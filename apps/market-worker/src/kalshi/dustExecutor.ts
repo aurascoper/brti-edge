@@ -199,6 +199,30 @@ export function defensibilityCheck(c: ScannerCandidate): DefensibilityCheck {
     }
   }
 
+  // Global σ ceiling (R2.C, 2026-05-16). Round-1 segmentation: the 15 trades
+  // with σ ≥ 0.40 net-lost $3.94 (47% win rate) while the 11 trades in σ
+  // 0.20-0.40 net-earned $9.14 (82% win rate). High σ inflates fair_yes
+  // toward 0.5, generating large apparent edges precisely when realized
+  // volatility breaks more strikes — the model misprices its own confidence.
+  // Default Infinity preserves prior behaviour; set KALSHI_DEF_SIGMA_MAX=0.40
+  // to enable the round-1-derived skip.
+  const sigmaMax = numEnv("KALSHI_DEF_SIGMA_MAX", Infinity);
+  if (c.sigma_annual >= sigmaMax) {
+    reasons.push(`sigma_${c.sigma_annual.toFixed(3)}_above_global_max_${sigmaMax}`);
+  }
+
+  // YES-side asymmetric edge floor (R3.A, 2026-05-16). Across R1+R2 (n=60)
+  // the YES side was 3W/6L (-$5.20) while NO was ~30W/20L (+$7.97). All YES
+  // losses had σ<0.40 so the R2.C ceiling never caught them; the bias is in
+  // fair_yes itself (model over-estimates P(YES) by ~5-10pp). Raising the
+  // edge floor on YES only — leaving NO at the global edgeMin — directly
+  // handicaps the side the data shows is mispriced. Default Infinity
+  // preserves prior behaviour; set KALSHI_DEF_YES_MIN_EDGE=0.15 to enable.
+  const yesMinEdge = numEnv("KALSHI_DEF_YES_MIN_EDGE", Infinity);
+  if (c.side === "YES" && c.edge < yesMinEdge) {
+    reasons.push(`yes_edge_${c.edge.toFixed(3)}_below_yes_min_${yesMinEdge}`);
+  }
+
   // Contrarian-market gate (2026-05-15). The dominant loss pattern across
   // n=15 trades was: side=NO at ask ~$0.30 with edge 0.06-0.08 while market
   // priced YES at ≥0.60 (i.e., yes_bid ≥ 0.60). 4-of-5 such trades lost.
