@@ -38,6 +38,8 @@ import {
   KalshiDustExecutor,
   type ScannerCandidate,
 } from "./dustExecutor";
+import { BrtiAggregator } from "../brti/aggregator";
+import type { Symbol as BrtiSymbol } from "../brti/types";
 
 // ------------------ config ------------------
 
@@ -75,6 +77,12 @@ interface CandidateRow {
   best_no_bid: number | null;
   spread: number | null;
   reason: string;
+  // Source attribution — added with BRTI integration. brti when the value
+  // came from the synthetic-BRTI aggregator (warm, ≥60s of 1s returns);
+  // binance when it fell back to SpotFeed.
+  spot_source: "brti" | "binance" | null;
+  sigma_source: "brti" | "binance" | null;
+  brti_contributors: string[] | null;
 }
 
 interface ShadowRow {
@@ -93,6 +101,17 @@ interface ShadowRow {
   strike: number | null;
   secs_to_close: number;
   reason: string;
+  spot_source: "brti" | "binance" | null;
+  sigma_source: "brti" | "binance" | null;
+  brti_contributors: string[] | null;
+}
+
+interface BrtiSymbolStatus {
+  symbol: string;       // BTC/ETH/...
+  price: number | null;
+  sigma_annual: number | null;
+  contributors: string[] | null;
+  warm: boolean;        // both price and sigma usable from BRTI
 }
 
 interface WorkerState {
@@ -105,11 +124,19 @@ interface WorkerState {
   balance: { cash_usd: number; portfolio_value_usd: number } | null;
   spot: number | null;
   sigmaAnnual: number | null;
+  // BTC headline source attribution (same source the strategy sees).
+  spotSource: "brti" | "binance" | null;
+  sigmaSource: "brti" | "binance" | null;
   exchangeActive: boolean | null;
   lastError: string | null;
   recentCandidates: CandidateRow[]; // ring buffer, last 50
   configuredSeries: SeriesConfig[];
   allowOrders: boolean; // mirrors ALLOW_ORDERS env; panel uses to enable/disable submit
+  brti: {
+    active: boolean;
+    symbols: string[];
+    perSymbol: BrtiSymbolStatus[];
+  };
 }
 
 const state: WorkerState = {
@@ -122,12 +149,19 @@ const state: WorkerState = {
   balance: null,
   spot: null,
   sigmaAnnual: null,
+  spotSource: null,
+  sigmaSource: null,
   exchangeActive: null,
   lastError: null,
   recentCandidates: [],
   configuredSeries: CRYPTO_15M_SERIES,
   // Initialized below after ALLOW_ORDERS is parsed
   allowOrders: false,
+  brti: {
+    active: false,
+    symbols: [],
+    perSymbol: [],
+  },
 };
 
 // Dry-run scanner: we WANT to re-evaluate each open market on every tick
@@ -150,6 +184,81 @@ const dust = new KalshiDustExecutor({
   candidatesLog: DUST_CANDIDATES_LOG,
 });
 
+// BRTI-first spot/σ source. Coinbase+Kraken+Bitstamp REST polling under the
+// hood; getSnapshot/getSigmaAnnual return null until the per-symbol return
+// buffer has ≥60s of samples, so Binance keeps serving as fallback during
+// warmup and for symbols no constituent venue lists (BCH/ADA always, and
+// BNB/HYPE in the current Phase-1 adapter set).
+const BRTI_SYMBOLS: BrtiSymbol[] = ["BTC", "ETH", "SOL", "BNB", "DOGE", "XRP", "HYPE"];
+const brti = new BrtiAggregator(BRTI_SYMBOLS);
+
+// Map Binance-style CEX ticker (KalshiSeries.cexSpotSymbol) → BRTI symbol.
+// Returns null for assets BRTI doesn't track (BCH/ADA) — caller falls back.
+function cexSymbolToBrti(cexSym: string): BrtiSymbol | null {
+  switch (cexSym) {
+    case "BTCUSDT": return "BTC";
+    case "ETHUSDT": return "ETH";
+    case "SOLUSDT": return "SOL";
+    case "BNBUSDT": return "BNB";
+    case "DOGEUSDT": return "DOGE";
+    case "XRPUSDT": return "XRP";
+    case "HYPEUSDT": return "HYPE";
+    default: return null; // BCHUSDT, ADAUSDT — Binance only
+  }
+}
+
+type SpotSource = "brti" | "binance";
+
+interface ResolvedSpotSigma {
+  spot: number | null;
+  sigma: number | null;
+  spot_source: SpotSource | null;
+  sigma_source: SpotSource | null;
+  brti_contributors: string[] | null;
+}
+
+// BRTI-first: ask the aggregator for spot + σ; for each that's null
+// (warming, no venue coverage, or asset not in BRTI map), fall back to the
+// Binance spot feed independently. spot and σ may come from different
+// sources during a partial BRTI warmup window; we tag both fields.
+function resolveSpotAndSigma(cexSym: string): ResolvedSpotSigma {
+  const brtiSym = cexSymbolToBrti(cexSym);
+  let spot: number | null = null;
+  let sigma: number | null = null;
+  let spot_source: SpotSource | null = null;
+  let sigma_source: SpotSource | null = null;
+  let brti_contributors: string[] | null = null;
+
+  if (brtiSym !== null) {
+    const snap = brti.getSnapshot(brtiSym);
+    if (snap && Number.isFinite(snap.price) && snap.price > 0) {
+      spot = snap.price;
+      spot_source = "brti";
+      brti_contributors = snap.contributors;
+    }
+    const sigmaB = brti.getSigmaAnnual(brtiSym);
+    if (sigmaB !== null && Number.isFinite(sigmaB) && sigmaB > 0) {
+      sigma = sigmaB;
+      sigma_source = "brti";
+    }
+  }
+  if (spot === null) {
+    const s = feeds.get(cexSym).getSpot();
+    if (s !== null) {
+      spot = s;
+      spot_source = "binance";
+    }
+  }
+  if (sigma === null) {
+    const v = feeds.get(cexSym).getSigmaAnnual();
+    if (v !== null && v > 0) {
+      sigma = v;
+      sigma_source = "binance";
+    }
+  }
+  return { spot, sigma, spot_source, sigma_source, brti_contributors };
+}
+
 // ------------------ scan loop ------------------
 
 async function scan(): Promise<void> {
@@ -158,9 +267,26 @@ async function scan(): Promise<void> {
   state.lastError = null;
 
   // BTC headline spot/sigma shown in the panel (most relevant market).
-  const btcFeed = feeds.get("BTCUSDT");
-  state.spot = btcFeed.getSpot();
-  state.sigmaAnnual = btcFeed.getSigmaAnnual();
+  // Goes through the BRTI-first resolver so the panel reflects what the
+  // strategy actually consumes for KXBTC15M.
+  const btcResolved = resolveSpotAndSigma("BTCUSDT");
+  state.spot = btcResolved.spot;
+  state.sigmaAnnual = btcResolved.sigma;
+  state.spotSource = btcResolved.spot_source;
+  state.sigmaSource = btcResolved.sigma_source;
+
+  // BRTI per-symbol diagnostics for /kalshi/state.
+  state.brti.perSymbol = BRTI_SYMBOLS.map((sym) => {
+    const snap = brti.getSnapshot(sym);
+    const sig = brti.getSigmaAnnual(sym);
+    return {
+      symbol: sym,
+      price: snap?.price ?? null,
+      sigma_annual: sig,
+      contributors: snap?.contributors ?? null,
+      warm: snap !== null && sig !== null && sig > 0,
+    };
+  });
 
   // Per-series inflight gate lives in dust.evaluate(); we deliberately do NOT
   // early-return on global inflight here. Skipping the whole scan when only
@@ -185,9 +311,9 @@ async function scan(): Promise<void> {
       // series Kalshi added that we haven't catalogued yet).
       continue;
     }
-    const feed = feeds.get(seriesCfg.cexSpotSymbol);
-    const spot = feed.getSpot();
-    const sigma = feed.getSigmaAnnual();
+    const resolved = resolveSpotAndSigma(seriesCfg.cexSpotSymbol);
+    const spot = resolved.spot;
+    const sigma = resolved.sigma;
 
     // Skip strategy evaluation if feed isn't warm yet, but still emit a shadow
     // row so we can audit feed readiness across all 9 series.
@@ -208,6 +334,9 @@ async function scan(): Promise<void> {
         strike: m.strike ?? null,
         secs_to_close: Math.max(0, (Date.parse(m.close_time) - Date.now()) / 1000),
         reason: spot === null ? "feed_no_spot" : "feed_no_sigma",
+        spot_source: resolved.spot_source,
+        sigma_source: resolved.sigma_source,
+        brti_contributors: resolved.brti_contributors,
       };
       appendJsonl(SHADOW_LOG, row);
       state.totalShadowFires += 1;
@@ -254,6 +383,9 @@ async function scan(): Promise<void> {
       strike: m.strike,
       secs_to_close: Math.max(0, (closeMs - Date.now()) / 1000),
       reason: decision.reason,
+      spot_source: resolved.spot_source,
+      sigma_source: resolved.sigma_source,
+      brti_contributors: resolved.brti_contributors,
     };
     appendJsonl(SHADOW_LOG, shadow);
     state.totalShadowFires += 1;
@@ -278,6 +410,9 @@ async function scan(): Promise<void> {
         best_no_bid: ob.best_no_bid,
         spread: ob.spread,
         reason: decision.reason,
+        spot_source: resolved.spot_source,
+        sigma_source: resolved.sigma_source,
+        brti_contributors: resolved.brti_contributors,
       };
       appendJsonl(CANDIDATE_LOG, cand);
       state.totalCandidates += 1;
@@ -530,6 +665,17 @@ async function main(): Promise<void> {
       `[kalshi-worker]   ${row.symbol.padEnd(10)} spot=${row.spot !== null ? "$" + row.spot.toFixed(2) : "—"} age=${row.ageSec !== null ? row.ageSec.toFixed(1) + "s" : "—"}`,
     );
   }
+
+  // BRTI aggregator: Coinbase + Kraken + Bitstamp REST polling. σ requires
+  // ~60s of 1s log-returns before getSigmaAnnual() returns non-null; until
+  // then the scan transparently falls back to the Binance feeds above.
+  // BCH/ADA are not in BRTI_SYMBOLS and will always use the Binance fallback.
+  console.log(
+    `[kalshi-worker] starting BRTI aggregator for: ${BRTI_SYMBOLS.join(", ")} (~60s warmup until σ usable)`,
+  );
+  await brti.start();
+  state.brti.active = true;
+  state.brti.symbols = BRTI_SYMBOLS.slice();
 
   await refreshExchangeStatus();
   await refreshBalance();

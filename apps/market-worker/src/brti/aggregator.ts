@@ -2,8 +2,9 @@
 //
 // Subscribes to constituent venue feeds, maintains per-venue rolling tick
 // state, and emits a 1-second benchmark snapshot computed as a robust
-// trimmed mean of constituent mid prices. Maintains rolling logs for σ
-// estimation and OFI feature extraction.
+// trimmed mean of constituent mid prices. σ is estimated from a separate
+// 1-minute resampled log-return buffer (not from 1s returns — see comment
+// on MINUTE_RETURN_BUFFER below). OFI features use the 1s tick state.
 //
 // Phase 1 (this file): Coinbase + Kraken + Bitstamp via REST polling.
 // Phase 2 deferred: Gemini, itBit, Bullish, Crypto.com WebSocket feeds.
@@ -20,9 +21,19 @@ import { CoinbaseAdapter } from "./venues/coinbase";
 import { KrakenAdapter } from "./venues/kraken";
 import { BitstampAdapter } from "./venues/bitstamp";
 
-const TICK_STALE_MS = 5000;        // drop ticks older than this from snapshot
-const SNAPSHOT_INTERVAL_MS = 1000; // emit one snapshot per second
-const PRICE_BUFFER_SIZE = 3600;    // 1 hour of 1s snapshots for σ estimation
+const TICK_STALE_MS = 5000;          // drop ticks older than this from snapshot
+const SNAPSHOT_INTERVAL_MS = 1000;   // emit one snapshot per second
+const SNAPSHOT_BUFFER_SIZE = 3600;   // 1 hour of 1s snapshots (audit + OFI)
+// σ is estimated from log returns sampled at the 1-minute boundary, not at 1s.
+// Trimmed-mean BRTI prices are smooth — the variance of 1s returns is dominated
+// by price-quantization at the cent / sub-cent level rather than real motion,
+// which deflates the 1s-based σ estimate well below realized vol. Sampling at
+// 60-second wall-clock buckets lets per-bucket price drift accumulate enough
+// signal to dominate quantization noise and brings σ back in line with what
+// the single-venue 3s Binance SpotFeed reports.
+const MINUTE_RETURN_BUFFER = 60;     // 1h rolling window of 1-min returns
+const MIN_MINUTE_SAMPLES = 5;        // need ≥5 min of samples before σ is usable
+const MINUTES_PER_YEAR = 525_600;    // 365 × 24 × 60, crypto trades 24/7
 
 export class BrtiAggregator {
   private symbols: Symbol[];
@@ -32,9 +43,10 @@ export class BrtiAggregator {
   private ticks: Map<string, VenueTick> = new Map();
   // rolling 1s benchmark snapshots per symbol
   private snapshots: Map<Symbol, BrtiSnapshot[]> = new Map();
-  // 1s log-return buffer for σ estimation
-  private logReturns: Map<Symbol, number[]> = new Map();
-  private lastSnapshotPrice: Map<Symbol, number> = new Map();
+  // 1-minute resampled log returns used for σ estimation
+  private minuteReturns: Map<Symbol, number[]> = new Map();
+  private lastMinutePrice: Map<Symbol, number> = new Map();
+  private lastMinuteBucket: Map<Symbol, number> = new Map();
 
   private snapshotTimer: NodeJS.Timeout | null = null;
 
@@ -47,7 +59,7 @@ export class BrtiAggregator {
     ];
     for (const s of symbols) {
       this.snapshots.set(s, []);
-      this.logReturns.set(s, []);
+      this.minuteReturns.set(s, []);
     }
   }
 
@@ -102,19 +114,26 @@ export class BrtiAggregator {
         raw_mids,
       };
 
-      // update log-return for σ
-      const last = this.lastSnapshotPrice.get(sym);
-      if (last !== undefined && last > 0) {
-        const r = Math.log(price / last);
-        const buf = this.logReturns.get(sym)!;
-        buf.push(r);
-        if (buf.length > PRICE_BUFFER_SIZE) buf.shift();
+      // 1-minute resampling for σ. On each new wall-clock minute bucket,
+      // compute log(price_now / price_at_previous_bucket) and append. Skip
+      // the very first observation per symbol (no prior bucket to diff).
+      const bucket = Math.floor(now / 60_000);
+      const prevBucket = this.lastMinuteBucket.get(sym);
+      if (prevBucket !== bucket) {
+        const prevPrice = this.lastMinutePrice.get(sym);
+        if (prevPrice !== undefined && prevPrice > 0 && price > 0) {
+          const r = Math.log(price / prevPrice);
+          const buf = this.minuteReturns.get(sym)!;
+          buf.push(r);
+          if (buf.length > MINUTE_RETURN_BUFFER) buf.shift();
+        }
+        this.lastMinutePrice.set(sym, price);
+        this.lastMinuteBucket.set(sym, bucket);
       }
-      this.lastSnapshotPrice.set(sym, price);
 
       const sbuf = this.snapshots.get(sym)!;
       sbuf.push(snap);
-      if (sbuf.length > PRICE_BUFFER_SIZE) sbuf.shift();
+      if (sbuf.length > SNAPSHOT_BUFFER_SIZE) sbuf.shift();
     }
   }
 
@@ -123,16 +142,18 @@ export class BrtiAggregator {
     return buf && buf.length > 0 ? buf[buf.length - 1]! : null;
   }
 
-  // Annualised σ from 1-second log returns.
-  //   σ_annual = sd(r_1s) * sqrt(seconds_per_year)
-  // Crypto trades 24/7 so the annualisation constant is 31_536_000.
+  // Annualised σ from 1-minute resampled log returns.
+  //   σ_annual = sd(r_1m) * sqrt(minutes_per_year)
+  // Need MIN_MINUTE_SAMPLES populated, which means ~MIN_MINUTE_SAMPLES wall
+  // clock minutes of aggregator uptime after the first tick lands. Crypto
+  // trades 24/7 so the annualisation constant is 525_600 = 365 × 24 × 60.
   getSigmaAnnual(sym: Symbol): number | null {
-    const buf = this.logReturns.get(sym);
-    if (!buf || buf.length < 60) return null; // require ≥60s of samples
+    const buf = this.minuteReturns.get(sym);
+    if (!buf || buf.length < MIN_MINUTE_SAMPLES) return null;
     const n = buf.length;
     const mean = buf.reduce((s, x) => s + x, 0) / n;
     const variance = buf.reduce((s, x) => s + (x - mean) ** 2, 0) / (n - 1);
-    return Math.sqrt(variance) * Math.sqrt(31_536_000);
+    return Math.sqrt(variance) * Math.sqrt(MINUTES_PER_YEAR);
   }
 
   // Top-of-book OFI across constituent venues.
