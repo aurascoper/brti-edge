@@ -35,10 +35,11 @@ export const SETTLEMENT_WINDOW_MS = 60_000;
 // outages without rejecting normal jitter.
 export const MIN_SAMPLES_PER_WINDOW = 40;
 
-// Ring buffer size: hold a little more than one window's worth of 1Hz
-// samples so a finalize() call that fires slightly past close_time still
-// has the full window in memory.
-const RING_CAPACITY = 90;
+// Ring buffer size: at the nominal 2Hz sample rate (VALIDATOR_SAMPLE_MS=500
+// in worker.ts), 240 entries holds 120 seconds — enough to cover the 60s
+// settlement window plus a generous grace zone for finalize() firing late.
+// Under event-loop slip (down to 0.5x) the same buffer covers 240 seconds.
+const RING_CAPACITY = 240;
 
 export interface SamplePoint {
   ts_ms: number;

@@ -57,10 +57,15 @@ const SHADOW_LOG = resolve(process.cwd(), "logs/kalshi-shadow.jsonl");
 const DUST_STATE_FILE = resolve(process.cwd(), "logs/kalshi-dust-state.json");
 const DUST_CANDIDATES_LOG = resolve(process.cwd(), "logs/kalshi-dust-candidates.jsonl");
 const SETTLEMENT_VALIDATION_LOG = resolve(process.cwd(), "logs/kalshi-settlement-validation.jsonl");
-// 1Hz sampler for settlement-print validation. Sampling is independent of
-// SCAN_INTERVAL_MS because the settlement-window mean needs at least 40 of 60
-// per-second samples in the final minute before close.
-const VALIDATOR_SAMPLE_MS = 1_000;
+// 2Hz sampler for settlement-print validation. The settlement-window mean
+// needs ≥40 of 60s of samples, which means we need an effective rate of at
+// least ~0.67Hz to clear the floor. Empirically the live worker's event
+// loop slows our timers from a nominal 1Hz down to ~0.5Hz under auto-submit
+// + reconcile + HTTP traffic, which lands every row below 40 samples and
+// trips the rejection branch. Oversampling at 500ms gives us 2x headroom
+// against event-loop slip; with no slip we collect ~120 samples per window
+// and the mean is more stable, with 0.5x slip we still collect ~60.
+const VALIDATOR_SAMPLE_MS = 500;
 // Poll for terminalized markets a bit slower than reconcile — Kalshi's result
 // field can lag close_time by 60-120s, so we don't waste API calls firing
 // every reconcile tick.
