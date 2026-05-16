@@ -40,6 +40,7 @@ import {
 } from "./dustExecutor";
 import { BrtiAggregator } from "../brti/aggregator";
 import type { Symbol as BrtiSymbol } from "../brti/types";
+import { SettlementValidator } from "./settlementValidator";
 
 // ------------------ config ------------------
 
@@ -55,6 +56,17 @@ const CANDIDATE_LOG = resolve(process.cwd(), "logs/kalshi-candidates.jsonl");
 const SHADOW_LOG = resolve(process.cwd(), "logs/kalshi-shadow.jsonl");
 const DUST_STATE_FILE = resolve(process.cwd(), "logs/kalshi-dust-state.json");
 const DUST_CANDIDATES_LOG = resolve(process.cwd(), "logs/kalshi-dust-candidates.jsonl");
+const SETTLEMENT_VALIDATION_LOG = resolve(process.cwd(), "logs/kalshi-settlement-validation.jsonl");
+// 1Hz sampler for settlement-print validation. Sampling is independent of
+// SCAN_INTERVAL_MS because the settlement-window mean needs at least 40 of 60
+// per-second samples in the final minute before close.
+const VALIDATOR_SAMPLE_MS = 1_000;
+// Poll for terminalized markets a bit slower than reconcile — Kalshi's result
+// field can lag close_time by 60-120s, so we don't waste API calls firing
+// every reconcile tick.
+const VALIDATOR_FINALIZE_POLL_MS = 30_000;
+// Clock-skew probe interval. Optional metadata; failures default to null.
+const CLOCK_SKEW_PROBE_MS = 30_000;
 
 // ------------------ state ------------------
 
@@ -137,6 +149,15 @@ interface WorkerState {
     symbols: string[];
     perSymbol: BrtiSymbolStatus[];
   };
+  // Optional observability metadata — null when probe disabled or last fetch
+  // failed. Never let validation block on this.
+  clockSkewMs: number | null;
+  clockSkewLastProbeAt: number | null;
+  validator: {
+    tracked: number;
+    finalized: number;
+    rejected_for_samples: number;
+  };
 }
 
 const state: WorkerState = {
@@ -162,6 +183,13 @@ const state: WorkerState = {
     symbols: [],
     perSymbol: [],
   },
+  clockSkewMs: null,
+  clockSkewLastProbeAt: null,
+  validator: {
+    tracked: 0,
+    finalized: 0,
+    rejected_for_samples: 0,
+  },
 };
 
 // Dry-run scanner: we WANT to re-evaluate each open market on every tick
@@ -183,6 +211,12 @@ const dust = new KalshiDustExecutor({
   stateFile: DUST_STATE_FILE,
   candidatesLog: DUST_CANDIDATES_LOG,
 });
+
+// Settlement-print validator. Independent of order flow — captures BRTI vs
+// Binance window means and compares the implied result to Kalshi's printed
+// result, without depending on any of our trades. Output is append-only
+// JSONL; finalize() is idempotent so the poller can fire as often as needed.
+const validator = new SettlementValidator({ outputPath: SETTLEMENT_VALIDATION_LOG });
 
 // BRTI-first spot/σ source. Coinbase+Kraken+Bitstamp REST polling under the
 // hood; getSnapshot/getSigmaAnnual return null until the per-symbol return
@@ -315,6 +349,19 @@ async function scan(): Promise<void> {
     const spot = resolved.spot;
     const sigma = resolved.sigma;
 
+    // Register the market with the validator (idempotent). The 1Hz sampler
+    // below uses the saved opts to look up BRTI/CEX symbols per ticker.
+    if (m.strike) {
+      validator.track({
+        ticker: m.ticker,
+        series: seriesPrefix,
+        strike: m.strike,
+        close_time_ms: Date.parse(m.close_time),
+        brti_symbol: cexSymbolToBrti(seriesCfg.cexSpotSymbol),
+        cex_symbol: seriesCfg.cexSpotSymbol,
+      });
+    }
+
     // Skip strategy evaluation if feed isn't warm yet, but still emit a shadow
     // row so we can audit feed readiness across all 9 series.
     if (spot === null || sigma === null || sigma <= 0) {
@@ -389,6 +436,17 @@ async function scan(): Promise<void> {
     };
     appendJsonl(SHADOW_LOG, shadow);
     state.totalShadowFires += 1;
+
+    // Save the latest decision for the validator. recordDecision() is a no-op
+    // for unknown tickers, so the order with track() above doesn't matter
+    // beyond this scan.
+    validator.recordDecision(m.ticker, {
+      fair_yes: decision.fair_yes,
+      side: decision.side,
+      sigma_annual: sigma,
+      spot_source: resolved.spot_source,
+      sigma_source: resolved.sigma_source,
+    });
 
     if (decision.side !== "SKIP" && decision.price !== null && decision.fair_yes !== null && decision.edge !== null) {
       const cand: CandidateRow = {
@@ -500,6 +558,94 @@ async function scan(): Promise<void> {
   }
 }
 
+// ------------------ settlement validator helpers ------------------
+
+// 1Hz sampler. For each tracked-and-not-finalized ticker, sample BRTI and
+// Binance at the same ts_ms so the window means are computed over matched
+// sample sets. Cheap — just reads cached state from the aggregators.
+function sampleValidator(): void {
+  const now = Date.now();
+  for (const ticker of validator.getTrackedTickers()) {
+    const opts = validator.getTrackOpts(ticker);
+    if (!opts) continue;
+    let brti_price: number | null = null;
+    if (opts.brti_symbol !== null) {
+      const snap = brti.getSnapshot(opts.brti_symbol as BrtiSymbol);
+      if (snap && Number.isFinite(snap.price) && snap.price > 0) brti_price = snap.price;
+    }
+    const binance_price = feeds.get(opts.cex_symbol).getSpot();
+    validator.record(now, ticker, brti_price, binance_price);
+  }
+}
+
+// Finalize poller. For any tracked-not-finalized ticker whose close_time has
+// passed by at least a grace period, fetch the market and call finalize()
+// if the result field is populated. Idempotent so we can fire often.
+async function pollFinalize(): Promise<void> {
+  const now = Date.now();
+  // Grace period covers Kalshi's documented result-field lag (60-120s past
+  // close_time on quiet markets).
+  const FINALIZE_GRACE_MS = 30_000;
+  for (const ticker of validator.getTrackedTickers()) {
+    if (validator.hasFinalized(ticker)) continue;
+    const opts = validator.getTrackOpts(ticker);
+    if (!opts) continue;
+    if (now < opts.close_time_ms + FINALIZE_GRACE_MS) continue;
+    try {
+      const market = await adapter.getMarket(ticker);
+      const result = (market?.raw as { result?: string } | undefined)?.result;
+      if (result === "yes" || result === "no") {
+        const row = validator.finalize(ticker, result, now, state.clockSkewMs);
+        if (row) {
+          state.validator.finalized += 1;
+          if (row.rejected_reason) state.validator.rejected_for_samples += 1;
+          console.log(
+            `[settlement-validator] ${ticker} result=${result} brti_implied=${row.brti_implied_result} binance_implied=${row.binance_implied_result} brti_match=${row.brti_matches_kalshi} binance_match=${row.binance_matches_kalshi} brti_n=${row.brti_window_n} binance_n=${row.binance_window_n}${row.rejected_reason ? ` [REJECTED ${row.rejected_reason}]` : ""}`,
+          );
+        }
+      }
+    } catch {
+      // Transient API failure — leave for the next poll cycle.
+    }
+  }
+  state.validator.tracked = validator.getTrackedTickers().length;
+}
+
+// Clock-skew probe. Non-blocking observability. AbortController + small
+// timeout so a stuck Kalshi endpoint can never delay the worker loop.
+async function probeClockSkew(): Promise<void> {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 3_000);
+  try {
+    const t0 = Date.now();
+    const res = await fetch("https://api.elections.kalshi.com/trade-api/v2/exchange/status", {
+      method: "GET",
+      signal: ac.signal,
+    });
+    const t1 = Date.now();
+    const dateHdr = res.headers.get("date");
+    if (!dateHdr) {
+      state.clockSkewMs = null;
+      return;
+    }
+    const serverMs = Date.parse(dateHdr);
+    if (!Number.isFinite(serverMs)) {
+      state.clockSkewMs = null;
+      return;
+    }
+    // The Date header has 1-second resolution. Compensate by treating our
+    // local time as the midpoint of the request — anything finer than
+    // ±500ms is below the header's granularity and we don't claim it.
+    const localMs = (t0 + t1) / 2;
+    state.clockSkewMs = Math.round(localMs - serverMs);
+    state.clockSkewLastProbeAt = t1;
+  } catch {
+    state.clockSkewMs = null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ------------------ HTTP state endpoint ------------------
 
 function startServer(): void {
@@ -534,6 +680,16 @@ function startServer(): void {
     if (req.url.startsWith("/kalshi/dust/state")) {
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify(dust.getState()));
+      return;
+    }
+    if (req.url.startsWith("/kalshi/settlement-validator/state")) {
+      res.setHeader("content-type", "application/json");
+      res.end(
+        JSON.stringify({
+          tracked: state.validator,
+          markets: validator.snapshot(),
+        }),
+      );
       return;
     }
     const confirmMatch = req.url.match(/^\/kalshi\/dust\/confirm\/([\w-]+)$/);
@@ -692,6 +848,17 @@ async function main(): Promise<void> {
   setInterval(() => {
     void dust.reconcileSubmitted(adapter);
   }, RECONCILE_INTERVAL_MS);
+
+  // Settlement-print validator: 1Hz sampler, finalize poller, clock-skew probe.
+  setInterval(sampleValidator, VALIDATOR_SAMPLE_MS);
+  setInterval(() => {
+    void pollFinalize();
+  }, VALIDATOR_FINALIZE_POLL_MS);
+  // Fire one immediately so the first sample row has fresh skew metadata.
+  void probeClockSkew();
+  setInterval(() => {
+    void probeClockSkew();
+  }, CLOCK_SKEW_PROBE_MS);
 
   // Auto-recompute per-asset calibration from settled trades every 5 min,
   // then hot-reload the table in strategy.ts. Bias estimates improve as
