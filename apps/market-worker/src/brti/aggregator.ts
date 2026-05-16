@@ -32,7 +32,14 @@ const SNAPSHOT_BUFFER_SIZE = 3600;   // 1 hour of 1s snapshots (audit + OFI)
 // signal to dominate quantization noise and brings σ back in line with what
 // the single-venue 3s Binance SpotFeed reports.
 const MINUTE_RETURN_BUFFER = 60;     // 1h rolling window of 1-min returns
-const MIN_MINUTE_SAMPLES = 5;        // need ≥5 min of samples before σ is usable
+// Need ≥10 min of samples before σ is usable. The 5-sample minimum produced a
+// usable σ faster but the early-buffer variance estimator is high-biased — in
+// the BRTI-vs-Binance acceptance window (dc62863), the first post-warmup BTC σ
+// was 0.32 and decayed to 0.20 as the buffer filled. Doubling the minimum
+// halves that early-regime bias at the cost of an extra 5 min of warmup, which
+// matters for settlement-print validation where an inflated σ would smear
+// fair_yes toward 0.5 and mask real BRTI tracking power.
+const MIN_MINUTE_SAMPLES = 10;
 const MINUTES_PER_YEAR = 525_600;    // 365 × 24 × 60, crypto trades 24/7
 
 export class BrtiAggregator {
