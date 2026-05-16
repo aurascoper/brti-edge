@@ -1,0 +1,27 @@
+node_modules
+.pnpm-store
+.turbo
+dist
+.next
+out
+coverage
+*.log
+.DS_Store
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+
+# Runtime state — local to each machine, contains trade history with PnL
+apps/market-worker/logs/
+apps/market-worker/data/
+
+# Per-machine temp data / staging
+*.pre-recal-*
+*.backup-*
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,29 @@
+{
+  "name": "@polyterminal/market-worker",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node --experimental-strip-types src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "kalshi-dev": "tsx watch src/kalshi/worker.ts",
+    "kalshi-scan": "tsx src/kalshi/worker.ts"
+  },
+  "dependencies": {
+    "@polyterminal/polymarket-client": "workspace:*",
+    "@polyterminal/market-state": "workspace:*",
+    "@polyterminal/signals": "workspace:*",
+    "@polyterminal/types": "workspace:*",
+    "ws": "^8.18.0",
+    "@polyterminal/kalshi-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

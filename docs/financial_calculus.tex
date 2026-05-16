@@ -1,0 +1,201 @@
+% brti-edge — Financial calculus reference
+%
+% Compile: pdflatex docs/financial_calculus.tex
+% Companion to README.md §2-3. Standalone math reference for the
+% current deployed model and the proposed BRTI-aware Student-t upgrade.
+
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\hypersetup{colorlinks=true, urlcolor=blue!70!black, linkcolor=black, citecolor=black}
+
+\title{\texttt{brti-edge}: financial calculus for the Kalshi 15-minute crypto trader}
+\author{aurascoper}
+\date{2026-05-16}
+
+\begin{document}
+\maketitle
+
+\section{The instrument}
+
+A Kalshi 15-minute crypto binary contract pays \$1 if the underlying's settlement value at time $T$ is at least the strike $K$, and \$0 otherwise. The settlement value is the simple mean of the final 60 one-second observations of the CF Benchmarks BRTI prior to $T$:
+\begin{equation}
+S_T^{\text{settle}} \;=\; \frac{1}{60}\sum_{i=0}^{59} \text{BRTI}(T - i\,\text{s}).
+\end{equation}
+BRTI is itself an aggregated multi-venue benchmark over the constituent set $\mathcal{V}$ (Coinbase, Kraken, Bitstamp, Gemini, itBit, LMAX Digital, Bullish, Crypto.com as of 2025-Q1).
+
+The payoff is
+\begin{equation}
+\mathrm{Payoff}(\text{YES}) \;=\; \mathbf{1}\!\left\{S_T^{\text{settle}} \geq K\right\},\qquad
+\mathrm{Payoff}(\text{NO}) \;=\; 1 - \mathrm{Payoff}(\text{YES}).
+\end{equation}
+
+\section{Deployed fair-value model}
+
+\subsection{Drift-free geometric Brownian motion baseline}
+
+The deployed strategy approximates $S_T^{\text{settle}} \approx S(T)$ (i.e., uses the terminal spot from a single venue, currently Binance.US, in place of the BRTI 60-second mean) and assumes
+\begin{equation}
+\ln S(T) \;\sim\; \mathcal{N}\!\left(\ln S(t),\; \sigma_{\text{ann}}^{2}\,\tau\right),\qquad
+\tau \;=\; \frac{T - t}{365\cdot 86400}.
+\end{equation}
+Under this assumption,
+\begin{equation}
+\hat p_{\text{YES}}(t) \;=\; \Phi\!\left(\frac{\ln(S(t)/K)}{\sigma_{\text{ann}}\sqrt{\tau}}\right),
+\label{eq:naive}
+\end{equation}
+where $\Phi$ is the standard-normal CDF. The complementary side satisfies $\hat p_{\text{NO}} = 1 - \hat p_{\text{YES}}$.
+
+\subsection{Edge and trade gate}
+
+For a YES ask price $A^{\text{YES}}$ from the venue order book, the model edge is
+\begin{equation}
+\text{edge}_{\text{YES}} \;=\; \hat p_{\text{YES}} - A^{\text{YES}}.
+\end{equation}
+A trade is fired if
+\begin{equation}
+\text{edge}_{\text{YES}} \;>\; \tfrac{1}{2}(A^{\text{YES}} - B^{\text{YES}}) + \delta_{\text{safety}} + \delta_{\text{floor}},
+\end{equation}
+where $B^{\text{YES}}$ is the best YES bid, $\delta_{\text{safety}} = 0.005$ (50~bps cushion), and $\delta_{\text{floor}} = 0.0075$. Symmetric logic applies on the NO side via the no-arbitrage identity $A^{\text{NO}} = 1 - B^{\text{YES}}$.
+
+\subsection{Calibration correction}
+
+Per Le~(2026), prediction-market calibration is structured by domain $d$, time-to-resolution $\tau$, and trade size. We maintain a per-series empirical bias
+\begin{equation}
+b_d \;=\; \frac{1}{N_d}\sum_{i: \text{series}(i) = d}
+\Big(\mathbf{1}\{\text{YES occurred}_i\} - \hat p_{\text{YES},i}^{\text{model}}\Big),
+\end{equation}
+and shrink it into the model with
+\begin{equation}
+\hat p_{\text{YES,corr}} \;=\; \mathrm{clip}\!\Big(\hat p_{\text{YES}} + \alpha\,b_d,\; 0.05,\; 0.95\Big),\qquad
+\alpha \in [0,1].
+\label{eq:cal}
+\end{equation}
+At $n < 30$ samples per series, $\widehat{\mathrm{sd}}(b_d) \approx 0.5/\sqrt{n} > 0.09$, so the correction is dominated by noise unless $|b_d|$ is large. Our $\alpha = 0.5$ default is a damping factor against this.
+
+\subsection{Fractional Kelly sizing}
+
+For a binary with model win-probability $p$ and ask $A$, the Kelly-optimal fraction of bankroll to bet is
+\begin{equation}
+f^{*} \;=\; \frac{pb - (1-p)}{b},\qquad b \;=\; \frac{1-A}{A},
+\end{equation}
+which simplifies to
+\begin{equation}
+f^{*} \;=\; \frac{p - A}{1 - A} \;=\; \frac{\text{edge}}{1 - A}.
+\label{eq:kelly}
+\end{equation}
+Full Kelly has been shown to be over-aggressive under parameter uncertainty (model error in $p$ causes geometric ruin); fractional Kelly with $k \in (0, 1)$ is the standard remedy. Notional stake is
+\begin{equation}
+\text{notional} \;=\; \min\!\Big(\text{maxNotional},\; B\cdot k \cdot f^{*}\Big),
+\end{equation}
+with bankroll $B$ and Kelly fraction $k$ (default $k = 0.25$, "quarter Kelly"). Number of contracts is $\lfloor\text{notional}/A\rfloor$; if this is below the minimum order size the trade is rejected, providing implicit edge-magnitude filtering.
+
+\subsection{Fee schedule}
+
+Kalshi's February 2026 fee formula for a contract trade of $C$ contracts at price $P$:
+\begin{align}
+\mathrm{fee}_{\text{taker}} &\;=\; \big\lceil 0.07 \cdot C \cdot P \cdot (1-P) \big\rceil_{\$0.01},\\
+\mathrm{fee}_{\text{maker}} &\;=\; \big\lceil 0.0175 \cdot C \cdot P \cdot (1-P) \big\rceil_{\$0.01}.
+\end{align}
+At $P = 0.50$, the taker fee per contract is $0.07 \cdot 0.25 = 0.0175$, which rounds up to \$0.02. Maker is $0.0175 \cdot 0.25 = 0.0044$, rounding up to \$0.01.
+
+For a sustained edge to survive net of fees on taker flow, the model edge must exceed roughly $\delta_{\text{fee}} + \delta_{\text{slip}} \approx 2.5\text{-}3$~cents per contract on average.
+
+\subsection{Risk gates}
+
+The deployed system applies a cascade of gates before a candidate becomes a live order. In addition to \eqref{eq:naive}-\eqref{eq:cal}, these include:
+\begin{itemize}
+\item \textbf{Z-distance:} reject if $|z| < z_{\min}$, where $z = \ln(S/K)/(\sigma_{\text{ann}}\sqrt{\tau})$. Removes coin-flip strikes.
+\item \textbf{Contrarian-market block:} if $\text{opp\_bid} > \theta$ and edge $< \varepsilon_{\text{contra}}$, reject. Avoid fighting a strongly-priced market with a weak signal.
+\item \textbf{Aggregate exposure cap:} $\sum_{i \in \mathrm{inflight}} \text{notional}_i \leq E_{\text{agg}}$.
+\item \textbf{Same-side cap:} $|\{i \in \mathrm{inflight} : \text{side}_i = \text{side}\}| < N_{\text{same}}$. Limits cluster correlation when crypto markets co-expire.
+\item \textbf{Loss-streak backoff:} if the last $N_{\text{strk}}$ settled trades all lost and the total loss exceeds $L_{\text{strk}}$, pause new entries for $\Delta t_{\text{strk}}$ seconds.
+\item \textbf{Session hard PnL stop:} terminate trading if $\sum_i \mathrm{realised\_pnl}_i \leq L_{\text{stop}}$.
+\end{itemize}
+
+\section{Proposed upgrade: BRTI-aware Student-t}
+
+\subsection{Defects of the deployed model}
+
+Four structural defects in \eqref{eq:naive} were identified empirically and via literature review:
+\begin{enumerate}
+\item Settles on the BRTI 60-second mean but proxies with single-venue spot.
+\item Estimates $\sigma$ from a single venue rather than the BRTI constituent set, missing the venues added 2024-2025 (Bullish, Crypto.com).
+\item Drift-free Brownian, ignoring order-flow imbalance (OFI) and spot--perp basis.
+\item Gaussian tails — $\Phi$ underprices extremes vs. realised crypto-return distribution.
+\end{enumerate}
+
+\subsection{Replacement equation}
+
+Let $\hat M_{t,\tau}$ be a forecast of the final-minute BRTI mean (the actual settlement object) and $\hat\mu_{t,\tau}$ a conditional drift over the residual horizon. With residual returns assumed Student-$t$ with $\nu_t$ degrees of freedom and scale $\hat\sigma_{t,\tau}\sqrt{\tau}$,
+\begin{equation}
+\boxed{\;\hat p_{\text{YES},t} \;=\; 1 - T_{\nu_t}\!\left(\frac{\ln(K / \hat M_{t,\tau}) - \hat\mu_{t,\tau}}{\hat\sigma_{t,\tau}\sqrt{\tau}}\right)\;}
+\label{eq:upgrade}
+\end{equation}
+where $T_{\nu}$ denotes the standardised Student-$t$ CDF. As $\nu \to \infty$, $T_{\nu} \to \Phi$ and \eqref{eq:upgrade} reduces to a drifted version of \eqref{eq:naive}.
+
+\subsection{Conditional drift specification}
+
+\begin{equation}
+\hat\mu_{t,\tau} \;=\; \beta_0 \;+\; \beta_1\,\mathrm{OFI}^{(1:5)}_t \;+\; \beta_2\,\Delta\mathrm{basis}_t \;+\; \beta_3\,\mathbf{r}_t^{(1,5,15)} \;+\; \beta_4\,\mathbf{1}\{\text{regime}_t\}.
+\end{equation}
+Features:
+\begin{itemize}
+\item $\mathrm{OFI}^{(1:5)}_t$: order-flow imbalance over top 5 levels, aggregated across BRTI constituents over a 1-second window. Defined per venue $v$ at level $\ell$ as
+\[
+\mathrm{OFI}_{v,\ell,t} \;=\; \frac{\mathrm{bidSize}_{v,\ell,t} - \mathrm{askSize}_{v,\ell,t}}{\mathrm{bidSize}_{v,\ell,t} + \mathrm{askSize}_{v,\ell,t}},
+\]
+and aggregated as $\mathrm{OFI}^{(1:5)}_t = (1/|\mathcal{V}|) \sum_v (1/5)\sum_\ell \mathrm{OFI}_{v,\ell,t}$.
+\item $\Delta\mathrm{basis}_t$: change in spot--perpetual basis (proxy: CME micro-futures lead or perp funding rate).
+\item $\mathbf{r}_t^{(1,5,15)}$: vector of recent log returns at 1, 5, 15-minute lags.
+\item $\mathbf{1}\{\text{regime}_t\}$: binary regime indicator from macro calendar (FOMC blackout, CPI day) or BVX deviation from rolling median.
+\end{itemize}
+
+\subsection{Volatility estimate}
+
+Synthetic BRTI is constructed as a robust trimmed mean over constituent mid prices,
+\begin{equation}
+\widehat{\mathrm{BRTI}}_t \;=\; \mathrm{trimMean}\big\{\,\mathrm{mid}_{v,t}\,:\, v \in \mathcal{V}_t\,\big\},
+\end{equation}
+where $\mathcal{V}_t$ is the set of venues with non-stale ticks at $t$. The annualised volatility used in \eqref{eq:upgrade} is computed from 1-second log returns of $\widehat{\mathrm{BRTI}}$:
+\begin{equation}
+\hat\sigma_t \;=\; \sqrt{\mathrm{Var}\!\big[\ln \widehat{\mathrm{BRTI}}_{t} / \widehat{\mathrm{BRTI}}_{t-1}\big] \cdot 31{,}536{,}000\,},
+\end{equation}
+optionally regularised with a HAR-RV (Heterogeneous Autoregressive Realised Volatility) specification that mixes 1-minute, 5-minute and 1-hour estimators.
+
+\subsection{Final-minute forecast}
+
+For the settlement object $\hat M_{t,\tau}$, the simplest specification is a drift-adjusted current synthetic BRTI:
+\begin{equation}
+\hat M_{t,\tau} \;=\; \widehat{\mathrm{BRTI}}_t \cdot \exp\!\big(\hat\mu_{t,\tau}\,\tau\big).
+\end{equation}
+This is the input to \eqref{eq:upgrade}. A more accurate specification predicts the final-minute mean conditional on the path so far; this is the natural next-generation research target once the OFI / basis / drift features are calibrated.
+
+\section{Validation criteria}
+
+For the upgraded model \eqref{eq:upgrade} to displace \eqref{eq:naive} in production, we require, on a held-out one-week paper-trading sample:
+\begin{enumerate}
+\item Brier-score improvement of at least 5\% versus baseline.
+\item Net expected edge per contract of at least \$0.025 (clears taker fee + slippage).
+\item Calibration of $\hat p_{\text{YES}}$ within the final five minutes before resolution that is strictly better than the deployed model in calibration-slope terms.
+\end{enumerate}
+
+\section{References}
+
+\begin{enumerate}
+\item Le, N. A. (2026). \emph{Decomposing Crowd Wisdom: Domain-Specific Calibration Dynamics in Prediction Markets.} \href{https://arxiv.org/abs/2602.19520}{arXiv:2602.19520}.
+\item Mohanty, H., Krishnamachari, B. (2026). \emph{Do Prediction Markets Forecast Cryptocurrency Volatility? Evidence from Kalshi Macro Contracts.} \href{https://arxiv.org/abs/2604.01431}{arXiv:2604.01431}.
+\item Zhang, J. et al. (2026). \emph{Prediction Arena: Benchmarking AI Models on Real-World Prediction Markets.} \href{https://arxiv.org/abs/2604.07355}{arXiv:2604.07355}.
+\item Mostafa, H., Shastri, O., Lee, D. (2026). \emph{TimeSeek: Temporal Reliability of Agentic Forecasters.} \href{https://arxiv.org/abs/2604.04220}{arXiv:2604.04220}.
+\item Galekwa, R. et al. (2026). \emph{Toward Sports Betting as a Financial Asset.} IEEE Access.
+\item Nayar, R. et al. (2026). \emph{Topological Risk Parity.} \href{https://arxiv.org/abs/2604.16773}{arXiv:2604.16773}.
+\end{enumerate}
+
+\end{document}
