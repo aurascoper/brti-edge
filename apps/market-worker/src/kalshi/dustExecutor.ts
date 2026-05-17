@@ -490,6 +490,24 @@ export class KalshiDustExecutor {
         `id=${candidate.id}`,
     );
 
+    // BTC-MID-NO sub-pattern watch (R4 observability, 2026-05-17). In R3 all
+    // 4 BTC losses had sz=4, ask 0.47-0.58, σ 0.08-0.13. Tag matching trades
+    // so R4 can validate or falsify the cohort. No execution effect.
+    if (
+      candidate.series === "KXBTC15M" &&
+      candidate.side === "NO" &&
+      candidate.contracts >= 3 &&
+      candidate.ask_price >= 0.45 &&
+      candidate.ask_price <= 0.60 &&
+      candidate.sigma_annual >= 0.07 &&
+      candidate.sigma_annual <= 0.14
+    ) {
+      console.log(
+        `[WATCH: BTC-MID-NO] ${candidate.ticker} sz=${candidate.contracts} ask=${candidate.ask_price.toFixed(3)} ` +
+          `σ=${candidate.sigma_annual.toFixed(3)} fair=${candidate.fair_yes.toFixed(3)} id=${candidate.id}`,
+      );
+    }
+
     return { candidate };
   }
 
