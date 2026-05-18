@@ -41,6 +41,8 @@ import {
 import { BrtiAggregator } from "../brti/aggregator";
 import type { Symbol as BrtiSymbol } from "../brti/types";
 import { SettlementValidator } from "./settlementValidator";
+import { PerpBasisFeed } from "./perpBasisFeed";
+import { ModelBakeoffLogger } from "./modelBakeoffLogger";
 
 // ------------------ config ------------------
 
@@ -230,6 +232,18 @@ const validator = new SettlementValidator({ outputPath: SETTLEMENT_VALIDATION_LO
 // BNB/HYPE in the current Phase-1 adapter set).
 const BRTI_SYMBOLS: BrtiSymbol[] = ["BTC", "ETH", "SOL", "BNB", "DOGE", "XRP", "HYPE"];
 const brti = new BrtiAggregator(BRTI_SYMBOLS);
+
+// Spot-perp basis feed (Kraken Futures by default; PERP_FEED_REST overridable).
+// First Layer-2 feature for the model-bakeoff JSONL. Polled on its own 3s
+// cadence; basis is read at scan time alongside spot/sigma.
+const perpFeed = new PerpBasisFeed(BRTI_SYMBOLS);
+
+// Layer-2 shadow bakeoff log — writes one row per scored market with both
+// the Gaussian/BRTI baseline prediction AND new candidate features (basis,
+// later OFI). Joined with kalshi-settlement-validation.jsonl by ticker for
+// prospective scoring in scripts/brier_bakeoff.py. Append-only JSONL.
+const MODEL_BAKEOFF_LOG = resolve(process.cwd(), "logs/kalshi-model-bakeoff-shadow.jsonl");
+const modelBakeoffLogger = new ModelBakeoffLogger({ outputPath: MODEL_BAKEOFF_LOG });
 
 // Map Binance-style CEX ticker (KalshiSeries.cexSpotSymbol) → BRTI symbol.
 // Returns null for assets BRTI doesn't track (BCH/ADA) — caller falls back.
@@ -441,6 +455,42 @@ async function scan(): Promise<void> {
     };
     appendJsonl(SHADOW_LOG, shadow);
     state.totalShadowFires += 1;
+
+    // Layer-2 model-bakeoff row. Fires unconditionally — independent of
+    // KALSHI_DUST_ENABLED — so shadow-mode runs accumulate prospective
+    // feature/prediction pairs for scripts/brier_bakeoff.py to join with
+    // settlement labels later. First feature is spot-perp basis.
+    const brtiSym = cexSymbolToBrti(seriesCfg.cexSpotSymbol);
+    const basis = brtiSym !== null ? perpFeed.getBasis(brtiSym, spot) : {
+      basis_mid: null, basis_bps: null, perp_mark: null, perp_index: null,
+      fundingRate: null, perp_age_ms: null,
+    };
+    modelBakeoffLogger.log({
+      ts: shadow.ts,
+      ticker: m.ticker,
+      series: seriesPrefix,
+      asset: brtiSym ?? seriesPrefix.replace("KX", "").replace("15M", ""),
+      strike: m.strike,
+      close_time: m.close_time,
+      secs_to_close: shadow.secs_to_close,
+      side_gaussian: decision.side,
+      p_gaussian: decision.fair_yes,
+      edge_gaussian: decision.edge,
+      best_yes_bid: ob.best_yes_bid,
+      best_yes_ask: ob.best_yes_ask,
+      best_no_bid: ob.best_no_bid,
+      best_no_ask: ob.best_no_ask,
+      spot,
+      spot_source: resolved.spot_source,
+      sigma_annual: sigma,
+      sigma_source: resolved.sigma_source,
+      perp_mark: basis.perp_mark,
+      perp_index: basis.perp_index,
+      perp_age_ms: basis.perp_age_ms,
+      basis_mid: basis.basis_mid,
+      basis_bps: basis.basis_bps,
+      funding_rate: basis.fundingRate,
+    });
 
     // Save the latest decision for the validator. recordDecision() is a no-op
     // for unknown tickers, so the order with track() above doesn't matter
@@ -837,6 +887,14 @@ async function main(): Promise<void> {
   await brti.start();
   state.brti.active = true;
   state.brti.symbols = BRTI_SYMBOLS.slice();
+
+  // Spot-perp basis polling (Bybit linear). Adds basis_mid / basis_bps /
+  // funding_rate as candidate features for the Layer-2 bakeoff. Independent
+  // of BRTI — if Bybit is unreachable the bakeoff rows just carry nulls.
+  console.log(
+    `[kalshi-worker] starting perp-basis feed (Kraken Futures PF_*USD) for: ${BRTI_SYMBOLS.join(", ")}`,
+  );
+  await perpFeed.start();
 
   await refreshExchangeStatus();
   await refreshBalance();

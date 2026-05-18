@@ -93,6 +93,45 @@ def load_validator_rows() -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
+def load_bakeoff_shadow() -> pd.DataFrame:
+    """Layer-2 shadow rows: model prediction + new candidate features (basis, ...).
+    Each row is one scan-tick evaluation of one Kalshi market. We dedupe to the
+    LAST row per ticker (closest to settlement = most informative features) so
+    the join with settlement labels is 1-to-1."""
+    rows = load_jsonl(LOGS / "kalshi-model-bakeoff-shadow.jsonl")
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    if "ticker" not in df.columns or "ts" not in df.columns:
+        return pd.DataFrame()
+    # Keep latest row per ticker
+    df["ts_parsed"] = pd.to_datetime(df["ts"], utc=True, errors="coerce")
+    df = df.sort_values("ts_parsed").drop_duplicates("ticker", keep="last")
+    return df
+
+
+def merge_layer2_with_settlements(layer2: pd.DataFrame, validator: pd.DataFrame) -> pd.DataFrame:
+    """Inner join Layer-2 features with settlement labels.
+    Result is one row per settled market we evaluated in shadow, with the
+    basis/funding features AND y_yes from Kalshi's settlement."""
+    if len(layer2) == 0 or len(validator) == 0:
+        return pd.DataFrame()
+    label_cols = ["ticker", "y_yes", "close_time"]
+    have = validator[label_cols].drop_duplicates("ticker")
+    feat = layer2[[
+        "ticker", "series", "asset", "p_gaussian", "edge_gaussian",
+        "spot", "sigma_annual", "secs_to_close",
+        "basis_mid", "basis_bps", "funding_rate", "perp_mark", "perp_index",
+        "best_yes_bid", "best_yes_ask", "best_no_bid", "best_no_ask",
+        "side_gaussian",
+    ]].copy()
+    merged = feat.merge(have, on="ticker", how="inner")
+    merged["close_time"] = pd.to_datetime(merged["close_time"], utc=True, errors="coerce")
+    merged["utc_hour"] = merged["close_time"].dt.hour
+    merged["universe"] = "shadow_with_basis"
+    return merged
+
+
 def load_filled_trades() -> pd.DataFrame:
     """Universe B: candidates the executor actually submitted, with realized PnL."""
     state_path = LOGS / "kalshi-dust-state.json"
@@ -215,6 +254,38 @@ def apply_logistic(lr: LogisticRegression, df: pd.DataFrame) -> np.ndarray:
     return lr.predict_proba(X)[:, 1]
 
 
+def fit_logistic_with_basis(train: pd.DataFrame) -> LogisticRegression | None:
+    """Logistic on logit(p_gaussian) + basis_bps + funding_rate.
+    Returns None if not enough samples have non-null basis (Layer-2 data is
+    only present once the shadow worker has been collecting it)."""
+    needed = ["p_gaussian", "y_yes", "basis_bps", "funding_rate"]
+    d = train.dropna(subset=needed)
+    if len(d) < 30:
+        return None
+    p = np.clip(d["p_gaussian"].to_numpy(), EPS, 1 - EPS)
+    logit_p = np.log(p / (1 - p))
+    X = np.column_stack([
+        logit_p,
+        d["basis_bps"].to_numpy(),
+        d["funding_rate"].to_numpy(),
+    ])
+    y = d["y_yes"].to_numpy()
+    if len(np.unique(y)) < 2:
+        return None
+    lr = LogisticRegression()
+    lr.fit(X, y)
+    return lr
+
+
+def apply_logistic_with_basis(lr: LogisticRegression, df: pd.DataFrame) -> np.ndarray:
+    p = np.clip(df["p_gaussian"].to_numpy(), EPS, 1 - EPS)
+    logit_p = np.log(p / (1 - p))
+    basis = df["basis_bps"].fillna(0.0).to_numpy()  # neutral fill at predict time
+    fund = df["funding_rate"].fillna(0.0).to_numpy()
+    X = np.column_stack([logit_p, basis, fund])
+    return lr.predict_proba(X)[:, 1]
+
+
 STUDENT_GRID = {
     "nu": [2, 3, 4, 5, 7, 10, 15, 30],
     "beta": [0.25, 0.40, 0.55, 0.70, 0.85, 1.00],
@@ -263,7 +334,7 @@ class FoldResult:
     params: dict
 
 
-def walk_forward(df: pd.DataFrame, universe_label: str) -> pd.DataFrame:
+def walk_forward(df: pd.DataFrame, universe_label: str, with_basis: bool = False) -> pd.DataFrame:
     d = df.dropna(subset=["p_gaussian", "y_yes", "close_time"]).sort_values("close_time").reset_index(drop=True)
     n = len(d)
     if n < 80:
@@ -335,6 +406,26 @@ def walk_forward(df: pd.DataFrame, universe_label: str) -> pd.DataFrame:
                 "params": json.dumps(params),
             })
 
+        # Logistic + basis (Layer-2 feature-augmented)
+        if with_basis:
+            lr_basis = fit_logistic_with_basis(train)
+            if lr_basis is not None:
+                test["p_logistic_basis"] = apply_logistic_with_basis(lr_basis, test)
+                results.append({
+                    "universe": universe_label,
+                    "fold": f"{train_end_frac:.0%}->{test_end_frac:.0%}",
+                    "n_train": len(train),
+                    "n_test": len(test),
+                    "model": "p_logistic_basis",
+                    "brier": brier(test, "p_logistic_basis"),
+                    "params": json.dumps({
+                        "intercept": float(lr_basis.intercept_[0]),
+                        "coef_logit_p": float(lr_basis.coef_[0][0]),
+                        "coef_basis_bps": float(lr_basis.coef_[0][1]),
+                        "coef_funding_rate": float(lr_basis.coef_[0][2]),
+                    }),
+                })
+
     return pd.DataFrame(results)
 
 
@@ -383,9 +474,13 @@ def main() -> None:
     print(f"Reading logs from: {LOGS}")
     val_df = load_validator_rows()
     filled_df = load_filled_trades()
+    layer2_df = load_bakeoff_shadow()
+    shadow_basis_df = merge_layer2_with_settlements(layer2_df, val_df)
 
-    print(f"  all_decisions universe: n={len(val_df)}")
-    print(f"  filled universe:        n={len(filled_df)}")
+    print(f"  all_decisions universe:           n={len(val_df)}")
+    print(f"  filled universe:                  n={len(filled_df)}")
+    print(f"  layer2 shadow rows (latest/ticker): n={len(layer2_df)}")
+    print(f"  shadow_with_basis (joined w/settlement): n={len(shadow_basis_df)}")
 
     # Add transform-only models to both universes (clip variants)
     val_df = add_clip_models(val_df)
@@ -436,7 +531,8 @@ def main() -> None:
     # Walk-forward — the honest test
     wf_val = walk_forward(val_df, "all_decisions")
     wf_filled = walk_forward(filled_df, "filled")
-    wf_combined = pd.concat([wf_val, wf_filled], ignore_index=True)
+    wf_shadow_basis = walk_forward(shadow_basis_df, "shadow_with_basis", with_basis=True) if len(shadow_basis_df) >= 80 else pd.DataFrame()
+    wf_combined = pd.concat([wf_val, wf_filled, wf_shadow_basis], ignore_index=True)
     wf_combined.to_csv(OUT / "bakeoff_walk_forward.csv", index=False)
 
     # Walk-forward summary (mean Brier per model per universe)
