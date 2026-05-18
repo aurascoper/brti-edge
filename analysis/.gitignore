@@ -1,0 +1,3 @@
+# Derived analysis artifacts — regenerate per-run via scripts/
+brier/*.csv
+brier/*.json
