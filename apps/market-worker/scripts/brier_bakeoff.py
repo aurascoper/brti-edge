@@ -66,6 +66,11 @@ def load_validator_rows() -> pd.DataFrame:
         if p is None or result not in ("yes", "no"):
             continue
         ct = pd.to_datetime(r["close_time"], utc=True)
+        decision_ts = pd.to_datetime(r.get("ts"), utc=True, errors="coerce")
+        if pd.notna(ct) and pd.notna(decision_ts):
+            secs_to_close = max(0.0, (ct - decision_ts).total_seconds())
+        else:
+            secs_to_close = None
         series = r["series"]
         out.append({
             "source_table": "validator",
@@ -83,6 +88,8 @@ def load_validator_rows() -> pd.DataFrame:
             "contracts": None,
             "realized_pnl_usd": None,
             "sigma_annual": r.get("sigma_at_decision"),
+            "secs_to_close": secs_to_close,
+            "strike": r.get("strike"),
             "spot_source": r.get("decision_spot_source"),
             "sigma_source": r.get("decision_sigma_source"),
             "brti_window_mean": r.get("brti_window_mean"),
@@ -93,21 +100,35 @@ def load_validator_rows() -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
-def load_bakeoff_shadow() -> pd.DataFrame:
+def load_bakeoff_shadow(decision_secs: float = 90.0) -> pd.DataFrame:
     """Layer-2 shadow rows: model prediction + new candidate features (basis, ...).
-    Each row is one scan-tick evaluation of one Kalshi market. We dedupe to the
-    LAST row per ticker (closest to settlement = most informative features) so
-    the join with settlement labels is 1-to-1."""
+    Each row is one scan-tick evaluation of one Kalshi market.
+
+    For each ticker, we keep the row whose secs_to_close is the smallest value
+    that is still >= decision_secs (default: 90s, matching the live executor's
+    KALSHI_DEF_MIN_SECS_TO_CLOSE gate). This represents the worker's view at
+    the moment a live decision would be made.
+
+    Previously we kept the LAST row per ticker; that captured the saturation
+    state (post-close), not the decision state. With the saturation row, both
+    p_gaussian and any structural correction collapse to 0/1, masking the real
+    signal we're trying to evaluate.
+
+    Tickers with no row at >= decision_secs (e.g., the worker only saw them
+    deep in the settlement window) are dropped."""
     rows = load_jsonl(LOGS / "kalshi-model-bakeoff-shadow.jsonl")
     if not rows:
         return pd.DataFrame()
     df = pd.DataFrame(rows)
     if "ticker" not in df.columns or "ts" not in df.columns:
         return pd.DataFrame()
-    # Keep latest row per ticker
     df["ts_parsed"] = pd.to_datetime(df["ts"], utc=True, errors="coerce")
-    df = df.sort_values("ts_parsed").drop_duplicates("ticker", keep="last")
-    return df
+    if "secs_to_close" not in df.columns:
+        return pd.DataFrame()
+    eligible = df[df["secs_to_close"] >= decision_secs].copy()
+    eligible = eligible.sort_values("secs_to_close")
+    eligible = eligible.drop_duplicates("ticker", keep="first")
+    return eligible
 
 
 def merge_layer2_with_settlements(layer2: pd.DataFrame, validator: pd.DataFrame) -> pd.DataFrame:
@@ -120,7 +141,7 @@ def merge_layer2_with_settlements(layer2: pd.DataFrame, validator: pd.DataFrame)
     have = validator[label_cols].drop_duplicates("ticker")
     feat = layer2[[
         "ticker", "series", "asset", "p_gaussian", "edge_gaussian",
-        "spot", "sigma_annual", "secs_to_close",
+        "spot", "strike", "sigma_annual", "secs_to_close",
         "basis_mid", "basis_bps", "funding_rate", "perp_mark", "perp_index",
         "best_yes_bid", "best_yes_ask", "best_no_bid", "best_no_ask",
         "side_gaussian",
@@ -286,6 +307,137 @@ def apply_logistic_with_basis(lr: LogisticRegression, df: pd.DataFrame) -> np.nd
     return lr.predict_proba(X)[:, 1]
 
 
+# -----------------------------------------------------------------------
+# Arithmetic-TWAP binary (structural-correctness candidate).
+#
+# Kalshi settles via a 60-second arithmetic average of BRTI. The deployed model
+# prices a point digital. For tau >= delta (executor's live regime under the
+# 90s gate), this reduces to an effective-time correction:
+#
+#     z = Phi^{-1}(p_gaussian)
+#     z_twap = z * sqrt(tau / (tau - 2*delta/3))
+#     p_twap = Phi(z_twap)
+#
+# Derivation: under driftless GBM with sigma annualized, the arithmetic
+# 60-second TWAP has Var(A) approx S^2 * sigma^2 * (tau - 2*delta/3) and
+# E[A] = S, which moment-matches to a lognormal with effective time
+# tau_eff = tau - 2*delta/3. The single closed-form drop-in uses the same
+# (S, K, sigma) implicit in p_gaussian and just rescales z.
+#
+# DIRECTIONALITY: for p > 0.5 (S > K), p_twap > p_gaussian. Expected to make
+# the [0.7, 0.8) overconfidence bucket WORSE, not better. Included as a
+# structural negative control.
+# -----------------------------------------------------------------------
+
+TWAP_DELTA_SEC = 60.0
+
+
+def _norm_cdf(x: np.ndarray) -> np.ndarray:
+    from scipy.special import ndtr
+    return ndtr(x)
+
+
+def p_twap_asian(p_gaussian: np.ndarray, secs_to_close: np.ndarray, delta_sec: float = TWAP_DELTA_SEC) -> np.ndarray:
+    """Pure transform from (p_gaussian, secs_to_close) to TWAP-corrected probability.
+    For tau >= delta uses effective-time form. For tau < delta we fall back to
+    p_gaussian (case-2 inside-window pricing needs the realized prefix which we
+    do not log; this regime is gated out of live trading by KALSHI_DEF_MIN_SECS_TO_CLOSE=90)."""
+    p = np.clip(np.asarray(p_gaussian, dtype=float), EPS, 1 - EPS)
+    tau = np.asarray(secs_to_close, dtype=float)
+    z = ndtri(p)
+    out = p.copy()
+
+    mask_pre = tau >= delta_sec
+    tau_eff = np.where(mask_pre, tau - (2.0 / 3.0) * delta_sec, tau)
+    safe = mask_pre & (tau_eff > 0)
+    ratios = np.ones_like(p)
+    ratios[safe] = np.sqrt(tau[safe] / tau_eff[safe])
+    z_twap = z * ratios
+    # Outside the pre-window regime (tau < delta) we keep p_gaussian as a
+    # conservative fallback; case-2 pricing needs the realized prefix which we
+    # don't log, and the live executor is gated to tau >= 90s anyway.
+    return np.where(safe, _norm_cdf(z_twap), p)
+
+
+# -----------------------------------------------------------------------
+# Sigma-correction candidate (structural-payoff model).
+#
+# Tests whether the deployed BRTI 1-min realized sigma underestimates effective
+# near-close variance. Functional form is rough-vol-flavored:
+#
+#     sigma_eff = sigma * clip(1 + a * (tau_ref / tau_sec) ** beta, 1, max_mult)
+#     p = Phi(log(S/K) / (sigma_eff * sqrt(tau_years)))
+#
+# We grid-search (a, beta) on training rows to minimize Brier, then apply on test.
+# Anchored at tau_ref = 900s (15 min) so the multiplier equals (1 + a) at the
+# anchor and grows as tau shrinks. Multiplier clipped to MAX_MULT to prevent
+# blow-up at very small tau (executor's 90s gate keeps live tau >= 90s anyway).
+# -----------------------------------------------------------------------
+
+SIGMA_TAU_REF_SEC = 900.0
+SIGMA_MAX_MULT = 3.0
+SIGMA_GRID = {
+    "a": [0.0, 0.05, 0.10, 0.20, 0.40, 0.80, 1.50],
+    "beta": [0.25, 0.50, 1.00, 2.00],
+}
+SECONDS_PER_YEAR = 365.0 * 24.0 * 3600.0
+
+
+def _sigma_eff(sigma: np.ndarray, tau_sec: np.ndarray, a: float, beta: float) -> np.ndarray:
+    ratio = SIGMA_TAU_REF_SEC / np.maximum(tau_sec, 1.0)
+    mult = np.clip(1.0 + a * np.power(ratio, beta), 1.0, SIGMA_MAX_MULT)
+    return sigma * mult
+
+
+def _scale_z_by_mult(p_gaussian: np.ndarray, tau_sec: np.ndarray, a: float, beta: float) -> np.ndarray:
+    """Scale the implied z = Phi^{-1}(p_gaussian) by 1/mult, where
+    mult = clip(1 + a * (tau_ref/tau_sec)^beta, 1, MAX_MULT).
+
+    This is equivalent to replacing sigma by sigma_eff = sigma * mult in the
+    point-digital formula, since z = log(S/K) / (sigma * sqrt(tau)) and the
+    *stored* p_gaussian already encodes the worker's full pricing (including
+    any per-asset calibration), so we operate on it as a single state variable.
+    If a=0 the transform is identity.
+    """
+    p = np.clip(np.asarray(p_gaussian, dtype=float), EPS, 1 - EPS)
+    tau = np.asarray(tau_sec, dtype=float)
+    z = ndtri(p)
+    ratio = SIGMA_TAU_REF_SEC / np.maximum(tau, 1.0)
+    mult = np.clip(1.0 + a * np.power(ratio, beta), 1.0, SIGMA_MAX_MULT)
+    return _norm_cdf(z / mult)
+
+
+def fit_sigma_correction(train: pd.DataFrame) -> dict | None:
+    """Grid-search (a, beta) over the implied-z rescale to minimize train Brier."""
+    needed = ["p_gaussian", "y_yes", "secs_to_close"]
+    d = train.dropna(subset=needed)
+    if len(d) < 30:
+        return None
+    p = d["p_gaussian"].to_numpy()
+    tau = d["secs_to_close"].to_numpy()
+    y = d["y_yes"].to_numpy()
+    best = None
+    for a in SIGMA_GRID["a"]:
+        for beta in SIGMA_GRID["beta"]:
+            p_pred = _scale_z_by_mult(p, tau, a, beta)
+            b = float(np.mean((p_pred - y) ** 2))
+            if best is None or b < best["train_brier"]:
+                best = {"a": a, "beta": beta, "train_brier": b, "n_train": len(d)}
+    return best
+
+
+def apply_sigma_correction(params: dict, df: pd.DataFrame) -> np.ndarray:
+    out = df["p_gaussian"].to_numpy().astype(float).copy()
+    mask = df["secs_to_close"].notna().to_numpy()
+    if mask.any():
+        out[mask] = _scale_z_by_mult(
+            df.loc[mask, "p_gaussian"].to_numpy(),
+            df.loc[mask, "secs_to_close"].to_numpy(),
+            params["a"], params["beta"],
+        )
+    return out
+
+
 STUDENT_GRID = {
     "nu": [2, 3, 4, 5, 7, 10, 15, 30],
     "beta": [0.25, 0.40, 0.55, 0.70, 0.85, 1.00],
@@ -425,6 +577,56 @@ def walk_forward(df: pd.DataFrame, universe_label: str, with_basis: bool = False
                         "coef_funding_rate": float(lr_basis.coef_[0][2]),
                     }),
                 })
+
+        # TWAP (structural-correctness / negative-control) — works whenever we
+        # have secs_to_close. Pure transform of p_gaussian, no fit needed.
+        if "secs_to_close" in test.columns and test["secs_to_close"].notna().any():
+            test["p_twap"] = p_twap_asian(
+                test["p_gaussian"].to_numpy(),
+                test["secs_to_close"].to_numpy(),
+            )
+            results.append({
+                "universe": universe_label,
+                "fold": f"{train_end_frac:.0%}->{test_end_frac:.0%}",
+                "n_train": len(train),
+                "n_test": len(test),
+                "model": "p_twap",
+                "brier": brier(test, "p_twap"),
+                "params": json.dumps({"delta_sec": TWAP_DELTA_SEC}),
+            })
+
+        # Sigma-correction (structural-payoff candidate). Rescales implied
+        # z by 1/mult(tau); needs only p_gaussian + secs_to_close.
+        if "secs_to_close" in train.columns and train["secs_to_close"].notna().any():
+            sig_params = fit_sigma_correction(train)
+            if sig_params is not None:
+                test["p_sigma_corrected"] = apply_sigma_correction(sig_params, test)
+                results.append({
+                    "universe": universe_label,
+                    "fold": f"{train_end_frac:.0%}->{test_end_frac:.0%}",
+                    "n_train": len(train),
+                    "n_test": len(test),
+                    "model": "p_sigma_corrected",
+                    "brier": brier(test, "p_sigma_corrected"),
+                    "params": json.dumps(sig_params),
+                })
+
+                # Joint TWAP + sigma-correction: apply TWAP rescale on top of
+                # sigma-corrected base. Provides attribution check.
+                if "p_twap" in test.columns:
+                    base = test["p_sigma_corrected"].to_numpy()
+                    test["p_twap_sigma"] = p_twap_asian(
+                        base, test["secs_to_close"].to_numpy(),
+                    )
+                    results.append({
+                        "universe": universe_label,
+                        "fold": f"{train_end_frac:.0%}->{test_end_frac:.0%}",
+                        "n_train": len(train),
+                        "n_test": len(test),
+                        "model": "p_twap_sigma",
+                        "brier": brier(test, "p_twap_sigma"),
+                        "params": json.dumps(sig_params),
+                    })
 
     return pd.DataFrame(results)
 
