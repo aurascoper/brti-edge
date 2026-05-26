@@ -20,6 +20,12 @@ apps/market-worker/data/
 apps/data-collector/logs/
 apps/data-collector/collector-*.pid
 
+# Autoresearch runtime/output state (per-trial configs and loop state grow
+# rapidly; the source scaffolds — instructions.md, launch_prompt.md,
+# score.py — are checked in alongside).
+autoresearch_*/state/
+autoresearch_*/configs/
+
 # Per-machine temp data / staging
 *.pre-recal-*
 *.backup-*
