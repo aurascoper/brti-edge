@@ -18,6 +18,25 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
+  apps/data-collector:
+    dependencies:
+      '@polyterminal/kalshi-client':
+        specifier: workspace:*
+        version: link:../../packages/kalshi-client
+      ws:
+        specifier: ^8.18.0
+        version: 8.20.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+    devDependencies:
+      '@types/ws':
+        specifier: ^8.5.12
+        version: 8.18.1
+      tsx:
+        specifier: ^4.19.1
+        version: 4.21.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   apps/market-worker:
     dependencies:
       '@polyterminal/kalshi-client':

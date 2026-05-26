@@ -16,6 +16,10 @@ coverage
 apps/market-worker/logs/
 apps/market-worker/data/
 
+# Data-collector runtime artifacts (large captured WS data; 300 MB per 30h run)
+apps/data-collector/logs/
+apps/data-collector/collector-*.pid
+
 # Per-machine temp data / staging
 *.pre-recal-*
 *.backup-*
