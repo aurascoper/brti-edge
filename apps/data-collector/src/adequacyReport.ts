@@ -2,7 +2,7 @@
 //
 // Reads the gzipped JSONL files written by the collector over a window
 // (default: last 24h, override via --since=ISO and --until=ISO) and prints
-// the 8 user-specified adequacy metrics:
+// adequacy metrics:
 //
 //   1. events per market
 //   2. depth levels observed
@@ -12,6 +12,16 @@
 //   6. storage/day estimate
 //   7. whether trade direction/aggressor side is actually present
 //   8. whether enough data exists to estimate adverse selection
+//   9. coverage gaps — per-channel hour-bucket completeness
+//
+// The Verdict block emits both `Adequate for replay harness work?` (structural
+// adequacy — does each channel carry usable data?) and
+// `continuous_holdout_eligible` (temporal continuity — does the window have
+// the unbroken coverage required to count as an official validation
+// holdout?). Structural adequacy can be YES while continuous-holdout
+// eligibility is false: this happens whenever a window contains long
+// missing-hour runs but the surviving hours still satisfy the per-series
+// volume / direction / depth thresholds.
 //
 // READ-ONLY. Does not write back to the collector log dir. Output goes to
 // stdout as Markdown.
@@ -287,6 +297,137 @@ function quantile(xs: number[], q: number): number {
   return sorted[idx]!;
 }
 
+// ---------------------------------------------------------------------------
+// Coverage-gap analysis
+// ---------------------------------------------------------------------------
+//
+// A window passes structural adequacy (sections 1–8) whenever the *hours that
+// landed on disk* contain enough events, deep-enough books, etc. It does NOT
+// notice that some expected hours are missing entirely. For research and
+// harness work that is fine. For a pre-registered validation holdout it is
+// not — a single multi-hour outage during the holdout week silently biases
+// the score, because the policy is denied trades it would otherwise have
+// taken (or kept) during the missing hours.
+//
+// computeCoverage() compares the set of UTC hour buckets the collector was
+// *expected* to cover (every hour in [since, until]) against the buckets a
+// gzipped file actually exists for, per channel. The longest run of
+// consecutive missing hours per channel is reported so brief reconnects
+// (sub-hour) are distinguishable from sustained outages.
+//
+// Note on bucket alignment: hoursBetween() bucket-aligns both endpoints, so a
+// window from 22:42 → 22:42 next day yields 25 hour labels (the bucket
+// containing `since` through the bucket containing `until`, inclusive). A
+// partial-hour file at either edge counts as "present" — file existence is
+// the only signal. This is intentional: a short partial bucket is exactly
+// what a normal start/stop produces, and treating it as a gap would
+// false-positive every run.
+
+interface ChannelCoverage {
+  present: string[];        // hour labels we have at least one file for
+  missing: string[];        // expected − present, sorted ascending
+  longestGapHours: number;  // longest run of consecutive missing hours
+  coveragePct: number;      // 100 * present / expected
+}
+
+interface CoverageReport {
+  expectedHours: string[];
+  perChannel: Record<string, ChannelCoverage>;
+  worstChannelCoveragePct: number;
+  worstChannelLongestGapHours: number;
+}
+
+function computeCoverage(args: Args, files: FileInfo[]): CoverageReport {
+  const expected = [...hoursBetween(args.since, args.until)];
+  const byChannel: Record<string, Set<string>> = {};
+  for (const c of CHANNELS) byChannel[c] = new Set();
+  for (const f of files) {
+    (byChannel[f.channel] ??= new Set()).add(f.hour);
+  }
+
+  const perChannel: Record<string, ChannelCoverage> = {};
+  let worstCov = expected.length === 0 ? 100 : Infinity;
+  let worstGap = 0;
+  for (const c of CHANNELS) {
+    const have = byChannel[c]!;
+    const present: string[] = [];
+    const missing: string[] = [];
+    let longest = 0;
+    let cur = 0;
+    for (const h of expected) {
+      if (have.has(h)) {
+        present.push(h);
+        cur = 0;
+      } else {
+        missing.push(h);
+        cur += 1;
+        if (cur > longest) longest = cur;
+      }
+    }
+    const coveragePct = expected.length === 0 ? 100 : (100 * present.length) / expected.length;
+    perChannel[c] = { present, missing, longestGapHours: longest, coveragePct };
+    if (coveragePct < worstCov) worstCov = coveragePct;
+    if (longest > worstGap) worstGap = longest;
+  }
+  if (!isFinite(worstCov)) worstCov = 100;
+  return {
+    expectedHours: expected,
+    perChannel,
+    worstChannelCoveragePct: worstCov,
+    worstChannelLongestGapHours: worstGap,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Continuous-holdout eligibility predicate (POLICY — load-bearing)
+// ---------------------------------------------------------------------------
+//
+// Decides whether the window has clean enough temporal coverage to be used
+// as an official validation holdout for frozen policies (e.g.
+// BTC_YES_LATE_ASIA_v1). Pre-registration is the point of a holdout — once
+// this returns true for a window, scoring a frozen policy over that window
+// counts as official validation. Downstream scoring code MUST refuse to
+// publish an official score against a window where this is false.
+//
+// Chosen policy: threshold-based with a minimum-window guard.
+//   (a) the window must span at least MIN_EXPECTED_HOURS hour buckets, so a
+//       short clean run can't be labeled holdout-eligible;
+//   (b) every channel must hit MIN_WORST_CHANNEL_COVERAGE_PCT coverage
+//       (worst-channel aggregation is the conservative summary — replay
+//       needs every signal stream intact, not an average);
+//   (c) no channel may contain a gap longer than
+//       MAX_WORST_CHANNEL_GAP_HOURS, so an 8h outage cannot pass even if
+//       coverage % stays high over a multi-day run.
+//
+// Rejected alternatives and why:
+//   * Strict zero-gap (worst_cov == 100 && longest_gap == 0): too brittle
+//     for multi-day validation — a sub-second reconnect straddling a
+//     top-of-hour boundary would burn the whole week.
+//   * Trade-channel strict, others lenient: replay needs books and tickers
+//     to reconstruct queue position and basis features, not just the
+//     ground-truth fill stream. Letting depth or ticker outages slide
+//     biases reconstructed adverse-selection estimates.
+//   * Configurable via CLI flag: defeats the pre-registration purpose —
+//     whoever runs the report could set the bar to whatever makes their
+//     candidate window pass.
+//
+// THE THREE CONSTANTS BELOW ARE POLICY, NOT TUNABLE PARAMETERS. Changing
+// them retroactively breaks the pass/fail interpretation of any
+// previously-scored holdout window. Any change must be accompanied by an
+// update to the matching block in CLAUDE.md (§Conventions, "Holdout
+// eligibility policy") so prior decisions remain interpretable.
+function isContinuousHoldoutEligible(coverage: CoverageReport): boolean {
+  const MIN_EXPECTED_HOURS = 30;
+  const MIN_WORST_CHANNEL_COVERAGE_PCT = 99;
+  const MAX_WORST_CHANNEL_GAP_HOURS = 1;
+
+  return (
+    coverage.expectedHours.length >= MIN_EXPECTED_HOURS &&
+    coverage.worstChannelCoveragePct >= MIN_WORST_CHANNEL_COVERAGE_PCT &&
+    coverage.worstChannelLongestGapHours <= MAX_WORST_CHANNEL_GAP_HOURS
+  );
+}
+
 async function main(): Promise<void> {
   const args = parseArgs();
   console.log("# Kalshi Data-Collector Adequacy Report\n");
@@ -458,6 +599,46 @@ async function main(): Promise<void> {
     console.log(`| ${series} | ${n} | ${enough ? "✓" : "✗"} |`);
   }
 
+  // ---- 9. coverage gaps ----
+  console.log("\n## 9. Coverage gaps (hour-bucket completeness)\n");
+  const cov = computeCoverage(args, files);
+  if (cov.expectedHours.length === 0) {
+    console.log("- empty window (no expected hour buckets)");
+  } else {
+    console.log(`- expected hour buckets in window: **${cov.expectedHours.length}**`);
+    console.log(
+      `  - first: \`${cov.expectedHours[0]}\` · last: \`${cov.expectedHours[cov.expectedHours.length - 1]}\` (UTC)`,
+    );
+    console.log("");
+    console.log("| channel | expected | actual | missing | longest gap (h) | coverage |");
+    console.log("|---|---:|---:|---:|---:|---:|");
+    for (const c of CHANNELS) {
+      const v = cov.perChannel[c];
+      if (!v) continue;
+      console.log(
+        `| ${c} | ${cov.expectedHours.length} | ${v.present.length} | ${v.missing.length} | ${v.longestGapHours} | ${v.coveragePct.toFixed(1)}% |`,
+      );
+    }
+    // Per-channel missing-hour listing (truncated if very long)
+    for (const c of CHANNELS) {
+      const v = cov.perChannel[c];
+      if (!v || v.missing.length === 0) continue;
+      const fmt = (h: string) => `\`${h}\``;
+      let list: string;
+      if (v.missing.length > 12) {
+        const head = v.missing.slice(0, 6).map(fmt).join(", ");
+        const tail = v.missing.slice(-6).map(fmt).join(", ");
+        list = `${head}, … (${v.missing.length - 12} more) …, ${tail}`;
+      } else {
+        list = v.missing.map(fmt).join(", ");
+      }
+      console.log(`- ${c} missing: ${list}`);
+    }
+    console.log("");
+    console.log(`- worst-channel coverage: **${cov.worstChannelCoveragePct.toFixed(1)}%**`);
+    console.log(`- worst-channel longest gap: **${cov.worstChannelLongestGapHours} h**`);
+  }
+
   // Final verdict
   console.log("\n## Verdict\n");
   const haveTrades = m.totalTrades > 100;
@@ -466,6 +647,7 @@ async function main(): Promise<void> {
   const haveDirection = m.totalTrades > 0 && m.tradesWithTakerSide / m.totalTrades >= 0.95;
   const haveDepth = m.maxDepthLevelsSeen >= 3;
   const allPass = haveTrades && haveDeltas && haveSnapshots && haveDirection && haveDepth;
+  const holdoutEligible = isContinuousHoldoutEligible(cov);
 
   console.log("| check | status |");
   console.log("|---|---|");
@@ -475,6 +657,7 @@ async function main(): Promise<void> {
   console.log(`| trade direction available (≥95%) | ${haveDirection ? "✓" : "✗"} |`);
   console.log(`| depth ≥ 3 levels | ${haveDepth ? "✓" : "✗"} |`);
   console.log(`\n**Adequate for replay harness work?** ${allPass ? "YES" : "NO — see failed checks above"}`);
+  console.log(`**continuous_holdout_eligible:** ${holdoutEligible ? "true" : "false"}`);
 }
 
 main().catch((err) => {
