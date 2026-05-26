@@ -11,6 +11,8 @@ Live trading is **paused** as of 2026-05-17. Six rounds (n = 285 filled trades, 
 
 The thesis has narrowed. Calibration is not the bottleneck — **new features are**. The repo's current focus is the *Layer 1 / Layer 2 bakeoff system* that lets us add candidate features (spot-perp basis, OFI, basis-change, …) one at a time, score them prospectively against settlement, and require they beat the gate before any live retest.
 
+**Parallel research thread (2026-05-26, Section 13).** A second path now runs alongside the signal-model work: an execution-side **maker-replay harness** that consumes a 30 h Kalshi WebSocket capture and simulates hypothetical resting maker quotes against the historical tape. The dumb two-sided `BTC_TOUCH_DEPTH50` policy was tested and rejected on robustness grounds; a refined policy `BTC_YES_LATE_ASIA_v1` is **pre-registered** awaiting fresh-week holdout collection. No live orders. See §13.
+
 ---
 
 ## TL;DR
@@ -578,7 +580,228 @@ Methodological:
 
 ---
 
-## 13. Status
+## 13. Execution-side calculus: maker-replay harness (2026-05-26, new path)
+
+A research thread **orthogonal to §4-6.** Where the Brier bakeoff asks "what is the right probability for `P(YES)` at decision time?", this harness asks "what is the realized PnL of a passive maker quote, accounting for queue position, adverse selection, and settlement drift?"
+
+The harness is **read-only**. It consumes a 30 h Kalshi WebSocket capture (orderbook snapshots + deltas + trades; ~16.7 M messages over 875 markets) and simulates hypothetical resting maker quotes against the historical tape. No live orders, no worker changes, no signal-model code touched.
+
+### 13.1 Kalshi orderbook semantics
+
+Kalshi's WS publishes only **bid books** on each side. There are no explicit asks; the ask is derived via no-arb from the opposite side's best bid:
+
+```math
+\text{best\_yes\_ask} \;=\; 1 - \text{best\_no\_bid}
+\qquad
+\text{best\_no\_ask} \;=\; 1 - \text{best\_yes\_bid}
+```
+
+The YES-mid is then:
+
+```math
+\text{mid}_{\text{yes}}(t) \;=\; \tfrac{1}{2}\!\left(\text{best\_yes\_bid}(t)\;+\;1 - \text{best\_no\_bid}(t)\right)
+```
+
+When either side has no resting bid, `mid_yes` is undefined and the reconstructor returns `null` (it refuses to synthesize a `yes_ask = 1.000` ceiling).
+
+### 13.2 Book reconstruction
+
+Per market ticker, two integer-keyed maps `(price\_ticks → size)` track the yes-bid and no-bid stacks. Three WS event types update the state:
+
+| event | effect |
+|---|---|
+| Snapshot **with levels** (`yes_dollars_fp` + `no_dollars_fp`) | Replace both stacks. Fired on initial subscribe and on WS reconnect re-sync. |
+| Snapshot **header-only** (`{market_ticker, market_id}`) | Mark market **terminated**; halt further delta application. |
+| Delta (`side, price_dollars, delta_fp`) | `size ← max(0,\;size + \texttt{delta\_fp})`. Level removed when `size = 0`. |
+
+Validation against the Kalshi ticker channel mid at coincident server-side timestamps:
+
+```math
+\Pr\!\big[\,\text{recon\_mid}(t) = \text{ticker\_mid}(t)\,\big] \;\;\approx\;\; 92.4\,\%-94.3\,\%
+```
+
+The non-matching ~6% are one-side-empty deep-ITM windows where the reconstructor returns null and the ticker synthesizes the ceiling. Settlement-PnL **decomposition identity** (§13.5) holds to floating-point noise — verified `\lvert\text{residual}\rvert \le 1.4 \times 10^{-14}` ¢ across 5 058 quotes. See [`kalshi-book-reconstructor-validation-2026-05-26.md`](docs/research/kalshi-book-reconstructor-validation-2026-05-26.md).
+
+### 13.3 Queue position model (FIFO)
+
+A hypothetical resting maker quote at `(side,\,price,\,size,\,t_{\text{post}})` competes with existing depth `D_0` at that price level. The queue is FIFO; initial queue position depends on the assumption:
+
+```math
+q_0 \;=\; \alpha \cdot D_0, \qquad
+\alpha \in \{\,0,\,\tfrac{1}{2},\,1\,\}
+\quad\text{for}\quad
+\text{front\_of\_queue} \,/\,\text{depth\_50} \,/\,\text{back\_of\_queue}
+```
+
+Each matching trade `T_n` at our price level reduces the queue:
+
+```math
+q_{n+1} \;=\; \max\!\big(0,\;q_n - T_n\big)
+```
+
+The quote fills when `q_n` reaches 0 AND the residual `T_n - q_n` covers our remaining size. v1 does **not** model cancels-ahead (deltas with `\Delta_{fp} < 0` that aren't trade-induced) — this makes the model **conservative** (over-estimates queue obstruction).
+
+Fill matching by side:
+
+| posted side | filled by trade where | maker effectively buys |
+|---|---|---|
+| YES-bid at `P_y` | `taker_outcome_side = "no"` AND `trade.yes_price = P_y` | 1 YES at `P_y` |
+| NO-bid at `P_n` | `taker_outcome_side = "yes"` AND `trade.no_price = P_n` | 1 NO at `P_n` |
+
+All four sanity checks pass on the 30 h sample — fill rate monotonically decreases behind best, tighter queue assumption lowers fill rate, maker captures positive markout at the touch, and conditional markout degrades as the quote moves behind best. See [`kalshi-queue-model-validation-2026-05-26.md`](docs/research/kalshi-queue-model-validation-2026-05-26.md).
+
+### 13.4 Settlement PnL
+
+For a YES-bid filled at price `P_y`, settlement `S \in [0,1]` (1 if YES wins, 0 if NO; continuous proxy from late-market mid otherwise), with fill fraction `F`:
+
+```math
+\text{PnL}_{\text{settle}}^{\text{yes-bid}} \;=\; (S - P_y) \cdot F
+```
+
+Mirror for NO-bid filled at `P_n`:
+
+```math
+\text{PnL}_{\text{settle}}^{\text{no-bid}} \;=\; \big((1-S) - P_n\big) \cdot F
+```
+
+### 13.5 Adverse-selection decomposition
+
+Per-quote settlement PnL decomposes **exactly** into three signed components for any horizon `H` (YES-bid form shown; NO-bid mirrors):
+
+```math
+\boxed{\;\;
+\text{PnL}_{\text{settle}}
+\;=\;
+\underbrace{(M_{\text{fill}} - P_y)}_{\text{spread captured at fill}}
+\;+\;
+\underbrace{(M_{\text{fill}+H} - M_{\text{fill}})}_{\text{adverse selection at }H}
+\;+\;
+\underbrace{(S - M_{\text{fill}+H})}_{\text{residual drift to settle}}
+\;\;}
+```
+
+where `M_t \;\equiv\; \text{mid}_{\text{yes}}(t)`. The identity holds by telescoping; it is verified to `\le 1.4 \times 10^{-14}` ¢ in code.
+
+For the dumb two-sided `BTC_TOUCH_DEPTH50` policy at `depth_50`, conditional on a fill, the empirical means (in cents per filled quote, in-sample 30 h):
+
+| component | mean (¢/filled) |
+|---|---:|
+| spread captured | −0.316 |
+| adv selection @ 1 s | −0.360 |
+| adv selection @ 5 s | −0.587 |
+| adv selection @ 15 s | −0.475 |
+| adv selection @ 30 s | −0.239 |
+| adv selection @ 60 s | **+0.474** |
+| residual (60 s → settle) | +0.497 |
+| **settlement PnL** | **+0.655** |
+
+**Reading the row.** "Spread captured" is negative because by the time a `depth_50` queue position is reached, the historical mid has already moved against us by ~half a tick (pre-fill drift). Short-horizon adverse selection is U-shaped — most negative at 5-15 s, then **mean-reverts** by 60 s. Residual drift to settlement compounds favorably. Net is positive per filled — *conditional on filling*.
+
+### 13.6 Markout EV vs settlement EV — why they diverge
+
+A maker has two natural EV measures conditional on fill:
+
+```math
+\mu_H \;=\; \mathbb{E}\!\left[\,M_{\text{fill}+H} - P\,\big|\,\text{filled}\,\right]
+\qquad
+\nu \;=\; \mathbb{E}\!\left[\,S - P\,\big|\,\text{filled}\,\right]
+```
+
+`\mu_H` is the **rolling adverse-selection signal** at horizon `H`; `\nu` is the **realized P&L** at settlement. In the 30 h in-sample for `BTC_TOUCH_DEPTH50`:
+
+```math
+\mu_{30\text{s}} \;\approx\; -0.41\,\text{¢/posted}
+\qquad
+\nu \;\approx\; +0.35\,\text{¢/posted}
+```
+
+They disagree in sign. Filled quotes are **selected** on "taker willing to cross" — that selection enriches for mildly-informed flow at the 30 s horizon, but the information leak is shallow and mean-reverts over the remaining 5-10 min of market life. **A maker's account cares about `\nu`, not `\mu_H`.** The earlier pass-criteria using `\mu_H` were measuring the wrong quantity; settlement-based EV is the canonical PnL metric here.
+
+### 13.7 The verdict on dumb two-sided BTC
+
+The adverse-selection scorer bucketed the decomposition by (TTE × ToD × side × queue × fill-latency × moneyness) and surfaced three structural concentrations:
+
+| dimension | concentration |
+|---|---|
+| **side** | YES-bid alone **+0.91¢/posted**; NO-bid alone **−0.22¢/posted** (net drag) |
+| **TTE bucket** | Removing the 6-9 min TTE bucket flips total EV to **−0.06¢/posted** |
+| **time of day** | UTC 00-08 Z (Asia + early Europe) carries the edge; 08-20 Z (US daytime) is net negative |
+| **fill latency** | U-shaped: <1 s wins (+1.77¢/filled), 1-30 s adversely selected (−1.1 to −1.4¢), >30 s wins big (+12 to +27¢/filled) |
+
+Two of four robustness pass gates fail: (i) NO-bid side is unprofitable, (ii) leave-best-TTE-bucket-out flips total negative. Per the agreed protocol this is a **STOP** before building any maker replay on the dumb policy. See [`kalshi-adverse-selection-scorer-2026-05-26.md`](docs/research/kalshi-adverse-selection-scorer-2026-05-26.md).
+
+### 13.8 Pre-registered refined policy `BTC_YES_LATE_ASIA_v1`
+
+A refined policy is **pre-registered** in [`kalshi-policy-preregistration-btc-yes-late-asia-v1-2026-05-26.md`](docs/research/kalshi-policy-preregistration-btc-yes-late-asia-v1-2026-05-26.md) and frozen in [`apps/data-collector/src/replay/btcYesLateAsiaV1.ts`](apps/data-collector/src/replay/btcYesLateAsiaV1.ts):
+
+| filter | value |
+|---|---|
+| series | `KXBTC15M` |
+| side | YES-bid only |
+| price | at `best_yes_bid` (the touch) |
+| size | 1 contract |
+| queue assumption | `depth_fraction_50%` |
+| TTE filter | `\text{tte}_{\text{min}} \ge 6\,\text{min}` |
+| UTC-hour filter | `h_{\text{utc}} \in [20,24) \cup [0,8)` |
+| cancel | none — hold to settlement |
+| anchor cadence | every 60 s |
+
+**Operator commitment:** no filter, threshold, or rule is modified between this pre-registration and the holdout. If the holdout fails, v1 is rejected as a whole; a future v2 requires its own fresh pre-registration on a *third* sample.
+
+#### Holdout pass gates (identical between in-sample and fresh data)
+
+For settlement EV per posted `\nu_{\text{posted}}`, leave-one-out variants `\nu_{\text{posted}}^{(-b)}`:
+
+```math
+\begin{aligned}
+\text{(1)}\quad & \nu_{\text{posted}} \;>\; 0 \\
+\text{(2)}\quad & \mathbb{E}[\,S - P \,\big|\, \text{filled}\,] \;>\; 0 \\
+\text{(3)}\quad & \forall\,b \in \{\text{6-9},\,\text{9-12},\,\text{12-15}\}\;\text{min}: \quad \nu_{\text{posted}}^{(-b)} \;>\; 0 \\
+\text{(4)}\quad & \forall\,b \in \{\text{20-24Z},\,\text{00-04Z},\,\text{04-08Z}\}: \quad \nu_{\text{posted}}^{(-b)} \;>\; 0 \\
+\text{(5)}\quad & \max_{\text{market}}\;\frac{\lvert\sum \text{PnL}_{\text{market}}\rvert}{\sum_i \lvert\text{PnL}_i\rvert} \;\le\; 0.25 \\
+\text{(6)}\quad & \max_{2\text{h window}}\;\frac{\lvert\sum \text{PnL}_{w}\rvert}{\sum_i \lvert\text{PnL}_i\rvert} \;\le\; 0.40 \\
+\text{(7)}\quad & \nu^{\text{YES-side}}_{\text{posted}} \;>\; 0 \quad\text{(trivial; v1 is YES-only)}
+\end{aligned}
+```
+
+#### In-sample exploratory result (NOT validation)
+
+| metric | value |
+|---|---:|
+| posted | 362 |
+| filled | 194 (53.6 %) |
+| **settlement EV per posted** | **+\$0.0200** (= +2.00 ¢) |
+| settlement EV per filled | +\$0.0377 (= +3.77 ¢) |
+
+Gates 1–4, 6–7 pass in-sample. **Gate 5 fails in-sample at 58.7 %** — a single 15-minute market (`KXBTC15M-26MAY252115-15`) drove the majority of in-sample PnL. This anchors the correct prior on the holdout: expect significant shrinkage from selection optimism, and watch single-market concentration as the load-bearing test of whether v1 has actual edge or merely lucked into one event. **Per the pre-registration, none of these results are used to modify the policy.**
+
+### 13.9 What's next
+
+- **Holdout collection** in a calendar week ≥ 2026-06-02, distinct from the in-sample window. Minimum 30 h, preferred 3-7 days. Same `apps/data-collector/` codebase, same schema; no worker, no live orders.
+- **Re-run `btcYesLateAsiaV1.ts` unchanged** against the new log dir. Binary verdict via the 7 gates above.
+- If v1 **passes** all 7 gates: a tiny maker-only canary may be discussed (size ≪ R1's Kelly base; explicit hard-stop; subject to the same two-book hygiene as §8.5).
+- If v1 **fails**: v1 rejected. Any v2 requires a new pre-registration on a *third* fresh sample; testing a v2 derived from the v1 holdout would repeat the selection-bias trap.
+
+The signal-model path (§4-6) and the execution-model path (§13) are **disjoint**: no shared code, no shared falsifiers, no shared pass gates. They MUST stay independent — running the maker-replay scorer on the same tape that birthed it is the exact failure pre-registration prevents.
+
+### 13.10 Module map
+
+| file | role |
+|---|---|
+| [`apps/data-collector/src/index.ts`](apps/data-collector/src/index.ts) | Kalshi WS collector (read-only). Persists hourly-gzipped JSONL. |
+| [`apps/data-collector/src/replay/bookReconstructor.ts`](apps/data-collector/src/replay/bookReconstructor.ts) | Two-sided book reconstruction primitive (§13.1, 13.2). |
+| [`apps/data-collector/src/replay/queueModel.ts`](apps/data-collector/src/replay/queueModel.ts) | FIFO queue simulator with front/depth_50/back assumptions (§13.3). |
+| [`apps/data-collector/src/replay/passiveQuoteSimulator.ts`](apps/data-collector/src/replay/passiveQuoteSimulator.ts) | `BTC_TOUCH_DEPTH50` two-sided maker over all anchors. |
+| [`apps/data-collector/src/replay/adverseSelectionScorer.ts`](apps/data-collector/src/replay/adverseSelectionScorer.ts) | Per-quote decomposition + bucketed verdict (§13.5, 13.7). |
+| [`apps/data-collector/src/replay/btcYesLateAsiaV1.ts`](apps/data-collector/src/replay/btcYesLateAsiaV1.ts) | Frozen pre-registered policy (§13.8). |
+| [`apps/data-collector/src/replay/validateMarkouts.ts`](apps/data-collector/src/replay/validateMarkouts.ts) | Reconstructor validation against ticker channel. |
+| [`apps/data-collector/src/replay/validateQueueModel.ts`](apps/data-collector/src/replay/validateQueueModel.ts) | Queue model sanity checks. |
+
+Validation docs under [`docs/research/kalshi-*.md`](docs/research/) (8 files): adequacy, reconstructor, queue model, passive policy, decomposition, pre-registration.
+
+---
+
+## 14. Status
 
 ```text
 Last live session:   2026-05-15 → 2026-05-17    R1 + R2 + R3 + R4 + R5 + R6
@@ -593,10 +816,27 @@ BRTI A/B:            168 / 188 = 89.4% favoring BRTI (p = 1.27 × 10⁻³⁰)  �
 Layer 1 harness:     committed at 7fbcd73
 Layer 2 logger:      committed at 71a6d62
 
-Next decision point: once shadow accumulates ≥80 settled markets with non-null basis
-                     features, re-run brier_bakeoff.py. If p_logistic_basis clears the
-                     three-criteria gate, R7 launches with a hard-stop ≤ $8.
-                     If not, OFI top-5 (WebSocket migration) becomes the next feature.
+Maker-replay harness (§13 — execution-side path, parallel to §4-6):
+  Data collector:    stopped cleanly 2026-05-26T13:47Z after 30.79 h capture
+                     (160 / 160 gzip files valid; integrity & adequacy PASS)
+  Book reconstructor + queue model + adverse-selection scorer:  validated
+                     (committed at adf86d6)
+  Dumb BTC_TOUCH_DEPTH50 policy:  REJECTED on robustness grounds
+  Refined BTC_YES_LATE_ASIA_v1:   PRE-REGISTERED + frozen; in-sample
+                     exploratory recorded; awaiting holdout collection in
+                     a calendar week ≥ 2026-06-02
+
+Next decision point — signal path:    once shadow accumulates ≥80 settled markets
+                     with non-null basis features, re-run brier_bakeoff.py.
+                     If p_logistic_basis clears the three-criteria gate, R7
+                     launches with hard-stop ≤ $8. If not → OFI top-5.
+
+Next decision point — execution path:  collect a fresh 30 h-to-7 d holdout in
+                     a calendar week distinct from 2026-05-25/26 → run the
+                     unchanged BTC_YES_LATE_ASIA_v1 → binary 7-gate verdict.
+                     If pass: discuss a tiny maker-only canary. If fail: v1
+                     rejected; any v2 requires a fresh pre-registration on a
+                     third sample.
 ```
 
-The financial loss is paid forward as scientific evidence: a frozen labeled corpus, two validated infrastructure pieces (BRTI vs Binance settlement A/B; Layer 1/2 bakeoff system), and an explicit gate that prevents the next live exposure from happening on hope.
+The financial loss is paid forward as scientific evidence: a frozen labeled corpus, three validated infrastructure pieces (BRTI vs Binance settlement A/B; Layer 1/2 bakeoff system; maker-replay harness with per-quote PnL decomposition), and explicit gates on both research paths that prevent the next live exposure from happening on hope.
