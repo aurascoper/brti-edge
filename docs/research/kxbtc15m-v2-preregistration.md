@@ -1,12 +1,13 @@
 # Pre-registration: `KXBTC15M_PASSIVE_MAKER_v2`
 
-**Status:** **DRAFT — NOT YET LOCKED**
+**Status:** **LOCKED**
 **Created:** 2026-05-27
+**Locked:** 2026-05-27T12:15Z
 **Policy version:** `KXBTC15M_PASSIVE_MAKER_v2`
 **Repository:** `aurascoper/brti-edge`
-**Commit hash at preregistration:** `<fill at lock time>`
-**Author/operator:** `<fill>`
-**Frozen after commit:** Once committed with `Status: LOCKED`, no parameter, threshold, gate, data window, queue assumption, or fee assumption may be changed. While `Status: DRAFT`, this file may be edited freely; it carries no validation authority.
+**Commit hash at preregistration (policy text):** `71216c6` (commit A — all §5 §7 §9 §10 placeholders filled)
+**Author/operator:** `aurascoper`
+**Frozen:** This document is now LOCKED. No parameter, threshold, gate, data window, queue assumption, or fee assumption may be changed prior to the publication of a holdout score against the §13 gates.
 
 > **This document does not authorize any live Kalshi orders.** A locked version of this preregistration is a *prerequisite* for any future canary discussion; it is not itself a license.
 
@@ -700,32 +701,60 @@ All eight outputs are required regardless of whether v2 passes or fails.
 
 ## 17. Final declaration before lock
 
-Before changing `Status:` from `DRAFT` to `LOCKED`, ALL of the following must be filled with `YES`:
+Lock declaration checklist (all must be YES for lock to be valid):
 
 ```text
-All policy parameters specified         : YES / NO
-All gates specified                     : YES / NO
-Design window specified                 : YES / NO
-Holdout window specified                : YES / NO
-Queue model specified                   : YES / NO
-Fee assumption source archived          : YES / NO
-Queue-position freshness archive present: YES / NO
-No validation data inspected for v2     : YES / NO
-front_of_queue, back_of_queue defined   : YES / NO
-catastrophic threshold locked           : YES / NO
-side-decomposition gate formulation locked : YES / NO
-moneyness metric explicit               : YES / NO
+All policy parameters specified            : YES (§5 §7 §9 §10 filled in commit A 71216c6)
+All gates specified                        : YES (§13 Gates 1-9 explicit)
+Design window specified                    : YES (§5.1 — union of two chunks, 40.32h observed)
+Holdout window specified                   : YES (§5.2 — 2026-06-02 → 2026-06-12, 10d, with
+                                                  pre-registered 14d sample-size contingency)
+Queue model specified                      : YES (§10.1 = conservative_threshold; §10.2 rule
+                                                  is deterministic local-reconstructor back-of-queue)
+Fee assumption source archived             : YES (docs/research/kalshi-fee-assumption-kxbtc15m.md,
+                                                  commit e9d0f28; PDF static attach is canary
+                                                  prereq, not lock prereq)
+Queue-position freshness archive present   : YES (docs/research/kalshi-queue-position-freshness.md,
+                                                  commit 617d55a; Phase 1 methodology — sufficient
+                                                  because §10.1 does not consume the live API)
+No validation data inspected for v2        : YES (no data ≥ 2026-06-02 observed; all reasoning
+                                                  uses only the design corpus per §5.1)
+front_of_queue, back_of_queue defined      : YES (§10.3)
+catastrophic threshold locked              : YES (§10.3 — back_of_queue_ev_per_posted < -0.01)
+side-decomposition gate formulation locked : YES (§13 Gate 6 one-sided branch active; YES-only
+                                                  per §7.1 with structural justification)
+moneyness metric explicit                  : YES (§7.8 — |touch_price - 0.50| ∈ [0.15, 0.40])
 ```
 
-If any field is `NO`, the lock is rejected.
+All YES. Lock is valid.
 
 ## 18. Commit record (filled at lock time)
 
 ```text
-preregistration_commit  = <fill>
-policy_code_commit      = <fill>
-scoring_code_commit     = <fill>
-data_collector_commit   = <fill>
+preregistration_commit  = 71216c6
+                          (commit A — policy text, all §5 §7 §9 §10 placeholders filled
+                           per operator review 2026-05-27)
+
+policy_code_commit      = pending — v2 implementation does NOT yet exist.
+                          The policy will be implemented at
+                          apps/data-collector/src/replay/btcMakerV2.ts (following the
+                          existing btcYesLateAsiaV1.ts pattern from commit adf86d6).
+                          The implementation file's top-of-module comment must
+                          reference THIS preregistration by name. Any deviation
+                          between the code and this spec is a bug in the code,
+                          NOT a license to amend the spec.
+
+scoring_code_commit     = pending — v2 scoring will be implemented at
+                          apps/data-collector/src/replay/btcMakerV2Capped.ts
+                          (following the btcYesLateAsiaV1Capped.ts pattern from
+                          commit 4d57ab7). Must reference this preregistration.
+
+data_collector_commit   = 4d57ab7 (last commit touching apps/data-collector/src/).
+                          The data collector is shared with v1 and does not change
+                          for v2; the §6 instrument list is identical. If the
+                          collector source changes between now and the holdout
+                          run, the running commit at holdout time MUST be
+                          recorded alongside the holdout score.
 ```
 
 ## 19. Operator sign-off (filled at lock time)
@@ -735,10 +764,32 @@ I understand that after this document is committed with Status: LOCKED,
 no v2 parameter, gate, queue assumption, fee assumption, or data window
 may be changed before the holdout score is published.
 
-operator_name = <fill>
-timestamp_utc = <fill>
-signature     = <fill>
+operator_name = aurascoper
+timestamp_utc = 2026-05-27T12:15:00Z
+signature     = Decisions for §5, §7, §9, §10, and the §2.1 Stanford-finding
+                addition were made by operator aurascoper in the 2026-05-27
+                review pass. Proposed values are recorded in commit add7841
+                (kxbtc15m-v2-parameters-proposal-2026-05-27.md); operator's
+                approved values — including notable departures from the
+                proposal at §7.6 (ToD narrowed from v1's 12h to 00-08Z 8h
+                with exploratory_origin label) and §7.7 (max-spread filter
+                disabled) — are recorded in commit 71216c6 (commit A of
+                this lock pair). This commit (B) transitions Status →
+                LOCKED with no content changes other than this header,
+                §17 declaration affirmation, §18 commit record, and this
+                §19 sign-off block.
+
+                Locking commitments:
+                - No v2 parameter or gate change before holdout score.
+                - Holdout scored exactly once against §13 gates.
+                - If any gate fails on the 10-day holdout (and no pre-
+                  registered 14d sample-size extension applies),
+                  v2 is rejected permanently.
+                - No live Kalshi orders before holdout passes.
+                - No iteration between holdout result and policy.
 ```
+
+The lock commit is the immutable record. Future readers: the only thing this commit changes relative to its parent (71216c6) is the §1 status header, the §17 declaration affirmation, and the §18 / §19 fills. Diff should reflect that exactly.
 
 ---
 
@@ -790,4 +841,4 @@ All §5, §7, §9, §10 placeholders are now filled. §18 (commit record) and §
 
 ---
 
-**End of fill-pass.** Status remains `DRAFT — NOT YET LOCKED`. The next commit transitions Status → LOCKED and fills §18 + §19. No live orders authorized.
+**End of locked preregistration.** Status: **LOCKED**. Next operational step is fresh holdout collection from 2026-06-02T00:00:00Z onward; v2 policy implementation and scoring code must then be written to match this spec (any deviation is a code bug, not a license to amend). No live Kalshi orders authorized by this document; passing the §13 gates on the holdout is a *prerequisite* for any future canary discussion, not a license.
