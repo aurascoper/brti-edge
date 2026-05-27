@@ -799,6 +799,24 @@ The signal-model path (§4-6) and the execution-model path (§13) are **disjoint
 
 Validation docs under [`docs/research/kalshi-*.md`](docs/research/) (8 files): adequacy, reconstructor, queue model, passive policy, decomposition, pre-registration.
 
+### 13.11 Non-holdout prerun shakeout (2026-05-27)
+
+A second collector run was started 2026-05-26T22:38Z targeting the 30-hour window for the §13.8 holdout. It was halted manually at 2026-05-27T09:34Z (elapsed 9 h 32 m, 10 of the required 30 UTC hour buckets). The window does **not** satisfy `continuous_holdout_eligible` per the §13 protocol — only 33% of the required duration.
+
+Despite the protocol violation, the frozen replay and $25 capped replay were run against the partial window as a non-holdout pipeline shakeout, and the maker order/cancel code path was exercised in dry-run mode with `KALSHI_ALLOW_ORDERS=0`. Results recorded for the historical record only — **not** for any update of the pre-registered policy:
+
+| step | result |
+|---|---|
+| Frozen `BTC_YES_LATE_ASIA_v1` replay (282 posted, 142 filled) | 9 of 7 gates failed; EV per posted = −1.5¢; total settlement PnL = **−$4.26** |
+| Gate 5 top-1 market share | **94.5%** (vs ≤ 25% gate) — `KXBTC15M-26MAY262200-00` dominated |
+| Gate 6 top-1 2h window share | **122.0%** (vs ≤ 40% gate) — one 2h block exceeded the absolute sum |
+| $25 capped replay | same −$4.26 realized PnL; **max drawdown $12.64 (50.6% of $25 bankroll)**; caps not binding (29.1% utilization) |
+| Maker order/cancel dry-run (30 min, ALLOW_ORDERS=0) | plumbing validated; 20 `pending_confirm`, 20 TTL-expired, 26 rejections (Kelly-size-0, same-side cap, series-in-flight); 0 HTTP requests to `/kalshi/dust/submit`; all four safety layers held |
+
+The gate-5 and gate-6 blowouts are the small-sample concentration signature the gates were calibrated to catch; results on a 9.5h window have no meaningful inference power relative to the protocol. The capped replay confirms the envelope did not save anything — the policy lost money in the same hours it would have traded live.
+
+**Decision:** no live canary. Halt before the holdout window means the pre-registered protocol cannot be honored against this run. Restart the data-collector for the formal ≥ 2026-06-02 holdout as originally specified in §13.9.
+
 ---
 
 ## 14. Status
@@ -825,6 +843,18 @@ Maker-replay harness (§13 — execution-side path, parallel to §4-6):
   Refined BTC_YES_LATE_ASIA_v1:   PRE-REGISTERED + frozen; in-sample
                      exploratory recorded; awaiting holdout collection in
                      a calendar week ≥ 2026-06-02
+
+  Non-holdout prerun shakeout (2026-05-27, §13.11):
+    Prerun collector: halted 2026-05-27T09:34Z at 9 h 32 m (10/30 hour
+                      buckets — NOT holdout-eligible; protocol violated
+                      by early stop).
+    Replays on the partial window (informational only):
+      - Frozen v1:        −$4.26 PnL, 9 gate failures, gates 5 & 6 blown
+                          out by single-market / single-2h-block dominance
+      - $25 capped:       same −$4.26, max DD $12.64 (50.6% of bankroll)
+      - Maker dry-run:    plumbing validated, 0 wire activity, 20
+                          pending_confirm expired (ALLOW_ORDERS=0)
+    Decision: NO live canary. Restart formal ≥ 2026-06-02 holdout.
 
 Next decision point — signal path:    once shadow accumulates ≥80 settled markets
                      with non-null basis features, re-run brier_bakeoff.py.

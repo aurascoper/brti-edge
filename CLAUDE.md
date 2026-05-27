@@ -17,8 +17,11 @@ pnpm build
 pnpm lint
 pnpm typecheck
 
-# Worker only
-cd apps/market-worker && pnpm dev
+# Worker only — TWO separate workers live in apps/market-worker (one Node package, two entry points):
+cd apps/market-worker && pnpm dev          # Polymarket-side: src/index.ts (BTC up/down, gamma-api, Polymarket WS)
+cd apps/market-worker && pnpm kalshi-dev   # Kalshi-side: src/kalshi/worker.ts (15M crypto markets, BRTI, RSA-PSS, dust executor)
+# The repo-root `pnpm dev` runs BOTH via turbo's parallel fan-out. App-level `pnpm dev` is Polymarket ONLY.
+# Maker order/cancel dry-run = `pnpm kalshi-dev` with KALSHI_ALLOW_ORDERS=0 (HTTP /dust/submit returns 403).
 
 # Web only
 cd apps/web && pnpm dev
