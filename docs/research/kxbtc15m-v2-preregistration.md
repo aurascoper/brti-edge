@@ -277,6 +277,8 @@ filled_open_exposure_worst_case
   # NO-bid at $P_n, size N:  max_loss = P_n × N (all-one settlement, NO loses)
 ```
 
+**Worst-case applies even if the strategy is hold-to-settlement.** A filled-but-unsettled position consumes its full `max_loss` against the locked-collateral cap until settlement, regardless of current mark-to-market value or the policy's intent not to take an early exit. Mark-to-market accounting is not permitted for cap purposes — it would silently let the strategy stack more exposure than the $5 envelope contemplates whenever positions are in the money.
+
 The replay must enforce `locked_collateral <= max_total_locked_collateral_usd` at quote-emission time. Quotes that would breach the cap are rejected as `exposure_cap`.
 
 **Drawdown is tracked separately** from exposure (drawdown measures realized + mark-to-market on the cash trajectory, not locked-collateral usage):
@@ -669,22 +671,25 @@ This draft incorporates the following refinements over the initial template:
 | 3 | Strict non-overlap of holdout vs design data | §5.2 | reviewer memo 2026-05-27 |
 | 4 | NO-side decomposition gate trade-off documented | §13 Gate 6 | reviewer memo 2026-05-27 |
 | 5 | Moneyness defined as `|touch - 0.50|` for binaries | §7.8 | reviewer memo 2026-05-27 |
-| 6 | Collateral worst-case accounting made explicit | §8 | reviewer memo 2026-05-27 (partially; tail truncated) |
+| 6 | Collateral worst-case accounting made explicit, incl. hold-to-settlement positions | §8 | reviewer memo 2026-05-27 (full tail received) |
 | 7 | `taker_outcome_side` (verified field name) | §12 | Kalshi public-trades docs, verified 2026-05-27 |
 | 8 | Queue-position freshness operational risk flagged | §10 | Kalshi queue endpoint docs, verified 2026-05-27 |
 | 9 | Fee source already archived (claude-mind memory) | §4.1 | memory `kalshi-ou-characterization-2026-05-25` |
 
+Reviewer status as of 2026-05-27: *"as rigorous as any academic preregistration I've reviewed for small-scale execution strategies. Green light to proceed — provided you do not inspect the holdout data before locking."*
+
 ## Appendix B — Open items before lock
 
 ```text
-- Refinement #6 collateral discussion was truncated in the reviewer memo;
-  any post-truncation refinements need to be incorporated before lock.
 - Queue-position freshness measurement does not yet exist; must be
-  archived to docs/research/kalshi-queue-position-freshness.md.
+  archived to docs/research/kalshi-queue-position-freshness.md before
+  any canary discussion (template §10 requires this).
 - Fee schedule archival doc does not yet exist as a static file in repo
   (claim is sourced via memory only); must be archived to
-  docs/research/kalshi-fee-assumption-kxbtc15m.md.
-- All <fill> fields in §5, §7, §9, §10, §18, §19 must be completed.
+  docs/research/kalshi-fee-assumption-kxbtc15m.md before lock.
+- All <fill> fields in §5, §7, §9, §10, §18, §19 must be completed
+  using ONLY design-window data and reasoning — no holdout-window
+  inspection prior to lock.
 ```
 
 ---
