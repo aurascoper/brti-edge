@@ -14,6 +14,8 @@
     "score-adverse-selection": "tsx src/replay/adverseSelectionScorer.ts",
     "run-btc-yes-late-asia-v1": "tsx src/replay/btcYesLateAsiaV1.ts",
     "run-btc-yes-late-asia-v1-capped": "tsx src/replay/btcYesLateAsiaV1Capped.ts",
+    "run-btc-maker-v2": "tsx src/replay/btcMakerV2.ts",
+    "run-btc-maker-v2-capped": "tsx src/replay/btcMakerV2Capped.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
