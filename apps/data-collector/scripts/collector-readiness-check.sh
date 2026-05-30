@@ -23,7 +23,14 @@ args=()
 [ -n "$SINCE" ] && args+=("--since=$SINCE")
 [ -n "$UNTIL" ] && args+=("--until=$UNTIL")
 
-out="$(cd "$APP_DIR" && pnpm run report -- "${args[@]}" 2>/dev/null)"
+# macOS /bin/bash is 3.2, where "${args[@]}" on an EMPTY array under `set -u`
+# is a fatal "unbound variable" error. Branch on length (${#args[@]} is safe)
+# so the no-arg rolling-24h form works, not just the two-date holdout form.
+if [ "${#args[@]}" -gt 0 ]; then
+  out="$(cd "$APP_DIR" && pnpm run report -- "${args[@]}" 2>/dev/null)"
+else
+  out="$(cd "$APP_DIR" && pnpm run report 2>/dev/null)"
+fi
 
 echo "$out" | grep -iE 'window:|files matched|worst-channel|longest gap|continuous_holdout_eligible|Adequate for replay' || true
 echo "----------------------------------------------------------------------"
