@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS LaunchAgent for the Kalshi data-collector.
+
+  Layering: launchd keeps the SUPERVISOR alive across reboot / logout / panic;
+  the supervisor (run-collector-supervised.sh) keeps the COLLECTOR alive within
+  a session (crash + stall restart) and holds caffeinate. launchd sends SIGTERM
+  then SIGKILL after ExitTimeOut (15s > the 5s drain grace), so the gzip trailer
+  always lands — no .drainbug.
+
+  Install (paths below are machine-specific — adjust if you move the repo):
+    cp scripts/com.polyterminal.kalshi-collector.plist ~/Library/LaunchAgents/
+    launchctl load   ~/Library/LaunchAgents/com.polyterminal.kalshi-collector.plist
+    launchctl start  com.polyterminal.kalshi-collector
+  Stop / remove:
+    launchctl stop   com.polyterminal.kalshi-collector
+    launchctl unload ~/Library/LaunchAgents/com.polyterminal.kalshi-collector.plist
+
+  NOTE: launchd has a minimal PATH. The EnvironmentVariables/PATH below must
+  contain your node + pnpm. Find them with `dirname "$(which pnpm)"` and
+  `dirname "$(which node)"` and edit if different. Credentials are NOT stored
+  here — the supervisor sources apps/data-collector/.env and the repo-root .env.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.polyterminal.kalshi-collector</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/aurascoper/Developer/polyterminal/apps/data-collector/scripts/run-collector-supervised.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/aurascoper/Developer/polyterminal/apps/data-collector</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Don't relaunch faster than this if the supervisor itself dies. -->
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <!-- Grace before launchd escalates SIGTERM -> SIGKILL. Must exceed the
+         supervisor's GRACE_SECONDS (5s) so the drain completes. -->
+    <key>ExitTimeOut</key>
+    <integer>15</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/aurascoper/Developer/polyterminal/apps/data-collector/ops/state/launchd-collector.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/aurascoper/Developer/polyterminal/apps/data-collector/ops/state/launchd-collector.err.log</string>
+
+    <!-- Optional: keep collecting even when the menu-bar user logs out.
+         Requires the agent to be a LaunchDaemon instead; for a single-user
+         laptop the LaunchAgent above is simpler. -->
+</dict>
+</plist>

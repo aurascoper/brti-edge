@@ -19,6 +19,8 @@ apps/market-worker/data/
 # Data-collector runtime artifacts (large captured WS data; 300 MB per 30h run)
 apps/data-collector/logs/
 apps/data-collector/collector-*.pid
+# Supervisor / launchd runtime state (uptime ledger + stdout/err) — machine-local
+apps/data-collector/ops/state/
 
 # Autoresearch runtime/output state (per-trial configs and loop state grow
 # rapidly; the source scaffolds — instructions.md, launch_prompt.md,
