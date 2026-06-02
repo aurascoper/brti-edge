@@ -83,7 +83,13 @@ export class GzipRotator {
       mkdirSync(dirname(path), { recursive: true });
     }
     const file = createWriteStream(path, { flags: "a" });
-    const gz = createGzip({ level: 6 });
+    // level 1, not zlib's default 6: for a holdout, completeness beats
+    // compression ratio. Level 6 is CPU-bound at our message rate (~100MB/hr),
+    // which backed up the write path until the file mtime froze and the
+    // stall-watchdog mistook it for a dead socket and thrashed (2026-06-01
+    // 22:15-22:25Z). Level 1 is ~3-5x faster to compress for ~10-20% larger
+    // files — disk is cheap, a coverage gap during the holdout is not.
+    const gz = createGzip({ level: 1 });
     gz.pipe(file);
     this.state = {
       gz,
