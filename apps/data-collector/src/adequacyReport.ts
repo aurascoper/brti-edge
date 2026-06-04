@@ -69,15 +69,32 @@ function* hoursBetween(since: Date, until: Date): Generator<string> {
   }
 }
 
-async function* readGzLines(path: string): AsyncGenerator<string> {
-  // Tolerate truncated gzip files (e.g. the active current-hour file while
-  // the collector is still running). zlib emits Z_BUF_ERROR when it hits a
-  // partial member; we swallow the error after yielding whatever lines
-  // were successfully decompressed.
+// zlib error codes we yield-then-tolerate rather than abort on. Two distinct
+// kinds of unreadable tail, both leaving the complete members BEFORE the fault
+// valid and worth keeping:
+//   * Z_BUF_ERROR / ERR_STREAM_PREMATURE_CLOSE — the active current-hour file is
+//     still being appended (benign truncation: no trailer yet). Expected.
+//   * Z_DATA_ERROR ("invalid block type") — a torn mid-stream member left by a
+//     HARD kill (OOM / power loss) the drain-safe supervisor never sees, with a
+//     fresh gzip member appended after it on restart. Genuine corruption — but a
+//     single ~10KB torn file must NOT abort the whole window scan. Before this,
+//     it propagated to main().catch -> process.exit(1), which surfaced as the
+//     false-negative "continuous_holdout_eligible: unknown (no data in window?)"
+//     even when 95%+ of the window was pristine.
+const SALVAGEABLE_GZ_CODES = new Set([
+  "Z_BUF_ERROR",
+  "ERR_STREAM_PREMATURE_CLOSE",
+  "Z_DATA_ERROR",
+]);
+
+async function* readGzLines(
+  path: string,
+  onCorrupt?: (err: NodeJS.ErrnoException) => void,
+): AsyncGenerator<string> {
   const gz = createReadStream(path).pipe(createGunzip());
   gz.on("error", (err: NodeJS.ErrnoException) => {
-    if (err.code !== "Z_BUF_ERROR" && err.code !== "ERR_STREAM_PREMATURE_CLOSE") {
-      // Re-surface non-truncation errors so genuine corruption is visible.
+    if (!SALVAGEABLE_GZ_CODES.has(err.code ?? "")) {
+      // Re-surface unexpected errors so genuine, non-gzip corruption is visible.
       process.stderr.write(`[adequacyReport] decompress warning ${path}: ${err.message}\n`);
     }
   });
@@ -85,9 +102,17 @@ async function* readGzLines(path: string): AsyncGenerator<string> {
   try {
     for await (const line of rl) yield line;
   } catch (err) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code !== "Z_BUF_ERROR" && code !== "ERR_STREAM_PREMATURE_CLOSE") throw err;
-    // truncated — partial yields already returned
+    const e = err as NodeJS.ErrnoException;
+    if (!SALVAGEABLE_GZ_CODES.has(e.code ?? "")) throw err;
+    if (e.code === "Z_DATA_ERROR") {
+      // Real corruption (not just an open file): flag it so the report never
+      // silently certifies a window built on salvaged-but-torn data.
+      process.stderr.write(
+        `[adequacyReport] salvaged readable records, skipping corrupt remainder of ${path}\n`,
+      );
+      onCorrupt?.(e);
+    }
+    // truncated / corrupt-tail — partial yields already returned
   }
 }
 
@@ -154,6 +179,11 @@ interface Metrics {
   tickerSample: unknown | null;
   windowStart: number | null;
   windowEnd: number | null;
+  // Files that decompressed only partially due to a torn gzip member
+  // (Z_DATA_ERROR) — a hard-kill artifact. Surfaced in the report so a
+  // salvaged window is never mistaken for a pristine one.
+  corruptFiles: number;
+  corruptPaths: string[];
 }
 
 function emptyMetrics(): Metrics {
@@ -177,6 +207,8 @@ function emptyMetrics(): Metrics {
     tickerSample: null,
     windowStart: null,
     windowEnd: null,
+    corruptFiles: 0,
+    corruptPaths: [],
   };
 }
 
@@ -198,7 +230,10 @@ function bucketDepth(n: number): string {
 async function processFile(info: FileInfo, m: Metrics): Promise<void> {
   m.filesByChannel[info.channel] = (m.filesByChannel[info.channel] ?? 0) + 1;
   m.bytesByChannel[info.channel] = (m.bytesByChannel[info.channel] ?? 0) + info.bytes;
-  for await (const line of readGzLines(info.path)) {
+  for await (const line of readGzLines(info.path, () => {
+    m.corruptFiles += 1;
+    m.corruptPaths.push(info.path);
+  })) {
     if (!line) continue;
     let obj: { recv_ts_ms?: number; raw?: any };
     try {
@@ -656,6 +691,16 @@ async function main(): Promise<void> {
   console.log(`| trades received | ${haveTrades ? "✓" : "✗"} |`);
   console.log(`| trade direction available (≥95%) | ${haveDirection ? "✓" : "✗"} |`);
   console.log(`| depth ≥ 3 levels | ${haveDepth ? "✓" : "✗"} |`);
+  if (m.corruptFiles > 0) {
+    // Never let a salvaged window read as pristine. Coverage above is keyed on
+    // file existence, so these hours still count as "present" with reduced
+    // density — call that out explicitly next to the verdict.
+    console.log(
+      `\n⚠️  **${m.corruptFiles} file(s) had torn gzip members (hard-kill artifact); ` +
+        `only the records before the tear were counted:**`,
+    );
+    for (const p of m.corruptPaths) console.log(`  - \`${p.split("/").pop()}\``);
+  }
   console.log(`\n**Adequate for replay harness work?** ${allPass ? "YES" : "NO — see failed checks above"}`);
   console.log(`**continuous_holdout_eligible:** ${holdoutEligible ? "true" : "false"}`);
 }
