@@ -15,6 +15,17 @@
 #                          STALE_SECONDS (default 300s; the collector flushes
 #                          every 5s during active markets), the socket is dead
 #                          but the process is wedged — drain-restart it.
+#   4. RESTART THROTTLE  — rolling-window thrash guard: if restarts (crash OR
+#                          stall) exceed RESTART_BURST_LIMIT within
+#                          RESTART_WINDOW, force a RESTART_COOLDOWN pause. The
+#                          uptime backoff only catches fast crash-loops; it
+#                          resets on a long-lived process that keeps needing
+#                          restarts — exactly the 2026-06-01 case (11 restarts
+#                          in 10min under gzip backpressure, each cycle living
+#                          >MIN_UP_SECONDS so backoff stayed at 1s). Fewer
+#                          restart cycles also means fewer file-rotation races
+#                          that can tear a gzip member. Cooldown stays well
+#                          under the 1h holdout gap tolerance.
 #
 # DRAIN SAFETY: on every stop we send SIGTERM and grant GRACE_SECONDS (default
 # 5s > the collector's 3s-per-rotator closeAsync timeout) for the gzip CRC32+
@@ -40,11 +51,19 @@ STALE_SECONDS="${COLLECTOR_STALE_SECONDS:-300}"   # no deltas write => stall
 WATCH_INTERVAL="${COLLECTOR_WATCH_INTERVAL:-30}"  # health-check cadence
 MIN_UP_SECONDS="${COLLECTOR_MIN_UP_SECONDS:-30}"  # shorter life => back off
 MAX_BACKOFF="${COLLECTOR_MAX_BACKOFF:-60}"
+# Restart-rate throttle (thrash guard). Cause-agnostic: counts crash AND stall
+# restarts. Cooldown (120s) is far below the 1h holdout gap tolerance, so the
+# guard trades a little extra downtime during a burst for far fewer SIGKILL/
+# rotation cycles (each a chance to tear a gzip member).
+RESTART_WINDOW="${COLLECTOR_RESTART_WINDOW:-600}"      # rolling burst-detection window (s)
+RESTART_BURST_LIMIT="${COLLECTOR_RESTART_BURST:-5}"    # restarts within window before throttling
+RESTART_COOLDOWN="${COLLECTOR_RESTART_COOLDOWN:-120}"  # enforced pause once bursting (s)
 
 STOPPING=false
 CHILD_PID=""
 CAFFEINATE_PID=""
 RESTARTS=0
+RESTART_TIMES=()   # epoch seconds of recent restarts (rolling window, thrash guard)
 
 now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
@@ -170,7 +189,24 @@ while true; do
   RESTARTS=$(( RESTARTS + 1 ))
   log_event child_exit "rc=$rc uptime_s=$up"
 
-  if [ "$up" -lt "$MIN_UP_SECONDS" ]; then
+  # --- restart-rate throttle (thrash guard) -------------------------------
+  # Prune timestamps outside the rolling window, then record this restart.
+  # bash 3.2 + `set -u` safe: ${arr[@]+"${arr[@]}"} expands to nothing when the
+  # array is empty, avoiding the unbound-variable crash fixed in 4fbc254.
+  nowt="$(date +%s)"
+  pruned=()
+  for t in ${RESTART_TIMES[@]+"${RESTART_TIMES[@]}"}; do
+    [ $(( nowt - t )) -lt "$RESTART_WINDOW" ] && pruned+=("$t")
+  done
+  RESTART_TIMES=(${pruned[@]+"${pruned[@]}"} "$nowt")
+  recent=${#RESTART_TIMES[@]}
+
+  if [ "$recent" -ge "$RESTART_BURST_LIMIT" ]; then
+    # Bursting (crash or stall): the underlying condition (load, disk, API) is
+    # not fixed by another fast restart — cool down to let it clear.
+    backoff="$RESTART_COOLDOWN"
+    log_event restart_throttle "${recent} restarts in <${RESTART_WINDOW}s — cooling down ${backoff}s (thrash guard)"
+  elif [ "$up" -lt "$MIN_UP_SECONDS" ]; then
     backoff=$(( backoff * 2 ))
     [ "$backoff" -gt "$MAX_BACKOFF" ] && backoff="$MAX_BACKOFF"
   else
