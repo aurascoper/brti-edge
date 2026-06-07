@@ -74,6 +74,7 @@
 // =============================================================================
 
 import { resolve } from "node:path";
+import { writeFileSync } from "node:fs";
 import {
   applyDelta,
   applySnapshot,
@@ -421,6 +422,7 @@ interface RejectRecord {
 interface Args {
   logDir: string;
   label: string;
+  dumpRecords: string | null;
 }
 function parseArgs(): Args {
   const args: Record<string, string> = {};
@@ -431,6 +433,8 @@ function parseArgs(): Args {
   return {
     logDir: args["log-dir"] ?? resolve(process.cwd(), "logs/data-collector"),
     label: args.label ?? "sanity-check-unlabeled",
+    // Opt-in, OFF by default. When set, dump QuoteRecord[] to this JSONL path.
+    dumpRecords: args["dump-records"] ?? null,
   };
 }
 
@@ -596,6 +600,16 @@ async function main(): Promise<void> {
   }
 
   process.stderr.write(`[${POLICY_NAME}] simulated ${records.length.toLocaleString()} posted quotes (${rejects.length.toLocaleString()} filter rejects) in ${((Date.now() - tSim) / 1000).toFixed(1)}s\n`);
+
+  // ---- opt-in diagnostic dump (OFF by default) ----
+  // Additive only: does NOT affect any computed metric, the default report, the
+  // policy, the fill model, or §13 gate logic. Consumed by src/replay/v2Markout.ts
+  // to compute short-horizon markout on v2's ACTUAL filtered/TTL/cancel fill set
+  // (the prereg requires markout fields; settlement numbers stay byte-identical).
+  if (args.dumpRecords) {
+    writeFileSync(args.dumpRecords, records.map((r) => JSON.stringify(r)).join("\n") + "\n");
+    process.stderr.write(`[${POLICY_NAME}] dumped ${records.length.toLocaleString()} records → ${args.dumpRecords}\n`);
+  }
 
   // ---- aggregate ----
   const posted = records.length;
