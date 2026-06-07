@@ -41,3 +41,9 @@ autoresearch_*/configs/
 # Python cache
 __pycache__/
 *.py[cod]
+
+# Markout scorer outputs (regenerable; like analysis/brier)
+analysis/markout/
+
+# Stray soak/runtime pid files
+apps/market-worker/*.pid
