@@ -2,7 +2,7 @@
 
 Systematic trading research for **Kalshi 15-minute crypto binary markets** (KXBTC15M, KXETH15M, KXSOL15M, KXBNB15M, KXDOGE15M, KXXRP15M, KXHYPE15M, KXBCH15M, KXADA15M).
 
-Live trading is **paused** as of 2026-05-17. Six rounds (n = 285 filled trades, $51.25 → ~$18 bankroll) produced one strong finding and one decisive negative result:
+Live trading is **paused**. The six main rounds (n = 285 filled trades, $51.25 → ~$18 bankroll) ended 2026-05-17; the last live orders were a 2-trade R7 micro-canary on **2026-05-22** (−$1.06, halted by the 2-loss stop — ledger row `R7-canary-2026-05-22`). The program produced one strong finding and one decisive negative result:
 
 | Result | Evidence |
 |---|---|
@@ -11,7 +11,7 @@ Live trading is **paused** as of 2026-05-17. Six rounds (n = 285 filled trades, 
 
 The thesis has narrowed. Calibration is not the bottleneck — **new features are**. The repo's current focus is the *Layer 1 / Layer 2 bakeoff system* that lets us add candidate features (spot-perp basis, OFI, basis-change, …) one at a time, score them prospectively against settlement, and require they beat the gate before any live retest.
 
-**Parallel research thread (2026-05-26, Section 13).** A second path now runs alongside the signal-model work: an execution-side **maker-replay harness** that consumes a 30 h Kalshi WebSocket capture and simulates hypothetical resting maker quotes against the historical tape. The dumb two-sided `BTC_TOUCH_DEPTH50` policy was tested and rejected on robustness grounds; a refined policy `BTC_YES_LATE_ASIA_v1` is **pre-registered** awaiting fresh-week holdout collection. No live orders. See §13.
+**Parallel research thread (2026-05-26, Section 13).** A second path ran alongside the signal-model work: an execution-side **maker-replay harness** that consumes Kalshi WebSocket captures and simulates hypothetical resting maker quotes against the historical tape. The dumb two-sided `BTC_TOUCH_DEPTH50` policy was tested and rejected on robustness grounds; a refined policy `BTC_YES_LATE_ASIA_v1` was pre-registered, then superseded by **`KXBTC15M_PASSIVE_MAKER_v2`** (locked preregistration, `docs/research/kxbtc15m-v2-preregistration.md`). **The maker program concluded 2026-06-09 with a 4-way-negative no-edge verdict** — see the wrap-up at `docs/research/kxbtc15m-passive-maker-negative-result-2026-06-09.md`. §13 below is kept as the historical record of the v1-era harness work.
 
 ---
 
@@ -442,7 +442,8 @@ Basis is the cheaper first test of whether *new information* — not new functio
 ## 9. Operational state
 
 ```text
-Live trading:           PAUSED (no live orders since 2026-05-17)
+Live trading:           PAUSED (last live orders: R7 micro-canary 2026-05-22,
+                        2 trades, −$1.06; main R1–R6 sessions ended 2026-05-17)
 Shadow worker:          alive (KALSHI_ALLOW_ORDERS=0, AUTO_SUBMIT=0, DUST_ENABLED=0)
                         accumulating settlement-validation + Layer 2 rows
 Kalshi balance:         ~$18 (after R6 close)
@@ -502,7 +503,7 @@ KALSHI_DUST_MAX_SAME_SIDE           2
 KALSHI_DUST_BACKOFF_STREAK          3
 KALSHI_DUST_BACKOFF_LOSS_USD        3
 KALSHI_DUST_BACKOFF_SEC             300
-KALSHI_DUST_HARD_STOP_PNL_USD     -15
+KALSHI_DUST_HARD_STOP_PNL_USD      -2   # code default (src/kalshi/dustExecutor.ts); R1-R6 ran with -15 set in env
 KALSHI_DUST_CANDIDATE_TTL_SEC       75
 KALSHI_DUST_MIN_ORDER_SIZE          1
 KALSHI_DUST_MANUAL_CONFIRM_FIRST_N  3
@@ -827,6 +828,9 @@ Last live session:   2026-05-15 → 2026-05-17    R1 + R2 + R3 + R4 + R5 + R6
                                                  cum PnL = −$32.99 (+ ~$11 manual sports bet)
                                                  Verdict: INCONCLUSIVE (regime hypothesis weak,
                                                           calibration falsified, edge tiny if real)
+Last live ORDERS:    2026-05-22                  R7 micro-canary — 2 XRP NO trades @ $0.53,
+                                                 both settled YES, −$1.06, halted by 2-loss
+                                                 stop (ledger row "R7-canary-2026-05-22")
 
 Live worker:         halted (no Kalshi orders permitted)
 Shadow worker:       running (collects validator A/B + Layer 2 basis features)
@@ -867,6 +871,19 @@ Next decision point — execution path:  collect a fresh 30 h-to-7 d holdout in
                      If pass: discuss a tiny maker-only canary. If fail: v1
                      rejected; any v2 requires a fresh pre-registration on a
                      third sample.
+
+PROGRAM CLOSED (2026-06-09):  both decision points above are RESOLVED NEGATIVE.
+                     Signal path: closed by the 2026-05-25 lockdown (~60
+                     variants / 0 passed). Execution path: v1 superseded by the
+                     locked KXBTC15M_PASSIVE_MAKER_v2 prereg; its holdout window
+                     burned (3h gap 2026-06-04); 4-way negative convergence
+                     (realized −4.54¢ / in-sample −4.57¢ / exploratory −2.74¢
+                     per fill / front-of-queue +0.31¢ sub-gate); design-corpus
+                     YES-side surplus INVERTED out-of-sample (+0.905 →
+                     −0.602¢/posted). Verdict: edge absent. All launchd agents
+                     unloaded; tooling archived as repurposable.
+                     Full record: docs/research/
+                     kxbtc15m-passive-maker-negative-result-2026-06-09.md
 ```
 
 The financial loss is paid forward as scientific evidence: a frozen labeled corpus, three validated infrastructure pieces (BRTI vs Binance settlement A/B; Layer 1/2 bakeoff system; maker-replay harness with per-quote PnL decomposition), and explicit gates on both research paths that prevent the next live exposure from happening on hope.

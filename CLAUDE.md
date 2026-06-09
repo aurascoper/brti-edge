@@ -1,6 +1,6 @@
 # polyterminal (brti-edge)
 
-Systematic trading research for **Kalshi 15-minute crypto binary markets** (KXBTC15M, KXETH15M, KXSOL15M, KXBNB15M, KXDOGE15M, KXXRP15M, KXHYPE15M, KXBCH15M, KXADA15M). pnpm + Turborepo TypeScript monorepo with a Next.js web app, a Node worker that runs the scan loop, and Python offline analysis. **Live trading is paused** as of 2026-05-17 — repo is in shadow + Layer-1/Layer-2 bakeoff mode after 6 rounds and 285 filled trades ended in a small loss.
+Systematic trading research for **Kalshi 15-minute crypto binary markets** (KXBTC15M, KXETH15M, KXSOL15M, KXBNB15M, KXDOGE15M, KXXRP15M, KXHYPE15M, KXBCH15M, KXADA15M). pnpm + Turborepo TypeScript monorepo with a Next.js web app, a Node worker that runs the scan loop, and Python offline analysis. **PROGRAM CLOSED 2026-06-09 — negative result.** Live trading paused (last live orders: R7 micro-canary 2026-05-22; main rounds ended 2026-05-17). Both research paths concluded negative: signal-side closed by the 2026-05-25 lockdown, execution-side (passive maker v2) closed 2026-06-09 on 4-way negative convergence with the design-corpus YES-side surplus inverting out-of-sample. All launchd agents unloaded; tooling archived as repurposable. Canonical wrap-up: `docs/research/kxbtc15m-passive-maker-negative-result-2026-06-09.md`. Any future work here starts as a NEW preregistered experiment.
 
 ## Stack
 - pnpm 9 + Turborepo 2; TypeScript 5.6; Node ≥20
@@ -36,7 +36,7 @@ python scripts/brier_bakeoff.py         # joins validator + Layer-2 + filled sta
 - `packages/kalshi-client/` — Kalshi API client (RSA-PSS auth)
 - `packages/polymarket-client/` — Polymarket CLOB client (handles Safe-proxy `sigType=2` and deposit-wallet `sigType=3` flows)
 - `packages/market-state/` — in-memory market state machine
-- `packages/signals/` — fairValueArb, OFI, basis features
+- `packages/signals/` — fairValueArb, basis features. **No real OFI exists**: the only order-book-imbalance code is a 10-line Polymarket-side top-1 imbalance; the BRTI feed's `top5_imbalance`/`aggressor_flow_1s` are hardcoded-0 stubs (`apps/market-worker/src/brti/aggregator.ts`, venues poll REST `book?level=1` — real OFI needs the unbuilt Phase-2 L2 WebSocket migration)
 - `packages/types/` — shared TS types
 - `packages/ui/` — shared React components
 - `analysis/brier/` — outputs of `scripts/brier_bakeoff.py`
