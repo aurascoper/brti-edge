@@ -192,3 +192,13 @@ converging, independently-measured evidence**, with the strongest single leg
 (realized R1–R6) immune to every methodological objection raised against the
 replay legs. Any future work at this venue starts as a *new* preregistered
 experiment against a *new* thesis, reusing the tooling above.
+
+**Post-close addendum (same day):** the one residual structural thread — the
+Asian-settlement (TWAP-vs-point) mispricing — was magnitude-checked on the
+existing settled corpus and closed: the divergence is real (2–4¢ at the
+moneyness shoulder inside 300 s) **and the book already prices it** (90% sign
+agreement near expiry; book mid sits 1.2¢ from the Asian price vs 4.9¢ from
+the point model at <90 s). The mispriced party was our deployed model, not the
+market. See `kxbtc15m-asian-settlement-magnitude-check-2026-06-09.md`. With
+that, the residual space at this venue/instrument is closed, not merely this
+program.
