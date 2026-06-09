@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS LaunchAgent for the Kalshi SCAN WORKER (shadow-only).
+
+  Sibling of com.polyterminal.kalshi-collector. The collector captures the
+  holdout data; this worker runs the scan/shadow strategy loop. Live trading is
+  PAUSED, so the three order gates are hard-pinned to 0 below AND in
+  scripts/run-worker-shadow.sh. Promoting to live = a separate R7 prereg, not an
+  edit to this file.
+
+  Install (paths are machine-specific — adjust if you move the repo):
+    cp apps/market-worker/scripts/com.polyterminal.kalshi-worker.plist ~/Library/LaunchAgents/
+    launchctl load   ~/Library/LaunchAgents/com.polyterminal.kalshi-worker.plist
+    launchctl start  com.polyterminal.kalshi-worker
+  Stop / remove (KeepAlive=true means a plain `kill` just respawns it):
+    launchctl stop   com.polyterminal.kalshi-worker
+    launchctl unload ~/Library/LaunchAgents/com.polyterminal.kalshi-worker.plist
+
+  Binds :4001 — stop any manual `pnpm kalshi-dev` first or this crash-loops on
+  EADDRINUSE (throttled to one relaunch / 30s). No caffeinate here: the
+  collector agent already holds wake-lock for the holdout window.
+
+  launchd has a minimal PATH; EnvironmentVariables/PATH below must contain your
+  node (here /opt/homebrew/bin). Credentials are NOT stored here — worker.ts
+  self-loads them from ~/Developer/live_trading/.env.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.polyterminal.kalshi-worker</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/aurascoper/Developer/polyterminal/apps/market-worker/scripts/run-worker-shadow.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/aurascoper/Developer/polyterminal/apps/market-worker</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Don't relaunch faster than this if the worker crash-loops. -->
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <!-- Worker writes no gzip trailer, so it needs no long drain grace. -->
+    <key>ExitTimeOut</key>
+    <integer>10</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <!-- Order gates hard-pinned OFF. launchd injects these into the worker's
+             process env; worker.ts only sets unset vars, so these always win. -->
+        <key>KALSHI_ALLOW_ORDERS</key>
+        <string>0</string>
+        <key>KALSHI_AUTO_SUBMIT</key>
+        <string>0</string>
+        <key>KALSHI_DUST_ENABLED</key>
+        <string>0</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/aurascoper/Developer/polyterminal/apps/market-worker/logs/launchd-kalshi-worker.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/aurascoper/Developer/polyterminal/apps/market-worker/logs/launchd-kalshi-worker.err.log</string>
+</dict>
+</plist>
