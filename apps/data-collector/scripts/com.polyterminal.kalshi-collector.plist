@@ -30,11 +30,11 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/aurascoper/Developer/polyterminal/apps/data-collector/scripts/run-collector-supervised.sh</string>
+        <string>/Users/aurascoper/Developer/brti-edge/apps/data-collector/scripts/run-collector-supervised.sh</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/aurascoper/Developer/polyterminal/apps/data-collector</string>
+    <string>/Users/aurascoper/Developer/brti-edge/apps/data-collector</string>
 
     <key>RunAtLoad</key>
     <true/>
@@ -58,9 +58,9 @@
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/Users/aurascoper/Developer/polyterminal/apps/data-collector/ops/state/launchd-collector.out.log</string>
+    <string>/Users/aurascoper/Developer/brti-edge/apps/data-collector/ops/state/launchd-collector.out.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/aurascoper/Developer/polyterminal/apps/data-collector/ops/state/launchd-collector.err.log</string>
+    <string>/Users/aurascoper/Developer/brti-edge/apps/data-collector/ops/state/launchd-collector.err.log</string>
 
     <!-- Optional: keep collecting even when the menu-bar user logs out.
          Requires the agent to be a LaunchDaemon instead; for a single-user
