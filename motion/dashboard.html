@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BRTI-EDGE × KALSHI — DUST EXECUTOR</title>
+<style>
+  :root {
+    --paper: #f5f2eb;
+    --ink: #16130e;
+    --red: #d0312d;
+    --green: #1c7c54;
+    --amber: #a8720a;
+    --line: #16130e;
+    --dim: #7d766a;
+    --mono: "SF Mono", ui-monospace, Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #111; }
+  #stage {
+    position: relative; width: 1080px; height: 1440px;
+    background: var(--paper); color: var(--ink);
+    font-family: var(--mono); overflow: hidden;
+    display: flex; flex-direction: column; padding: 26px; gap: 14px;
+  }
+  .panel { border: 2px solid var(--line); position: relative; background: var(--paper); }
+  .cap {
+    position: absolute; top: -9px; left: 12px; background: var(--paper);
+    padding: 0 8px; font-size: 15px; letter-spacing: .18em; font-weight: 700;
+  }
+  .cap-r {
+    position: absolute; top: -9px; right: 12px; background: var(--paper);
+    padding: 0 8px; font-size: 12px; letter-spacing: .14em; color: var(--dim);
+  }
+  .micro { font-size: 12px; letter-spacing: .14em; color: var(--dim); }
+
+  /* header */
+  #hdr { display: flex; align-items: stretch; border: 2px solid var(--line); }
+  #hdr > div { padding: 14px 18px; }
+  #brand { flex: 0 0 auto; border-right: 2px solid var(--line); }
+  #brand .t1 { font-size: 13px; letter-spacing: .22em; color: var(--dim); }
+  #brand .t2 { font-size: 38px; font-weight: 800; letter-spacing: .02em; line-height: 1.1; }
+  #odo { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 18px; }
+  #odo .from { font-size: 26px; color: var(--dim); }
+  #odo .arrow { font-size: 26px; }
+  #odo .now { font-size: 52px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #odo .now.neg { color: var(--red); }
+  #hdrchips { flex: 0 0 auto; border-left: 2px solid var(--line); display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .chip { border: 1.5px solid var(--line); font-size: 12px; letter-spacing: .12em; padding: 3px 10px; text-align: center; white-space: nowrap; }
+  .chip.red { background: var(--red); color: var(--paper); border-color: var(--red); }
+  .chip.amber { color: var(--amber); border-color: var(--amber); }
+  .chip.green { color: var(--green); border-color: var(--green); }
+
+  /* question bar */
+  #qbar { display: flex; align-items: center; border: 2px solid var(--line); }
+  #qbar .lab { padding: 12px 16px; border-right: 2px solid var(--line); font-size: 12px; letter-spacing: .16em; color: var(--dim); white-space: nowrap; }
+  #qtext { flex: 1; padding: 12px 18px; font-size: 26px; font-weight: 700; }
+  #qside { padding: 12px 18px; border-left: 2px solid var(--line); text-align: right; white-space: nowrap; }
+  #qside .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #qside .k { font-size: 11px; letter-spacing: .14em; color: var(--dim); }
+
+  /* the loop */
+  #loop { flex: 0 0 430px; }
+  #loop svg { display: block; width: 100%; height: 100%; }
+  .orb { fill: none; stroke: var(--ink); }
+  .orb.dash { stroke-dasharray: 10 14; }
+  .orb.fine { stroke-dasharray: 2 10; stroke-width: 1.2; }
+  .nlab { font-size: 13px; letter-spacing: .12em; fill: var(--ink); font-family: var(--mono); }
+  .nlab.dim { fill: var(--dim); font-size: 11px; }
+  .nlab.b { font-weight: 700; }
+  #veto {
+    position: absolute; left: 50%; top: 44%;
+    transform: translate(-50%, -50%) rotate(-7deg);
+    border: 3px solid var(--red); color: var(--red); background: var(--paper);
+    font-size: 34px; font-weight: 800; letter-spacing: .12em; padding: 10px 26px;
+    opacity: 0; box-shadow: 6px 6px 0 rgba(208,49,45,.25);
+  }
+  #tape {
+    position: absolute; left: 0; right: 0; bottom: 0; border-top: 2px solid var(--line);
+    height: 34px; overflow: hidden; background: var(--paper);
+  }
+  #tapein { position: absolute; white-space: nowrap; font-size: 14px; line-height: 34px; letter-spacing: .06em; }
+  #tapein .w { color: var(--green); font-weight: 700; }
+  #tapein .l { color: var(--red); font-weight: 700; }
+
+  /* mid + bottom grids */
+  .grid2 { display: flex; gap: 14px; flex: 1 1 auto; min-height: 0; }
+  .col { display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; }
+  #chain, #ledgerwrap, #extra, #curve { flex: 1; min-height: 0; }
+  .pad { padding: 24px 18px 14px; height: 100%; display: flex; flex-direction: column; }
+
+  /* gates funnel (in chain panel for round scenes) */
+  .gate { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px dashed rgba(22,19,14,.25); }
+  .gate .gk { flex: 1; font-size: 15px; }
+  .gate .gbar { height: 12px; background: var(--ink); }
+  .gate .gv { font-size: 17px; font-weight: 800; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+  .gate.fired .gk, .gate.fired .gv { color: var(--red); }
+  .gate.fired .gbar { background: var(--red); }
+  .chainrow { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px dashed rgba(22,19,14,.25); font-size: 14px; }
+  .chainrow .ck { color: var(--dim); min-width: 130px; font-size: 12px; letter-spacing: .08em; padding-top: 2px; }
+  .chainrow.bad .cv { color: var(--red); }
+  .chainrow.good .cv { color: var(--green); }
+  .chainrow.warn .cv { color: var(--amber); }
+
+  /* kill switch */
+  #kill { flex: 0 0 150px; }
+  #killrow { display: flex; align-items: center; gap: 16px; }
+  #killstate { font-size: 34px; font-weight: 800; letter-spacing: .08em; padding: 6px 18px; border: 3px solid var(--green); color: var(--green); }
+  #killstate.FIRED { border-color: var(--red); color: var(--paper); background: var(--red); }
+  #killstate.HALTED { border-color: var(--amber); color: var(--amber); }
+  #killstate.SAFE { border-color: var(--dim); color: var(--dim); }
+  #vetocount { text-align: right; flex: 1; }
+  #vetocount .v { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  #stopbar { margin-top: 12px; }
+  #stopbar .rail { height: 14px; border: 1.5px solid var(--line); position: relative; }
+  #stopbar .fill { position: absolute; right: 0; top: 0; bottom: 0; background: var(--red); }
+
+  /* ledger */
+  .lrow { display: flex; align-items: baseline; gap: 12px; padding: 5px 0; border-bottom: 1px dashed rgba(22,19,14,.25); font-size: 15px; opacity: 0; }
+  .lrow .tick { font-weight: 800; width: 22px; }
+  .lrow .lk { color: var(--dim); flex: 1; font-size: 13px; letter-spacing: .08em; }
+  .lrow .lv { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .lrow.ok .tick { color: var(--green); } .lrow.no .tick, .lrow.no .lv { color: var(--red); }
+
+  /* extrapolation */
+  #extra .big { font-size: 64px; font-weight: 800; color: var(--red); line-height: 1; margin: 10px 0 6px; }
+  #extra .strike { text-decoration: line-through; text-decoration-thickness: 5px; }
+  #extra .sub { font-size: 15px; }
+  #extra .math { font-size: 13px; color: var(--dim); margin-top: 6px; }
+  #extra .reality { margin-top: auto; font-size: 20px; font-weight: 800; opacity: 0; }
+  #extra .reality .r { color: var(--red); }
+
+  /* curve */
+  #curve svg { display: block; width: 100%; flex: 1; }
+  .axis { stroke: rgba(22,19,14,.35); stroke-width: 1; }
+  .cline { fill: none; stroke: var(--ink); stroke-width: 3; }
+  .cfill { fill: rgba(208,49,45,.12); stroke: none; }
+  .clab { font-size: 12px; font-family: var(--mono); fill: var(--dim); letter-spacing: .08em; }
+  .cnow { font-size: 20px; font-weight: 800; font-family: var(--mono); }
+
+  /* title overlay */
+  #overlay {
+    position: absolute; inset: 0; background: var(--paper);
+    display: flex; flex-direction: column; justify-content: center; padding: 90px;
+    gap: 26px; opacity: 0; pointer-events: none;
+  }
+  #overlay .t1 { font-size: 17px; letter-spacing: .3em; color: var(--red); font-weight: 700; }
+  #overlay .t2 { font-size: 74px; font-weight: 800; line-height: 1.05; }
+  #overlay .rule { height: 3px; background: var(--ink); width: 180px; }
+  #overlay .ln { font-size: 20px; letter-spacing: .06em; padding: 6px 0; border-bottom: 1px dashed rgba(22,19,14,.3); opacity: 0; }
+  #overlay .src { margin-top: 30px; font-size: 13px; color: var(--dim); letter-spacing: .1em; }
+  #frame-footer { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: .18em; color: var(--dim); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="hdr">
+    <div id="brand">
+      <div class="t1">BRTI-EDGE × KALSHI · 15-MIN CRYPTO BINARIES</div>
+      <div class="t2">DUST EXECUTOR</div>
+    </div>
+    <div id="odo">
+      <span class="from" id="odo-from">$51.28</span>
+      <span class="arrow">→</span>
+      <span class="now" id="odo-now">$51.28</span>
+    </div>
+    <div id="hdrchips">
+      <div class="chip" id="chip-step">ROUND 0 / 7</div>
+      <div class="chip" id="chip-kill">ARMED</div>
+      <div class="chip" id="chip-clock">00:00</div>
+    </div>
+  </div>
+
+  <div id="qbar">
+    <div class="lab">THE QUESTION</div>
+    <div id="qtext"></div>
+    <div id="qside"><div class="v" id="q-win">—</div><div class="k">ROUND WIN RATE</div></div>
+  </div>
+
+  <div class="panel" id="loop">
+    <div class="cap">THE LOOP</div><div class="cap-r" id="loop-cap-r">LOOPS WATCHING LOOPS</div>
+    <svg viewBox="0 0 1030 392" id="loopsvg">
+      <g id="orbits" transform="translate(320,186)">
+        <circle class="orb fine" r="150"/>
+        <g id="rot1"><circle class="orb dash" r="118" stroke-width="2.5"/></g>
+        <g id="rot2"><circle class="orb dash" r="78" stroke-width="2"/></g>
+        <circle class="orb" r="34" stroke-width="2.5"/>
+        <text class="nlab b" text-anchor="middle" y="-2">SCAN</text>
+        <text class="nlab dim" text-anchor="middle" y="14">15 S</text>
+        <text class="nlab dim" text-anchor="middle" y="-128">CANDIDATES</text>
+        <text class="nlab dim" text-anchor="middle" y="168">BRTI · COINBASE + KRAKEN + BITSTAMP</text>
+      </g>
+      <path d="M 480 186 C 560 186 570 120 660 120" class="orb" stroke-width="2" marker-end="url(#ah)"/>
+      <path d="M 480 186 C 560 186 570 252 660 252" class="orb dash" stroke-width="2" marker-end="url(#ah)"/>
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#16130e"/></marker></defs>
+      <g transform="translate(660,84)">
+        <rect width="240" height="72" class="orb" stroke-width="2.5"/>
+        <text class="nlab b" x="16" y="30">GATES × 4</text>
+        <text class="nlab dim" x="16" y="52">EDGE · σ · BACKOFF · STOP</text>
+      </g>
+      <g transform="translate(660,216)">
+        <rect width="240" height="72" class="orb" stroke-width="2.5"/>
+        <text class="nlab b" x="16" y="30">WATCHDOG</text>
+        <text class="nlab dim" x="16" y="52">HARD STOP −$15 · SETTLE-TIME</text>
+      </g>
+      <g id="killnode" transform="translate(930,150)">
+        <rect width="72" height="72" fill="#16130e"/>
+        <text class="nlab b" x="36" y="32" text-anchor="middle" fill="#f5f2eb" font-size="11">KILL</text>
+        <text class="nlab b" x="36" y="48" text-anchor="middle" fill="#f5f2eb" font-size="11">SWITCH</text>
+      </g>
+      <path d="M 900 120 C 920 120 924 150 930 168" class="orb" stroke-width="2"/>
+      <path d="M 900 252 C 920 252 924 222 930 204" class="orb" stroke-width="2"/>
+    </svg>
+    <div id="veto">VETO — LOOP HALTED</div>
+    <div id="tape"><div id="tapein"></div></div>
+  </div>
+
+  <div class="grid2" style="flex:0 0 330px">
+    <div class="panel" id="chain" style="flex:1.15">
+      <div class="cap" id="chain-cap">THE GATES</div><div class="cap-r" id="chain-cap-r"></div>
+      <div class="pad" id="chain-body"></div>
+    </div>
+    <div class="col" style="flex:1">
+      <div class="panel" id="kill">
+        <div class="cap">KILL SWITCH</div><div class="cap-r">NON-NEGOTIABLE</div>
+        <div class="pad">
+          <div id="killrow">
+            <div id="killstate">ARMED</div>
+            <div id="vetocount"><div class="v" id="veto-n">0</div><div class="micro">LOOP VETOS THIS ROUND</div></div>
+          </div>
+          <div id="stopbar"><div class="rail"><div class="fill" id="stopfill" style="width:0%"></div></div>
+          <div class="micro" style="margin-top:4px">HARD-STOP BUDGET · TRIP AT −$15.00</div></div>
+        </div>
+      </div>
+      <div class="panel" id="ledgerwrap">
+        <div class="cap">THE LEDGER</div><div class="cap-r" id="ledger-cap-r">EVERY ROUND CHECKED</div>
+        <div class="pad" id="ledger-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2" style="flex:0 0 300px">
+    <div class="panel" id="extra" style="flex:1">
+      <div class="cap">THE EXTRAPOLATION</div><div class="cap-r">IF IT HELD</div>
+      <div class="pad">
+        <div class="big" id="ex-big">$0</div>
+        <div class="sub" id="ex-sub"></div>
+        <div class="math" id="ex-math"></div>
+        <div class="reality" id="ex-real">REALITY, 285 FILLS: <span class="r" id="ex-real-v"></span></div>
+      </div>
+    </div>
+    <div class="panel" id="curve" style="flex:1.2">
+      <div class="cap">THE REAL CURVE</div><div class="cap-r" id="curve-cap-r">SESSION PNL · CLOSE-TIME</div>
+      <div class="pad"><svg id="curvesvg" viewBox="0 0 470 240" preserveAspectRatio="none"></svg></div>
+    </div>
+  </div>
+
+  <div id="frame-footer">
+    <span>SOURCE · DOCS/RUN-LEDGERS/KALSHI-R1-R6-LEDGER.JSONL · APPEND-ONLY</span>
+    <span id="foot-note"></span>
+    <span>SHADOW-FIRST · ALLOW_ORDERS=0</span>
+  </div>
+
+  <div id="overlay">
+    <div class="t1" id="ov-kicker">BRTI-EDGE × KALSHI</div>
+    <div class="t2" id="ov-title"></div>
+    <div class="rule"></div>
+    <div id="ov-lines"></div>
+    <div class="src" id="ov-src">SOURCE: KALSHI-R1-R6-LEDGER.JSONL · 285 FILLS · APPEND-ONLY, IMMUTABLE</div>
+  </div>
+</div>
+
+<script src="timeline.js"></script>
+<script>
+'use strict';
+const T = window.TIMELINE;
+const DUR = T.meta.duration * 1000;
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, p) => a + (b - a) * p;
+const easeOut = (p) => 1 - Math.pow(1 - p, 3);
+const fmt$ = (v) => (v < 0 ? '−$' : '$') + Math.abs(v).toFixed(2);
+
+// --- curve geometry (static; reveal animated) -------------------------------
+const CV = { w: 470, h: 240, padL: 8, padR: 66, padT: 26, padB: 26 };
+const vals = T.curve.map((k) => k.v);
+const vmin = Math.min(...vals) - 4, vmax = Math.max(...vals) + 4;
+const cx = (i) => CV.padL + (i / (T.curve.length - 1)) * (CV.w - CV.padL - CV.padR);
+const cy = (v) => CV.padT + (1 - (v - vmin) / (vmax - vmin)) * (CV.h - CV.padT - CV.padB);
+// map narrative curve keyframes to scene ends so the line draws in step with the story
+const KEY_AT = [6, 15, 24, 30, 38, 46, 52]; // seconds at which each keyframe is reached
+
+function buildCurve() {
+  const svg = $('curvesvg');
+  let d = '';
+  T.curve.forEach((k, i) => { d += (i ? ' L ' : 'M ') + cx(i).toFixed(1) + ' ' + cy(k.v).toFixed(1); });
+  const zero = cy(0);
+  svg.innerHTML =
+    `<line class="axis" x1="0" x2="${CV.w}" y1="${zero}" y2="${zero}"/>` +
+    `<text class="clab" x="2" y="${zero - 6}">$0</text>` +
+    `<rect class="cfill" x="${cx(1)}" y="0" width="${cx(3) - cx(1)}" height="${CV.h}" id="ddband" opacity="0"/>` +
+    `<text class="clab" x="${cx(2) - 30}" y="16" fill="#d0312d" id="ddlab" opacity="0">THE R4 DRAWDOWN</text>` +
+    `<path class="cline" d="${d}" id="cpath"/>` +
+    T.curve.map((k, i) => `<circle r="4" fill="#16130e" cx="${cx(i)}" cy="${cy(k.v)}" class="cdot" id="cdot${i}" opacity="0"/>`).join('') +
+    `<text class="cnow" id="cnow" text-anchor="start"></text>`;
+  const p = $('cpath'); const L = p.getTotalLength();
+  p.dataset.len = L; p.style.strokeDasharray = L + ' ' + L;
+}
+buildCurve();
+
+// static extrapolation content (from the bump scene)
+const bumpScene = T.scenes.find((s) => s.id === 'bump');
+$('ex-big').textContent = bumpScene.extrapolation.headline;
+$('ex-sub').textContent = bumpScene.extrapolation.sub.toUpperCase();
+$('ex-math').textContent = bumpScene.extrapolation.math;
+$('ex-real-v').textContent = fmt$(T.curve[T.curve.length - 1].v);
+
+// fills tape content
+const tapeItems = [];
+T.scenes.forEach((s) => (s.tickers || []).forEach((tk) => {
+  tapeItems.push(`<span class="${tk.pnl >= 0 ? 'w' : 'l'}">${tk.k}</span> NO · ${tk.w}W/${tk.l}L · ${tk.pnl >= 0 ? '+' : '−'}$${Math.abs(tk.pnl).toFixed(2)}`);
+}));
+T.meta.series.forEach((s) => tapeItems.push(`<span>${s}</span> · BRTI SETTLE`));
+$('tapein').innerHTML = ('&nbsp;&nbsp;///&nbsp;&nbsp;' + tapeItems.join('&nbsp;&nbsp;///&nbsp;&nbsp;')).repeat(4);
+
+// --- per-scene DOM builders (cached per scene id) ---------------------------
+let builtScene = null;
+function buildScene(sc) {
+  if (builtScene === sc.id) return;
+  builtScene = sc.id;
+  $('qtext').textContent = sc.question;
+  $('foot-note').textContent = (sc.note || '').toUpperCase();
+
+  // chain panel: gates funnel for rounds, else scene-specific rows
+  const cb = $('chain-body');
+  let html = '';
+  if (sc.gates) {
+    $('chain-cap').textContent = 'THE GATES';
+    $('chain-cap-r').textContent = 'REJECTIONS THIS ROUND';
+    const mx = Math.max(...sc.gates.map((g) => g.v), 1);
+    html += sc.gates.map((g, i) =>
+      `<div class="gate ${g.fired ? 'fired' : ''}">
+         <div class="gk">${g.k}</div>
+         <div class="gbar" data-max="${(20 + 160 * (g.v / mx)).toFixed(0)}" style="width:0"></div>
+         <div class="gv" data-n="${g.v}">0</div>
+       </div>`).join('');
+  } else { $('chain-cap').textContent = 'THE CHAIN'; $('chain-cap-r').textContent = 'THINKS IT THROUGH'; }
+  if (sc.chain) html += sc.chain.map((c) =>
+    `<div class="chainrow ${c.tone || ''}"><div class="ck">${c.k.toUpperCase()}</div><div class="cv">${c.v}</div></div>`).join('');
+  if (sc.hours) html += sc.hours.map((h) =>
+    `<div class="chainrow ${h.v.includes('0%)') || h.v.includes('14%') ? 'bad' : ''}"><div class="ck">${h.k.toUpperCase()}</div><div class="cv">${h.v}</div></div>`).join('');
+  if (sc.kind === 'title') html += (sc.lines || []).map((l) => `<div class="chainrow"><div class="cv">${l}</div></div>`).join('');
+  cb.innerHTML = html;
+
+  // ledger rows
+  $('ledger-body').innerHTML = (sc.ledger || []).map((r) =>
+    `<div class="lrow ${r.ok ? 'ok' : 'no'}"><span class="tick">${r.ok ? '✓' : '✕'}</span><span class="lk">${r.k.toUpperCase()}</span><span class="lv">${r.v}</span></div>`).join('');
+
+  // header chips
+  $('chip-step').textContent = 'ROUND ' + sc.step;
+  const ck = $('chip-kill'); ck.textContent = sc.kill;
+  ck.className = 'chip ' + ({ FIRED: 'red', HALTED: 'amber', ARMED: 'green', SAFE: '' }[sc.kill] || '');
+  const ks = $('killstate'); ks.textContent = sc.kill === 'SAFE' ? 'STOOD DOWN' : sc.kill; ks.className = sc.kill;
+
+  // title overlays
+  if (sc.kind === 'title') {
+    $('ov-title').textContent = sc.id === 'intro' ? T.meta.subtitle : sc.question.toUpperCase();
+    $('ov-kicker').textContent = sc.id === 'intro' ? T.meta.title + ' · ' + T.meta.venue : 'AFTER SIX ROUNDS';
+    $('ov-lines').innerHTML = (sc.lines || []).map((l) => `<div class="ln">${l}</div>`).join('');
+  }
+}
+
+// --- seek -------------------------------------------------------------------
+function seek(ms) {
+  const t = clamp(ms, 0, DUR - 1) / 1000;
+  const sc = T.scenes.find((s) => t >= s.t0 && t < s.t1) || T.scenes[T.scenes.length - 1];
+  buildScene(sc);
+  const p = clamp((t - sc.t0) / (sc.t1 - sc.t0), 0, 1);
+  const ep = easeOut(p);
+
+  // clock + orbits + tape
+  const mm = String(Math.floor(t / 60)).padStart(2, '0'), ss = String(Math.floor(t % 60)).padStart(2, '0');
+  $('chip-clock').textContent = mm + ':' + ss;
+  document.getElementById('rot1').setAttribute('transform', 'rotate(' + (t * 24) + ')');
+  document.getElementById('rot2').setAttribute('transform', 'rotate(' + (-t * 40) + ')');
+  $('tapein').style.transform = 'translateX(' + (-((t * 90) % ($('tapein').scrollWidth / 4 || 2000))) + 'px)';
+
+  // bankroll odometer
+  const cumFrom = sc.cumFrom ?? sc.bankrollAt ?? 0;
+  const cumTo = sc.cumTo ?? sc.bankrollAt ?? cumFrom;
+  const cum = lerp(cumFrom, cumTo, ep);
+  const bank = T.meta.startBankroll + cum;
+  const odo = $('odo-now');
+  odo.textContent = fmt$(bank);
+  odo.classList.toggle('neg', cum < -10);
+  $('q-win').textContent = sc.winRate != null ? Math.round(lerp(0, sc.winRate, ep)) + '%'
+    : sc.pnl != null ? fmt$(sc.pnl) : '—';
+
+  // ledger rows stagger in
+  document.querySelectorAll('#ledger-body .lrow').forEach((el, i, all) => {
+    el.style.opacity = clamp(p * (all.length + 2) - i, 0, 1);
+  });
+
+  // gate counters + bars
+  document.querySelectorAll('#chain-body .gate').forEach((el) => {
+    const bar = el.querySelector('.gbar'), num = el.querySelector('.gv');
+    bar.style.width = (parseFloat(bar.dataset.max) * ep) + 'px';
+    num.textContent = Math.round(parseFloat(num.dataset.n) * ep);
+  });
+  let vetoTotal = (sc.gates || []).reduce((a, g) => a + g.v, 0);
+  $('veto-n').textContent = Math.round(vetoTotal * ep);
+
+  // hard-stop budget: fraction of −$15 consumed by current round pnl
+  const roundPnl = lerp(0, sc.pnl ?? 0, ep);
+  $('stopfill').style.width = clamp((-roundPnl / 15) * 100, 0, 100) + '%';
+
+  // veto banner + kill flash on FIRED / HALTED
+  const veto = $('veto');
+  if (sc.kill === 'FIRED') {
+    const flash = p > 0.35 ? (Math.sin(t * 10) > -0.6 ? 1 : 0.25) : 0;
+    veto.style.opacity = flash;
+    veto.textContent = 'VETO — LOOP HALTED · SIGTERM';
+  } else if (sc.kill === 'HALTED' && p > 0.6) {
+    veto.style.opacity = 0.9; veto.textContent = 'MANUAL HALT — USER SIGTERM';
+  } else veto.style.opacity = 0;
+
+  // curve reveal
+  const cp = $('cpath'); const L = parseFloat(cp.dataset.len);
+  let ki = 0;
+  while (ki < KEY_AT.length && t >= KEY_AT[ki]) ki++;
+  const segFrac = ki >= KEY_AT.length ? 1
+    : (ki === 0 ? 0 : (ki - 1 + clamp((t - KEY_AT[ki - 1]) / (KEY_AT[ki] - KEY_AT[ki - 1]), 0, 1)) / (KEY_AT.length - 1));
+  cp.style.strokeDashoffset = L * (1 - segFrac);
+  document.querySelectorAll('.cdot').forEach((d, i) => { d.style.opacity = segFrac * (T.curve.length - 1) >= i ? 1 : 0; });
+  $('ddband').style.opacity = t > 24 ? 1 : 0;
+  $('ddlab').style.opacity = t > 24 ? 1 : 0;
+  const idxF = segFrac * (T.curve.length - 1);
+  const i0 = Math.min(Math.floor(idxF), T.curve.length - 2);
+  const nowV = lerp(T.curve[i0].v, T.curve[i0 + 1].v, idxF - i0);
+  const cnow = $('cnow');
+  cnow.setAttribute('x', clamp(cx(idxF > 0 ? idxF : 0) + 8, 8, CV.w - 60));
+  cnow.setAttribute('y', clamp(cy(nowV) - 8, 14, CV.h - 6));
+  cnow.setAttribute('fill', nowV < 0 ? '#d0312d' : '#16130e');
+  cnow.textContent = fmt$(nowV);
+
+  // extrapolation: hidden until the Kelly bump, struck through after R4 fires
+  const exVis = t >= 15 ? 1 : 0;
+  $('ex-big').style.opacity = exVis; $('ex-sub').style.opacity = exVis; $('ex-math').style.opacity = exVis;
+  $('ex-big').classList.toggle('strike', t > 27);
+  $('ex-real').style.opacity = t > 27 ? 1 : 0;
+
+  // title overlay
+  const ov = $('overlay');
+  if (sc.kind === 'title') {
+    // intro holds then fades out to reveal the dashboard; epilogue fades in and holds
+    ov.style.opacity = sc.id === 'intro' ? (p < 0.82 ? 1 : clamp((1 - p) / 0.18, 0, 1)) : clamp(p * 5, 0, 1);
+    document.querySelectorAll('#ov-lines .ln').forEach((el, i, all) => {
+      el.style.opacity = clamp(p * (all.length + 3) - i - 1, 0, 1);
+    });
+  } else ov.style.opacity = 0;
+}
+window.__seek = seek;
+seek(0);
+
+// live playback unless the renderer drives us
+if (!location.search.includes('render')) {
+  const start = performance.now();
+  (function loop(now) { seek((now - start) % DUR); requestAnimationFrame(loop); })(start);
+}
+</script>
+</body>
+</html>
