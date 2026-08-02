@@ -480,6 +480,8 @@ async function scan(): Promise<void> {
       best_yes_ask: ob.best_yes_ask,
       best_no_bid: ob.best_no_bid,
       best_no_ask: ob.best_no_ask,
+      best_yes_bid_size: ob.yes_bids[0]?.size ?? null,
+      best_no_bid_size: ob.no_bids[0]?.size ?? null,
       spot,
       spot_source: resolved.spot_source,
       sigma_annual: sigma,

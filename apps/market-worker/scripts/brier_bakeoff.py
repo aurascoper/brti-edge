@@ -139,13 +139,17 @@ def merge_layer2_with_settlements(layer2: pd.DataFrame, validator: pd.DataFrame)
         return pd.DataFrame()
     label_cols = ["ticker", "y_yes", "close_time"]
     have = validator[label_cols].drop_duplicates("ticker")
-    feat = layer2[[
+    feat_cols = [
         "ticker", "series", "asset", "p_gaussian", "edge_gaussian",
         "spot", "strike", "sigma_annual", "secs_to_close",
         "basis_mid", "basis_bps", "funding_rate", "perp_mark", "perp_index",
         "best_yes_bid", "best_yes_ask", "best_no_bid", "best_no_ask",
         "side_gaussian",
-    ]].copy()
+    ]
+    # Schema v2+ optional fields (touch sizes for microprice devig) — only
+    # present on rows logged after the modelBakeoffLogger v2 bump.
+    feat_cols += [c for c in ("best_yes_bid_size", "best_no_bid_size") if c in layer2.columns]
+    feat = layer2[feat_cols].copy()
     merged = feat.merge(have, on="ticker", how="inner")
     merged["close_time"] = pd.to_datetime(merged["close_time"], utc=True, errors="coerce")
     merged["utc_hour"] = merged["close_time"].dt.hour
@@ -252,6 +256,121 @@ def add_clip_models(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     for lo, hi in CLIP_RANGES:
         d[f"p_clip_{lo:.2f}_{hi:.2f}"] = d["p_gaussian"].clip(lo, hi)
+    return d
+
+
+# -----------------------------------------------------------------------
+# Devig baselines — market-implied probability from touch quotes
+# -----------------------------------------------------------------------
+# KXBTC15M (and siblings) are single-strike up/down binaries: verified
+# 2026-07-06 via the public API that 200/200 recent settled windows carry
+# exactly ONE strike per close_time, and the strike is definitionally the
+# prior window's BRTI settlement average. There is no strike ladder to
+# devig, so the market-implied probability comes from a single book. On a
+# CLOB binary the vig IS the bid-ask spread (asks_sum - 1 == spread), and
+# devigging reduces to "where inside the spread is the true probability".
+#
+# Canonical estimator (zero free parameters, preregistration-friendly):
+#   p_market_mid   = (best_yes_bid + best_yes_ask) / 2
+# Diagnostic estimator (needs schema-v2 touch sizes; NaN on v1 rows):
+#   p_market_micro = (ask * Q_bid + bid * Q_ask) / (Q_bid + Q_ask)
+#     where Q_bid = size resting at best_yes_bid and Q_ask = size resting
+#     at best_no_bid (which IS the yes-ask liquidity by no-arb).
+# Diagnostics:
+#   market_spread  = best_yes_ask - best_yes_bid
+#   sigma_implied  = ln(spot/strike) / (ndtri(p_market_mid) * sqrt(tau_yr))
+#     — the market's implied vol under the same drift-free Brownian model
+#     the worker prices with. Ill-posed near p = 0.5 (ndtri -> 0), so it is
+#     masked to NaN inside |p - 0.5| < SIGMA_IMPLIED_P_BAND.
+#
+# These columns are BASELINES, not candidate models: a Layer-1/Layer-2
+# variant that cannot beat p_market_mid has no taker alpha regardless of
+# how it scores against climatology.
+
+SIGMA_IMPLIED_P_BAND = 0.02
+SECONDS_PER_YEAR = 365.0 * 24 * 3600
+
+
+def devig_one_sided(bid: pd.Series, ask: pd.Series) -> pd.Series:
+    """Devig policy for rows where exactly ONE side of the touch exists
+    (deep ITM/OTM books near settlement publish bids on only one side).
+
+    Default policy: EXCLUDE — return NaN so one-sided rows drop out of the
+    baseline's sample. Conservative, but biases the p_market_mid sample
+    toward two-sided (liquid, mid-probability) moments; the model-vs-market
+    comparison then silently ignores exactly the near-certain tails where
+    the Gaussian model historically misprices.
+
+    TODO(operator): choose and implement the inclusion policy here if the
+    exclusion bias turns out to matter (check n dropped in the console
+    report). Options, roughly in order of aggressiveness:
+      1. Keep NaN (current) — cleanest sample, known selection bias.
+      2. Use the one derivable quote, shaded half a minimum tick toward
+         0.5 (tapered_deci_cent: 0.001 in the tails) — includes the tails
+         at the cost of a modeling assumption about where truth sits
+         relative to the surviving quote.
+      3. Use the derivable quote as-is — simplest inclusive rule, but
+         systematically overstates certainty (the missing side's absent
+         bid is itself information).
+    Whatever is chosen becomes part of the baseline's definition — treat
+    it like the holdout constants: policy, not a tunable.
+    """
+    return pd.Series(np.nan, index=bid.index, dtype=float)
+
+
+def add_devig_baselines(df: pd.DataFrame) -> pd.DataFrame:
+    """Attach p_market_mid / p_market_micro / market_spread / sigma_implied
+    wherever the input frame carries touch quotes. Column-guarded: frames
+    without book columns (e.g. the validator universe) pass through."""
+    if "best_yes_bid" not in df.columns or "best_yes_ask" not in df.columns:
+        return df
+    d = df.copy()
+    bid = pd.to_numeric(d["best_yes_bid"], errors="coerce")
+    ask = pd.to_numeric(d["best_yes_ask"], errors="coerce")
+
+    two_sided = bid.notna() & ask.notna() & (ask >= bid)
+    d["p_market_mid"] = np.where(two_sided, (bid + ask) / 2.0, np.nan)
+    d["market_spread"] = np.where(two_sided, ask - bid, np.nan)
+
+    one_sided = bid.notna() ^ ask.notna()
+    if one_sided.any():
+        fallback = devig_one_sided(bid, ask)
+        d.loc[one_sided, "p_market_mid"] = fallback[one_sided]
+
+    # Microprice — only on rows that captured touch sizes (schema v2+).
+    if "best_yes_bid_size" in d.columns and "best_no_bid_size" in d.columns:
+        q_bid = pd.to_numeric(d["best_yes_bid_size"], errors="coerce")
+        q_ask = pd.to_numeric(d["best_no_bid_size"], errors="coerce")
+        ok = two_sided & q_bid.notna() & q_ask.notna() & ((q_bid + q_ask) > 0)
+        d["p_market_micro"] = np.where(
+            ok, (ask * q_bid + bid * q_ask) / (q_bid + q_ask), np.nan
+        )
+
+    # Implied vol inversion of the worker's own pricing formula.
+    if {"spot", "strike", "secs_to_close"}.issubset(d.columns):
+        spot = pd.to_numeric(d["spot"], errors="coerce")
+        strike = pd.to_numeric(d["strike"], errors="coerce")
+        tau_yr = pd.to_numeric(d["secs_to_close"], errors="coerce") / SECONDS_PER_YEAR
+        p_mid = d["p_market_mid"]
+        ok = (
+            p_mid.notna()
+            & ((p_mid - 0.5).abs() >= SIGMA_IMPLIED_P_BAND)
+            & spot.notna() & (spot > 0)
+            & strike.notna() & (strike > 0)
+            & tau_yr.notna() & (tau_yr > 0)
+        )
+        with np.errstate(divide="ignore", invalid="ignore"):
+            sigma = np.log(spot / strike) / (
+                ndtri(p_mid.clip(EPS, 1 - EPS)) * np.sqrt(tau_yr)
+            )
+        sigma = pd.Series(sigma, index=d.index).where(ok)
+        # Annualized vol outside (1%, 500%) is an inversion artifact, not a market view.
+        d["sigma_implied"] = sigma.where((sigma > 0.01) & (sigma < 5.0))
+        if "sigma_annual" in d.columns:
+            d["sigma_implied_over_realized"] = (
+                d["sigma_implied"] / pd.to_numeric(d["sigma_annual"], errors="coerce")
+            )
+
     return d
 
 
@@ -595,6 +714,20 @@ def walk_forward(df: pd.DataFrame, universe_label: str, with_basis: bool = False
                 "params": json.dumps({"delta_sec": TWAP_DELTA_SEC}),
             })
 
+        # Devig baseline (market touch mid at decision time). No fit — pure
+        # observation, scored on the test fold only so it is comparable with
+        # the fitted models' out-of-sample numbers.
+        if "p_market_mid" in test.columns and test["p_market_mid"].notna().any():
+            results.append({
+                "universe": universe_label,
+                "fold": f"{train_end_frac:.0%}->{test_end_frac:.0%}",
+                "n_train": len(train),
+                "n_test": int(test["p_market_mid"].notna().sum()),
+                "model": "p_market_mid",
+                "brier": brier(test, "p_market_mid"),
+                "params": json.dumps({"estimator": "touch_mid", "one_sided": "excluded"}),
+            })
+
         # Sigma-correction (structural-payoff candidate). Rescales implied
         # z by 1/mult(tau); needs only p_gaussian + secs_to_close.
         if "secs_to_close" in train.columns and train["secs_to_close"].notna().any():
@@ -688,6 +821,21 @@ def main() -> None:
     val_df = add_clip_models(val_df)
     filled_df = add_clip_models(filled_df)
 
+    # Devig baselines — attached wherever touch quotes exist. The validator
+    # universe has no book columns (passes through unchanged); the Layer-2
+    # shadow universe is where the model-vs-market comparison happens.
+    val_df = add_devig_baselines(val_df)
+    filled_df = add_devig_baselines(filled_df)
+    shadow_basis_df = add_devig_baselines(shadow_basis_df)
+    if "p_market_mid" in shadow_basis_df.columns:
+        n_book = int(shadow_basis_df["p_market_mid"].notna().sum())
+        n_one_sided = int(
+            (shadow_basis_df["best_yes_bid"].notna()
+             ^ shadow_basis_df["best_yes_ask"].notna()).sum()
+        )
+        print(f"  devig baseline coverage:          n={n_book} two-sided, "
+              f"{n_one_sided} one-sided rows excluded (see devig_one_sided)")
+
     # In-sample logistic + Student-t fits (for full-data baseline; walk-forward is below)
     lr_all = fit_logistic(val_df)
     if lr_all is not None:
@@ -703,26 +851,48 @@ def main() -> None:
     if st_filled is not None:
         filled_df["p_student_t_insample"] = apply_student_t(st_filled, filled_df)
 
-    # Summary (in-sample) — useful as a baseline reproduction
+    # Summary (in-sample) — useful as a baseline reproduction. The shadow
+    # universe joins the table because it is the only one carrying the devig
+    # baseline; model-vs-market skill is only meaningful there.
     summary = []
-    for universe_name, df in [("all_decisions", val_df), ("filled", filled_df)]:
+    for universe_name, df in [
+        ("all_decisions", val_df),
+        ("filled", filled_df),
+        ("shadow_with_basis", shadow_basis_df),
+    ]:
         if len(df) == 0:
             continue
         baseline_p = df["y_yes"].mean()
         climatology = float(((baseline_p - df["y_yes"]) ** 2).mean())
+        # Second baseline: the devigged market itself. Scored on the SAME
+        # rows as each model (pairwise dropna) so the comparison is honest
+        # even when p_market_mid has one-sided gaps.
+        has_market = "p_market_mid" in df.columns and df["p_market_mid"].notna().any()
         for col in [c for c in df.columns if c.startswith("p_")]:
             score = brier(df, col)
             if math.isnan(score):
                 continue
-            summary.append({
+            row = {
                 "universe": universe_name,
                 "model": col,
                 "n": int(df[[col, "y_yes"]].dropna().shape[0]),
                 "brier": score,
                 "climatology_brier": climatology,
                 "brier_skill_vs_climatology": brier_skill(score, climatology),
-                "fit": "in-sample" if col.endswith("_insample") else "transform" if col.startswith("p_clip") else "raw",
-            })
+                "fit": "market_baseline" if col.startswith("p_market")
+                       else "in-sample" if col.endswith("_insample")
+                       else "transform" if col.startswith("p_clip")
+                       else "raw",
+            }
+            if has_market and not col.startswith("p_market"):
+                paired = df[[col, "p_market_mid", "y_yes"]].dropna()
+                if len(paired) >= 10:
+                    model_b = float(((paired[col] - paired["y_yes"]) ** 2).mean())
+                    market_b = float(((paired["p_market_mid"] - paired["y_yes"]) ** 2).mean())
+                    row["market_brier_paired"] = market_b
+                    row["n_paired"] = int(len(paired))
+                    row["brier_skill_vs_market"] = brier_skill(model_b, market_b)
+            summary.append(row)
     summary_df = pd.DataFrame(summary)
     summary_df.to_csv(OUT / "brier_summary.csv", index=False)
 
@@ -779,6 +949,14 @@ def main() -> None:
         "filled_gaussian_brier": brier(filled_df, "p_gaussian") if len(filled_df) else None,
         "all_decisions_baseline_p_yes": float(val_df["y_yes"].mean()) if len(val_df) else None,
         "all_decisions_gaussian_brier": brier(val_df, "p_gaussian") if len(val_df) else None,
+        "shadow_market_mid_brier": brier(shadow_basis_df, "p_market_mid")
+            if "p_market_mid" in shadow_basis_df.columns else None,
+        "shadow_gaussian_brier": brier(shadow_basis_df, "p_gaussian")
+            if len(shadow_basis_df) else None,
+        "shadow_sigma_implied_over_realized_median": float(
+            shadow_basis_df["sigma_implied_over_realized"].median()
+        ) if "sigma_implied_over_realized" in shadow_basis_df.columns
+            and shadow_basis_df["sigma_implied_over_realized"].notna().any() else None,
         "student_t_full_fit_validator": st_all,
         "student_t_full_fit_filled": st_filled,
         "outputs_dir": str(OUT),

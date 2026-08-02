@@ -5,9 +5,10 @@
 // can fit prospective models that have NOT seen settlement labels at decision
 // time. Joined with kalshi-settlement-validation.jsonl by ticker after close.
 //
-// Schema v1 — intentionally flat / scalar-only / forward-extensible. New
-// features (OFI levels, order-book depth, etc.) get added as new optional
-// fields in v2+ without breaking the analysis script.
+// Schema — intentionally flat / scalar-only / forward-extensible. New
+// features get added as new optional fields without breaking the analysis
+// script. v1: baseline + spot-perp basis. v2 (2026-07-06): touch sizes
+// (best_yes_bid_size / best_no_bid_size) for the microprice devig baseline.
 //
 // This logger does NOT take any action on the market. It runs unconditionally
 // whenever a candidate is scored, regardless of KALSHI_DUST_ENABLED state, so
@@ -16,7 +17,7 @@
 import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
-export const MODEL_BAKEOFF_SCHEMA_VERSION = 1;
+export const MODEL_BAKEOFF_SCHEMA_VERSION = 2;
 
 export interface ModelBakeoffRow {
   schema_version: number;
@@ -37,6 +38,11 @@ export interface ModelBakeoffRow {
   best_yes_ask: number | null;
   best_no_bid: number | null;
   best_no_ask: number | null;
+  // Schema v2: contracts resting at each side's touch. Kalshi books are
+  // bids-only, so by no-arb the yes-ask liquidity IS best_no_bid_size.
+  // Enables the microprice devig estimator in scripts/brier_bakeoff.py.
+  best_yes_bid_size: number | null;
+  best_no_bid_size: number | null;
 
   // Spot + sigma inputs (already in shadow log, but re-included so this file
   // is self-contained for the bakeoff script — single-table join with settlement)
