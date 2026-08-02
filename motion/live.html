@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRTI-EDGE — LIVE SHADOW</title>
+<style>
+  :root {
+    --paper: #f5f2eb;
+    --ink: #16130e;
+    --red: #d0312d;
+    --green: #1c7c54;
+    --amber: #a8720a;
+    --line: #16130e;
+    --dim: #7d766a;
+    --mono: "SF Mono", ui-monospace, Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink); font-family: var(--mono);
+    padding: 22px; max-width: 1180px; margin: 0 auto;
+  }
+  .panel { border: 2px solid var(--line); position: relative; background: var(--paper); margin-top: 18px; }
+  .cap {
+    position: absolute; top: -9px; left: 12px; background: var(--paper);
+    padding: 0 8px; font-size: 13px; letter-spacing: .18em; font-weight: 700;
+  }
+  .cap-r {
+    position: absolute; top: -9px; right: 12px; background: var(--paper);
+    padding: 0 8px; font-size: 11px; letter-spacing: .14em; color: var(--dim);
+  }
+  .micro { font-size: 11px; letter-spacing: .12em; color: var(--dim); }
+
+  /* header */
+  #hdr { display: flex; flex-wrap: wrap; align-items: stretch; border: 2px solid var(--line); }
+  #hdr > div { padding: 12px 16px; }
+  #brand { border-right: 2px solid var(--line); }
+  #brand .t1 { font-size: 11px; letter-spacing: .22em; color: var(--dim); }
+  #brand .t2 { font-size: 28px; font-weight: 800; }
+  #vitals { flex: 1; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; }
+  .vital .k { font-size: 10px; letter-spacing: .16em; color: var(--dim); }
+  .vital .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #kill {
+    border-left: 2px solid var(--line); display: flex; flex-direction: column; justify-content: center;
+  }
+  #kill .armed { color: var(--green); font-weight: 800; font-size: 15px; letter-spacing: .1em; }
+  #stale {
+    display: none; margin-top: 14px; border: 2px solid var(--red); color: var(--red);
+    padding: 8px 12px; font-weight: 800; letter-spacing: .14em; font-size: 13px;
+  }
+
+  /* holdout clock */
+  #soak { padding: 16px 16px 12px; }
+  #soakbar { height: 12px; border: 2px solid var(--line); margin-top: 8px; position: relative; }
+  #soakfill { height: 100%; background: var(--ink); width: 0%; }
+  #soaklbl { display: flex; justify-content: space-between; margin-top: 5px; }
+
+  /* market grid */
+  #grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px; padding: 18px 12px 12px;
+  }
+  .mkt { border: 1.5px solid var(--line); padding: 10px 12px; }
+  .mkt .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .mkt .ser { font-weight: 800; font-size: 15px; letter-spacing: .06em; }
+  .mkt .clk { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--dim); }
+  .mkt .strike { font-size: 11px; color: var(--dim); margin-top: 2px; letter-spacing: .06em; }
+  .prices { display: flex; justify-content: space-between; margin-top: 10px; text-align: center; }
+  .prices .k { font-size: 9px; letter-spacing: .16em; color: var(--dim); }
+  .prices .v { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .edge-pos { color: var(--green); }
+  .edge-neg { color: var(--dim); }
+  .fired { color: var(--red); }
+  .decision { margin-top: 8px; font-size: 11px; letter-spacing: .1em; }
+  .decision .chip { font-weight: 800; padding: 1px 6px; border: 1.5px solid var(--line); }
+  .chip.skip { color: var(--dim); border-color: var(--dim); }
+  .chip.fire { color: var(--paper); background: var(--red); border-color: var(--red); }
+  .mkt .reason { margin-top: 6px; font-size: 10px; color: var(--dim); word-break: break-all; line-height: 1.5; }
+
+  /* ledger */
+  #ledger { padding: 16px 12px 10px; overflow-x: auto; }
+  #ledger table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #ledger th { text-align: left; font-size: 10px; letter-spacing: .14em; color: var(--dim); padding: 4px 8px; border-bottom: 1.5px solid var(--line); }
+  #ledger td { padding: 4px 8px; border-bottom: 1px solid #d8d2c4; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #ledger td.r { color: var(--dim); font-size: 11px; white-space: normal; }
+  footer { margin-top: 16px; line-height: 1.7; }
+</style>
+</head>
+<body>
+  <div id="hdr">
+    <div id="brand">
+      <div class="t1">AURASCOPER · KALSHI 15M</div>
+      <div class="t2">BRTI-EDGE</div>
+      <div class="micro" id="mode">LIVE SHADOW</div>
+    </div>
+    <div id="vitals">
+      <div class="vital"><div class="k">EPOCH (SCANS)</div><div class="v" id="scans">—</div></div>
+      <div class="vital"><div class="k">SHADOW FIRES</div><div class="v" id="fires">—</div></div>
+      <div class="vital"><div class="k">BTC SPOT</div><div class="v" id="spot">—</div></div>
+      <div class="vital"><div class="k">σ ANNUAL</div><div class="v" id="sigma">—</div></div>
+      <div class="vital"><div class="k">SOURCE</div><div class="v" id="src">—</div></div>
+    </div>
+    <div id="kill">
+      <div class="micro">KILL SWITCH</div>
+      <div class="armed">ARMED</div>
+      <div class="micro">ALLOW_ORDERS=0 · launchd-pinned</div>
+    </div>
+  </div>
+
+  <div id="stale">FEED STALE — worker not reporting</div>
+
+  <div class="panel">
+    <div class="cap">THE SOAK</div><div class="cap-r">30H HOLDOUT → STAGE A</div>
+    <div id="soak">
+      <div class="micro">SHADOW RECORD ELAPSED — eligibility is adequacy-report's call, not this bar's</div>
+      <div id="soakbar"><div id="soakfill"></div></div>
+      <div id="soaklbl" class="micro"><span id="soakh">0.0h</span><span>30h</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="cap">THE BOARD</div><div class="cap-r">CROWD vs MODEL · EVERY OPEN MARKET</div>
+    <div id="grid"></div>
+  </div>
+
+  <div class="panel">
+    <div class="cap">THE LEDGER</div><div class="cap-r">EVERY EDGE OVER THRESHOLD · SHADOW ONLY</div>
+    <div id="ledger"><table>
+      <thead><tr><th>TIME</th><th>TICKER</th><th>SIDE</th><th>FAIR</th><th>ASK</th><th>EDGE</th><th>REASON</th></tr></thead>
+      <tbody id="lrows"></tbody>
+    </table></div>
+  </div>
+
+  <footer class="micro">
+    SHADOW-ONLY — no orders can be sent (KALSHI_ALLOW_ORDERS=0 pinned in plist + launcher) ·
+    scoring path frozen @ tag stage-a-holdout-20260801 ·
+    data: /kalshi/state + kalshi-shadow.jsonl · edge shown is UNVALIDATED until Stage A
+  </footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const cents = (p) => p == null ? "—" : (p * 100).toFixed(1) + "¢";
+  let board = null;
+
+  function fired(r) { return r.side && r.side !== "SKIP"; }
+
+  function render() {
+    if (!board) return;
+    const s = board.state;
+    const stale = !s || (s.lastScanAt && board.now - s.lastScanAt > 90_000);
+    $("stale").style.display = stale ? "block" : "none";
+    if (s) {
+      $("scans").textContent = s.totalScans ?? "—";
+      $("fires").textContent = s.totalShadowFires ?? "—";
+      $("spot").textContent = s.spot ? "$" + Math.round(s.spot).toLocaleString() : "—";
+      $("sigma").textContent = s.sigmaAnnual ? (s.sigmaAnnual * 100).toFixed(1) + "%" : "—";
+      $("src").textContent = (s.spotSource ?? "—").toUpperCase();
+    }
+    if (board.holdoutStartMs) {
+      const h = (board.now - board.holdoutStartMs) / 3.6e6;
+      $("soakh").textContent = h.toFixed(1) + "h";
+      $("soakfill").style.width = Math.min(100, h / 30 * 100).toFixed(1) + "%";
+    }
+
+    const grid = $("grid");
+    grid.innerHTML = "";
+    for (const r of board.markets) {
+      const mid = r.best_yes_bid != null && r.best_yes_ask != null
+        ? (r.best_yes_bid + r.best_yes_ask) / 2 : null;
+      const secsLeft = Math.max(0, (r.close_ms - board.now) / 1000);
+      const mm = String(Math.floor(secsLeft / 60)).padStart(2, "0");
+      const ss = String(Math.floor(secsLeft % 60)).padStart(2, "0");
+      const isFire = fired(r);
+      const el = document.createElement("div");
+      el.className = "mkt";
+      el.innerHTML = `
+        <div class="top"><span class="ser">${r.series.replace("KX", "").replace("15M", "")}</span>
+          <span class="clk">${mm}:${ss}</span></div>
+        <div class="strike">STRIKE ${r.strike} · ${r.ticker.split("-").pop()}</div>
+        <div class="prices">
+          <div><div class="k">CROWD</div><div class="v">${cents(mid)}</div></div>
+          <div><div class="k">EDGE</div><div class="v ${isFire ? "fired" : (r.edge > 0 ? "edge-pos" : "edge-neg")}">${r.edge == null ? "—" : (r.edge >= 0 ? "+" : "") + (r.edge * 100).toFixed(1) + "¢"}</div></div>
+          <div><div class="k">MODEL</div><div class="v">${cents(r.fair_yes)}</div></div>
+        </div>
+        <div class="decision"><span class="chip ${isFire ? "fire" : "skip"}">${r.side ?? "—"}</span>
+          <span class="micro"> AGE ${(r.row_age_ms / 1000).toFixed(0)}s</span></div>
+        <div class="reason">${r.reason ?? ""}</div>`;
+      grid.appendChild(el);
+    }
+    if (!board.markets.length) {
+      grid.innerHTML = '<div class="micro" style="padding:8px">no open-market rows in shadow log tail</div>';
+    }
+
+    const rows = (s?.recentCandidates ?? []).slice(-14).reverse();
+    $("lrows").innerHTML = rows.map((c) => `
+      <tr><td>${(c.ts ?? "").slice(11, 19)}</td><td>${c.ticker}</td>
+      <td class="${fired(c) ? "fired" : ""}">${c.side}</td>
+      <td>${cents(c.fair_yes)}</td><td>${cents(c.ask_price)}</td>
+      <td>${c.edge == null ? "—" : "+" + (c.edge * 100).toFixed(1) + "¢"}</td>
+      <td class="r">${c.reason ?? ""}</td></tr>`).join("");
+  }
+
+  async function poll() {
+    try {
+      const r = await fetch("/api/board", { cache: "no-store" });
+      board = await r.json();
+    } catch { if (board) board.state = null; }
+    render();
+  }
+  poll();
+  setInterval(poll, 5000);
+  setInterval(() => { if (board) { board.now += 1000; render(); } }, 1000);
+</script>
+</body>
+</html>
