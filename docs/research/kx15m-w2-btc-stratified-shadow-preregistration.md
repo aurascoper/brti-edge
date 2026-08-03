@@ -65,9 +65,9 @@ For each ticker: the **first** non-SKIP decision of that ticker's life; 1 contra
 
 **Fill rule (anti-quote-fade — the taker mirror of v2 §2.1's maker adverse selection):** a signal at time *t* quoting ask *A* on the fired side fills **only if** the tick archive shows the displayed best ask on that side at *t + 2s* is still ≤ *A*; the fill price is *A* (the signal-time quote, never an improved later one). If the level faded or worsened within 2s, the trade is a **no-fill**: excluded from P&L, counted, and the no-fill rate reported per stratum. The rationale is that the ask you saw is most likely to vanish precisely when the signal is right — marking fills at displayed quotes without a persistence check would let W2 replicate a fade artifact with a tight CI.
 
-**Gate-authority rule (resolved 2026-08-03, before lock):** the **next-scan rule** — fill only if the same ticker's next shadow-log scan (~15s later) shows the fired side's ask ≤ *A*. The 2s tick-archive variant remains buildable (snapshots + deltas channels both archive) but is **descriptive-only, computed post-lock** if at all: the next-scan numbers are now known, so switching to the shorter-horizon variant — which predictably readmits marginal fades — would be a fork under known incentives. The rule applies identically to S1, S2, and S3.
+**Gate-authority rule (resolved 2026-08-03, before lock):** the **next-scan rule** — fill only if the same ticker's next shadow-log row shows the fired side's ask ≤ *A*. The persistence horizon is therefore *the ticker's actual next scan gap*, not a fixed constant — median ~15s under an eligible window, longer across any scan hiccup (which only makes the rule harsher). A first fire with **no usable fired-side quote** is counted as **unquoted** — never silently dropped — and §4's tripwire applies: unquoted > 2% of settled tickers marks the window suspect (collector degradation hides exactly in that path; W1 measured 0/840 while zero was cheap to prove). The 2s tick-archive variant remains buildable (snapshots + deltas channels both archive) but is **descriptive-only, computed post-lock** if at all: the next-scan numbers are now known, so switching to the shorter-horizon variant — which predictably readmits marginal fades — would be a fork under known incentives. The rule applies identically to S1, S2, and S3.
 
-**W1 leak audit of this rule** (targeted book replay, ±15s around each S1 fill): 13 of 71 fills (18%) showed the ask ticking above *A* within 2s of signal — every one a single-tick fade to the next level 1¢ back. Sensitivity: dropping them → ~+2.2¢/ct; repricing them 1¢ worse → ~+3.7¢/ct (vs +3.83¢ as-scored). The disciplined design-corpus estimate therefore brackets the G1 threshold itself. Live note for §11: real taker latency (~1s) is far under the 15s proxy horizon, so Stage B's live fill rate should EXCEED the sim's 59% — a higher live fill rate is expected behavior, not a plumbing fault.
+**W1 leak audit of this rule** (targeted book replay, ±15s around each S1 fill): 13 of 71 fills (18%) showed the ask ticking above *A* within 2s of signal — every one a single-tick fade to the next level 1¢ back. Sensitivity: dropping them → ~+2.2¢/ct; repricing them 1¢ worse → ~+3.7¢/ct (vs +3.83¢ as-scored). **The drop-all-13 figure is a floor, not an estimate** — a single-tick fade at 2s mostly still fills at sub-second live latency — so the truth sits between +2.2¢ and +3.83¢, bracketing the G1 threshold itself. Live note for §11: real taker latency (~1s) is far under the 15s proxy horizon, so Stage B's live fill rate should EXCEED the sim's 59% — a higher live fill rate is expected behavior, not a plumbing fault.
 
 **Fees:** net of the exchange's published taker fee schedule for each series as implemented in the tagged scorer (the general Kalshi formula `0.07 × P × (1−P)` unless the series' schedule differs; the constant actually used is pinned at tag time). Gross-of-fee numbers appear nowhere in gate evaluation.
 
@@ -89,7 +89,7 @@ Prohibited for S1 P&L, with exactly one exception: the §8a day-7 look, computed
 | G4 | Window eligibility (§4) | eligible |
 | G5 | Code/env integrity (§6) | tag match, no edits |
 | G6 | Robustness (leave-one-block-out): aggregate P&L/contract with the single best UTC 6h block **removed** | ≥ **+2.5¢** |
-| G7 | **Fired-subset Brier vs mid**: on ALL S1 first-fire tickers (fills + no-fills — signal question, no fill conditioning), `p_gaussian` Brier skill vs decision-time market mid, one-sided | skill > 0 at z ≥ **1.645** |
+| G7 | **Fired-subset Brier vs mid**: on ALL S1 first-fire tickers (fills + no-fills — signal question, no fill conditioning; unquoted rows excluded for lack of a mid, reported), z from **paired per-ticker Brier differences** (mid−model) — unpaired would be wrong, not merely conservative | z ≥ **1.645**, one-sided |
 
 **§8a — interim look (day 7):** computed mechanically by the tagged scorer; early GO iff one-sided z ≥ 2.8 AND G1, G3, G6, G7 all pass on interim data; otherwise the only output is CONTINUE.
 
@@ -99,13 +99,20 @@ G7's form: climatology was a strawman — W1 showed +71.8% skill vs climatology 
 
 G6 is deliberately leave-one-block-out rather than share-of-total: a share rule goes unstable when total P&L sits near zero (denominator ≈ 0 makes every share explode), while "still clears the gate with the best block removed" is stable everywhere and directly tests that no single regime carried the window.
 
-**All seven → GO** (unlocks §11 Stage B). **Any failure → NO-GO**: the policy is not retested on new windows without a *new* prereg naming what changed and why. S2/S3 results are reported alongside with the same metrics and fill rule but carry no authority.
+**All seven → GO** (unlocks §11 Stage B). **Any failure → NO-GO, named by quadrant** so a mixed outcome cannot become an argument:
+
+- **NO-GO (data)** — G4 fails (window ineligible, or the §4/§5 unquoted tripwire trips)
+- **NO-GO (execution)** — G3 fails purely on no-fills: the strategy cannot get filled at its marks
+- **NO-GO (mechanism)** — G7 fails: the model does not beat the market on its own exceedances; there is no basis for taker edge, and the right next work is *model* research
+- **NO-GO (economics)** — G7 passes but a P&L gate (G1/G2/G6) fails: real signal the taker cannot monetize through spread, fee, and fade; the right next work is *maker structure or execution* research, not model work
+
+The policy is not retested on new windows without a *new* prereg naming what changed and why. S2/S3 results are reported alongside with the same metrics and fill rule but carry no authority.
 
 Power note: at W1's observed per-trade dispersion (recorded at lock from official Stage A output; preliminary ≈ 11–13¢ sd), n ≈ 250 filled gives se ≈ 0.8¢ — G1+G2 are comfortably detectable if the true effect is anywhere near the design-corpus +7¢, and a true-zero policy fails with high probability.
 
 ## 9. Scoring instrument
 
-`scripts/brier_bakeoff.py` at the post-W1 patch tag (the W1 Stage A run patches the `filled n=0` crash after the W1 freeze lifts; that tag is recorded HERE at lock: `____________`), plus the §5 replay — **including the fill rule (persistence check or named fallback) and the pinned fee constants** — implemented as a read-only script committed *before* lock. Which persistence variant shipped (2s tick-archive or next-scan fallback) is recorded here at lock: `____________`. The 19h scratchpad scorer is design-corpus tooling and is superseded: note its +7.04¢ BTC figure was marked at displayed quotes with no persistence haircut — the design-corpus number the §5 rule exists to discipline.
+`scripts/brier_bakeoff.py` at the post-W1 patch tag (the W1 Stage A run patched the `filled n=0` crash after the W1 freeze lifted; tag: **`w2-scorer-final-20260803`**), plus the §5 replay — **including the fill rule, unquoted counting, pinned fee constants, the full G1–G7 battery, and the §8a `--interim` boolean-only mode** — implemented as the read-only script `scripts/w2_replay_scorer.py`, committed before lock at the same tag. Persistence variant shipped: **next-scan (gate authority, §5)**. The 19h scratchpad scorer is design-corpus tooling and is superseded: note its +7.04¢ BTC figure was marked at displayed quotes with no persistence haircut — the design-corpus number the §5 rule exists to discipline.
 
 ## 10. What this window cannot conclude
 
@@ -133,9 +140,13 @@ kill switch   : KALSHI_ALLOW_ORDERS reverts to 0 at any stop condition; plist pi
 **How stops read — pre-specified so an early stop is not an interpretation fight:**
 the *evidence stop* (drawdown) counts as **Stage B FAIL** — evidence against the W2 result at live
 scale, full stop. The *plumbing trip* is operational, not evidential: a pause that resumes unless
-inspection finds the live path diverging from the §5 sim (wrong fills, wrong fees, wrong size), in
-which case the round is **VOID (plumbing)** and may be restarted exactly once after the fault is
-fixed. Rationale: at any plausible win rate, two consecutive losses arrive before trade 40 with
+inspection finds the live path diverging from the §5 sim (wrong fills, wrong fees, wrong size, or
+**re-fire divergence**: §5 is first-fire-only with no re-fire after a no-fill, so the live worker
+must be too — a live re-fire after a missed quote masquerades as extra fills rather than the
+sim/live divergence it is), in which case the round is **VOID (plumbing)** and may be restarted
+exactly once after the fault is fixed. Expected-behavior note: live taker latency (~1s) is far
+below the §5 persistence horizon, so a live fill rate ABOVE the sim's ~59% is anticipated, not a
+plumbing fault. Rationale: at any plausible win rate, two consecutive losses arrive before trade 40 with
 near-certainty (~99% at 60% win rate, ~95% at 70%), so a *terminal* consecutive-loss stop would
 guarantee Stage B never completes its sample — a drawdown stop sized to the cap preserves it.
 
@@ -153,6 +164,10 @@ All changes made after the W1 19h peek and 30h Stage A results were known, so fu
 | Window 72h → 14d (§4) | **neutral/necessary** | sd corrected 11–13¢ → ~48¢ (first-principles binary formula); 72h could not reach G3 |
 | G2 two-sided CI → one-sided z ≥ 1.70 (§8) | **softening — justified** | hypothesis is directional; two-sided at corrected sd required a ~7¢ true edge. One-sided is the only softening; α preserved jointly with §8a interim (P(GO\|0) = 3.4% by simulation) |
 | §11 stop: terminal 2-consec-loss → drawdown stop + plumbing trip | **neutral** | consecutive-loss stop fired with ~99% probability before sample completion — de facto exit, not a stop |
+| Unquoted counter + §4 tripwire (§5) | **counting** | first-fire-without-quote silently dropped; 0/840 in W1 — counter added while zero was cheap to prove |
+| Fee determinism `ceil(round(·,9))` (§5 scorer) | **hygiene** | float wobble at exact-cent boundaries was conservative-only; reproducibility for a gate |
+| G2 stated in z-form; G7 paired-differences spec; NO-GO quadrant taxonomy (§8) | **wording** | prose now equals code; mechanism/economics quadrants named pre-outcome |
+| §11 re-fire parity in plumbing checklist | **counting** | live re-fire after no-fill would masquerade as extra fills |
 
 ## 13. Locking procedure
 
