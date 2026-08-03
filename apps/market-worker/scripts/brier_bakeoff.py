@@ -157,11 +157,22 @@ def merge_layer2_with_settlements(layer2: pd.DataFrame, validator: pd.DataFrame)
     return merged
 
 
+# Column schema every filled_df consumer touches (dropna subsets, groupbys,
+# clip/devig transforms). A pure-shadow window has zero fills; returning an
+# empty frame WITH this schema lets the whole filled-universe analysis flow
+# through as empty instead of KeyError-ing (first hit: 30h shadow soak,
+# 2026-08-03, filled n=0).
+FILLED_COLUMNS = [
+    "ticker", "series", "asset", "side", "fair_yes", "p_gaussian",
+    "y_yes", "close_time", "utc_hour", "realized_pnl_usd",
+]
+
+
 def load_filled_trades() -> pd.DataFrame:
     """Universe B: candidates the executor actually submitted, with realized PnL."""
     state_path = LOGS / "kalshi-dust-state.json"
     if not state_path.exists():
-        return pd.DataFrame()
+        return pd.DataFrame(columns=FILLED_COLUMNS)
     state = json.loads(state_path.read_text())
     out = []
     for c in state.get("candidates", []):
@@ -224,6 +235,12 @@ def brier(df: pd.DataFrame, p_col: str, y_col: str = "y_yes") -> float:
 
 def reliability(df: pd.DataFrame, p_col: str, y_col: str = "y_yes") -> pd.DataFrame:
     d = df.dropna(subset=[p_col, y_col]).copy()
+    if d.empty:
+        # Empty groupby.apply returns a DataFrame, not a Series — assigning it
+        # to the single "brier" column raises. Short-circuit with the schema.
+        return pd.DataFrame(
+            columns=["bucket", "n", "mean_p", "actual", "gap", "brier"]
+        )
     bins = np.arange(0.0, 1.01, 0.1)
     d["bucket"] = pd.cut(d[p_col], bins=bins, include_lowest=True, right=False)
     g = d.groupby("bucket", observed=True)
@@ -254,6 +271,10 @@ CLIP_RANGES = [(0.05, 0.95), (0.10, 0.90), (0.20, 0.80), (0.30, 0.70), (0.35, 0.
 
 def add_clip_models(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
+    # A zero-fill universe (pure-shadow window) arrives as an empty frame with
+    # no columns at all — clipping would KeyError on p_gaussian.
+    if d.empty or "p_gaussian" not in d.columns:
+        return d
     for lo, hi in CLIP_RANGES:
         d[f"p_clip_{lo:.2f}_{hi:.2f}"] = d["p_gaussian"].clip(lo, hi)
     return d
@@ -782,6 +803,8 @@ def by_asset(df: pd.DataFrame, p_cols: list[str]) -> pd.DataFrame:
             if col in g.columns:
                 row[col] = brier(g, col)
         rows.append(row)
+    if not rows:
+        return pd.DataFrame(columns=["asset", "n"])
     return pd.DataFrame(rows).sort_values("asset")
 
 
@@ -798,6 +821,8 @@ def by_hour(df: pd.DataFrame, p_cols: list[str]) -> pd.DataFrame:
             if col in g.columns:
                 row[col] = brier(g, col)
         rows.append(row)
+    if not rows:
+        return pd.DataFrame(columns=["utc_hour", "n"])
     return pd.DataFrame(rows).sort_values("utc_hour")
 
 
