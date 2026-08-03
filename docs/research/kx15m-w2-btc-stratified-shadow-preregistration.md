@@ -77,7 +77,7 @@ Scoring path (`worker.ts`, `modelBakeoffLogger.ts`, `brier_bakeoff.py`, strategy
 
 ## 7. Interim looks
 
-Prohibited for S1 P&L. Pipeline-health monitoring (log freshness, launchd status, coverage) is permitted and encouraged; it reads liveness, not outcomes. The live board (`motion/live.html`) may run — it displays current-market state, not cumulative W2 P&L; its ledger panel MUST NOT be aggregated by eye into an early verdict that alters any decision. (Peeking cannot be technically prevented; it is hereby made *procedurally meaningless* — §8 is the only decision rule and it runs once.)
+Prohibited for S1 P&L, with exactly one exception: the §8a day-7 look, computed mechanically by the tagged scorer, disclosing **only** GO or CONTINUE — no point estimates, no per-stratum numbers, no fill counts. Pipeline-health monitoring (log freshness, launchd status, coverage) is permitted and encouraged; it reads liveness, not outcomes. The live board (`motion/live.html`) may run — it displays current-market state, not cumulative W2 P&L; its ledger panel MUST NOT be aggregated by eye into an early verdict that alters any decision. (Peeking cannot be technically prevented; it is hereby made *procedurally meaningless* — §8 evaluated at close, plus the single §8a boolean, are the only decision rules.)
 
 ## 8. Gates — S1 (KXBTC15M) only, evaluated once at window close
 
