@@ -179,4 +179,4 @@ This document is LOCKED by the commit with message `prereg: lock KX15M_FV_TAKER_
 
 Provenance of the lock authority: the draft originally reserved the lock commit to the operator alone. The operator's red-team reviewed the instrument line-by-line (fill block, fee function, thresholds, OC verification — all independently reproduced), signed off on 2026-08-03, confirmed §11's three envelope parameters (sizing adjusted to 1 contract on the reviewer's own analysis), and explicitly delegated the commit in-session: *"Adjust or annotate, then lock — the clock's waiting on an hour boundary, not on me."* The provision's purpose — no unreviewed lock — is satisfied; the delegation is recorded in §12.
 
-**Lock commit hash:** `____________` (appended post-lock)
+**Lock commit hash:** `dbbe3e1`
