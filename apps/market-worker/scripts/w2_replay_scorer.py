@@ -59,7 +59,9 @@ def ts_ms(iso):
 
 
 def fee(p):
-    return 0.07 * p * (1 - p)
+    # Kalshi rounds the per-order fee UP to the next cent. At 1 contract this
+    # is worth ~0.3-0.5¢/trade vs the raw formula — flattery if omitted.
+    return math.ceil(0.07 * p * (1 - p) * 100) / 100
 
 
 def stratum(series):

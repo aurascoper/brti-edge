@@ -44,8 +44,20 @@ Rationale: one primary endpoint avoids multiplicity correction entirely; "droppi
 ## 4. Validation window
 
 - **Start:** first UTC hour boundary ≥ the lock commit timestamp (data logged between W1 close and lock is design corpus, not W2).
-- **Duration:** 72 hours (≈ 288 KXBTC15M settlements at 4/hour).
-- **Eligibility:** the existing holdout policy applied to the W2 span — worst-channel coverage ≥ 99%, no channel with a continuous gap > 1h, per `isContinuousHoldoutEligible()`. An ineligible window is scored as **NO-GO (data)**, not retried silently; the next clean 72h span becomes W2′ under this same document.
+- **Duration:** **14 days** (≈ 1,344 KXBTC15M signals; ≈ 790 expected fills at W1's 59% fill rate). 72h was rejected by arithmetic: at the observed per-trade sd (~48¢, = 100·√(p̄(1−p̄)) for midrange binary entries), 72h yields ~170 fills — an expected NO-GO (execution) on G3 before any signal question is asked.
+- **Single pre-specified interim look at day 7** (§8a): early GO permitted only at a deliberately harsh bound (one-sided z ≥ 2.8 with all other gates passing at interim); otherwise CONTINUE, with **only the boolean disclosed** — no point estimates, no per-stratum numbers — so a continue-look leaks minimal information to the operator.
+- **Eligibility:** the existing holdout policy applied to the W2 span — worst-channel coverage ≥ 99%, no channel with a continuous gap > 1h, per `isContinuousHoldoutEligible()`. An ineligible window is scored as **NO-GO (data)**, not retried silently; the next clean 14-day span becomes W2′ under this same document.
+
+**Operating characteristics** (Monte Carlo, 20k trials/row, all P&L gates jointly — G1, G2 one-sided z≥1.70 final / z≥2.8 interim, G3, G6 — at sd 48¢, 96 signals/day, 59% fill):
+
+| True edge | P(GO) | P(early day-7 GO) |
+|---|---|---|
+| 0¢ | **3.4%** | 0.3% |
+| +2.5¢ | 36.3% | 3.7% |
+| +3.83¢ (W1 disciplined estimate) | 65.9% | 10.9% |
+| +7¢ (W1 undisciplined estimate) | 98.8% | 54.7% |
+
+Read before interpreting any verdict: a NO-GO at a true +2.5¢ edge is the *most likely outcome* (64%) — the gates are sized to admit only edges meaningfully larger than their own threshold, and the eventual verdict must be read at that weight.
 
 ## 5. Trade simulation (what "the signal's P&L" means)
 
@@ -53,7 +65,9 @@ For each ticker: the **first** non-SKIP decision of that ticker's life; 1 contra
 
 **Fill rule (anti-quote-fade — the taker mirror of v2 §2.1's maker adverse selection):** a signal at time *t* quoting ask *A* on the fired side fills **only if** the tick archive shows the displayed best ask on that side at *t + 2s* is still ≤ *A*; the fill price is *A* (the signal-time quote, never an improved later one). If the level faded or worsened within 2s, the trade is a **no-fill**: excluded from P&L, counted, and the no-fill rate reported per stratum. The rationale is that the ask you saw is most likely to vanish precisely when the signal is right — marking fills at displayed quotes without a persistence check would let W2 replicate a fade artifact with a tight CI.
 
-*Fallback, named now:* if parsing the collector's delta archive proves infeasible before lock, the persistence check degrades to the next-scan rule — fill only if the same ticker's next shadow-log scan (~15s later) shows the fired side's ask ≤ *A* — which is strictly harsher. Whichever rule ships in the tagged scorer is recorded at lock and applies identically to S1, S2, and S3 (under optimistic marking, S3 "edges" reappearing would measure artifact stability, not mechanism failure — the falsification control is only meaningful under the same fill discipline).
+**Gate-authority rule (resolved 2026-08-03, before lock):** the **next-scan rule** — fill only if the same ticker's next shadow-log scan (~15s later) shows the fired side's ask ≤ *A*. The 2s tick-archive variant remains buildable (snapshots + deltas channels both archive) but is **descriptive-only, computed post-lock** if at all: the next-scan numbers are now known, so switching to the shorter-horizon variant — which predictably readmits marginal fades — would be a fork under known incentives. The rule applies identically to S1, S2, and S3.
+
+**W1 leak audit of this rule** (targeted book replay, ±15s around each S1 fill): 13 of 71 fills (18%) showed the ask ticking above *A* within 2s of signal — every one a single-tick fade to the next level 1¢ back. Sensitivity: dropping them → ~+2.2¢/ct; repricing them 1¢ worse → ~+3.7¢/ct (vs +3.83¢ as-scored). The disciplined design-corpus estimate therefore brackets the G1 threshold itself. Live note for §11: real taker latency (~1s) is far under the 15s proxy horizon, so Stage B's live fill rate should EXCEED the sim's 59% — a higher live fill rate is expected behavior, not a plumbing fault.
 
 **Fees:** net of the exchange's published taker fee schedule for each series as implemented in the tagged scorer (the general Kalshi formula `0.07 × P × (1−P)` unless the series' schedule differs; the constant actually used is pinned at tag time). Gross-of-fee numbers appear nowhere in gate evaluation.
 
@@ -69,13 +83,17 @@ Prohibited for S1 P&L. Pipeline-health monitoring (log freshness, launchd status
 
 | # | Gate | Threshold |
 |---|---|---|
-| G1 | Aggregate net P&L per contract (§5 sim, filled trades only) | ≥ **+2.5¢** |
-| G2 | 95% CI lower bound on mean P&L/contract | > **0¢** |
+| G1 | Aggregate net P&L per contract (§5 sim, filled trades only, ceil-to-cent fees) | ≥ **+2.5¢** |
+| G2 | **One-sided** test of mean P&L/contract > 0 (directional hypothesis; final bound z ≥ 1.70, α-adjusted for the §8a interim look) | z ≥ **1.70** |
 | G3 | Sample size *n* | ≥ **200** |
 | G4 | Window eligibility (§4) | eligible |
 | G5 | Code/env integrity (§6) | tag match, no edits |
 | G6 | Robustness (leave-one-block-out): aggregate P&L/contract with the single best UTC 6h block **removed** | ≥ **+2.5¢** |
-| G7 | Decision-time Brier skill of `p_gaussian` vs climatology on S1 settled set | ≥ **+5%** |
+| G7 | **Fired-subset Brier vs mid**: on ALL S1 first-fire tickers (fills + no-fills — signal question, no fill conditioning), `p_gaussian` Brier skill vs decision-time market mid, one-sided | skill > 0 at z ≥ **1.645** |
+
+**§8a — interim look (day 7):** computed mechanically by the tagged scorer; early GO iff one-sided z ≥ 2.8 AND G1, G3, G6, G7 all pass on interim data; otherwise the only output is CONTINUE.
+
+G7's form: climatology was a strawman — W1 showed +71.8% skill vs climatology *while losing to mid by 32.9%* overall. The mechanism that matters is winning **on the exceedances**: W1 design-corpus fired-subset result was S1 +4.4% vs mid (z = +1.40, n = 120, suggestive not significant; projects to z ≈ 4.7 at W2's fired n if real), with the monotone S1 > S2 > S3 ordering (+4.4 / +1.0 / −5.7) matching the §2 mechanism.
 
 **Unit of n (G1, G2, G3, and the SE arithmetic all use the same unit):** *n* = settled KXBTC15M tickers whose first non-SKIP decision produced a **fill** under the §5 rule. The ≈288 settlements in 72h is an upper bound, discounted by the no-fire rate (W1 preliminary: ~0%, every settled ticker fired at least once) and the no-fill rate (unknown until the persistence rule runs — this is the number most likely to bite G3). A G3 failure caused *purely* by no-fills is reported as **NO-GO (execution)** — distinct from NO-GO (signal) — since it means the strategy cannot get filled at its marks, which is its own kind of no.
 
@@ -123,6 +141,19 @@ guarantee Stage B never completes its sample — a drawdown stop sized to the ca
 
 A NO-GO leaves all order gates at 0/0/0 and R7 CLOSED.
 
-## 12. Locking procedure
+## 12. Amendment log (post-peek changes, direction declared)
+
+All changes made after the W1 19h peek and 30h Stage A results were known, so future readers can discount honestly:
+
+| Change | Direction | Rationale |
+|---|---|---|
+| Fill rule added (§5, next-scan persistence) | **harshening** | W1 fade diagnostic: no-fills' counterfactual +11.8¢ vs fills +3.83¢ — quote fade was the artifact |
+| Fees ceil-to-cent (§5, G1) | **harshening** | exchange rounds up; raw formula flattered by ~0.33¢/trade (verified) |
+| G7: climatology → fired-subset-vs-mid (§8) | **harshening** | climatology gate passed at +71.8% while the model lost to mid by 32.9% — strawman replaced by the actual mechanism test |
+| Window 72h → 14d (§4) | **neutral/necessary** | sd corrected 11–13¢ → ~48¢ (first-principles binary formula); 72h could not reach G3 |
+| G2 two-sided CI → one-sided z ≥ 1.70 (§8) | **softening — justified** | hypothesis is directional; two-sided at corrected sd required a ~7¢ true edge. One-sided is the only softening; α preserved jointly with §8a interim (P(GO\|0) = 3.4% by simulation) |
+| §11 stop: terminal 2-consec-loss → drawdown stop + plumbing trip | **neutral** | consecutive-loss stop fired with ~99% probability before sample completion — de facto exit, not a stop |
+
+## 13. Locking procedure
 
 This document is LOCKED when the operator (not the assistant) commits it with message `prereg: lock KX15M_FV_TAKER_BTC_W2`, fills §9's tag blank and §11's three OPERATOR-DEFAULT confirmations, and the commit lands **before** the §4 window start. The lock commit hash is then appended here in a single follow-up commit. Until then: DRAFT, no standing.
