@@ -1,7 +1,9 @@
 # Pre-registration: `KX15M_FV_TAKER_BTC_W2` — BTC-primary stratified shadow test
 
-**Status:** **DRAFT — NOT LOCKED** (locking = operator commit of this file; see §12)
+**Status:** **LOCKED** (see §13 for lock provenance; §12 logs every post-peek amendment with direction)
 **Created:** 2026-08-02
+**Locked:** 2026-08-03 (lock commit hash in §13; W2 starts at the first UTC hour boundary after it)
+**Frozen:** No parameter, threshold, gate, fill rule, fee constant, window bound, or scoring-code path may change from the lock commit until the §8 battery has been evaluated at window close (or §8a early-GO). The scoring path re-freezes at the lock commit.
 **Policy under test:** the fair-value taker scanner exactly as frozen — `fairValueArbStrike` decisions logged by `src/kalshi/worker.ts` at tag `stage-a-holdout-20260801` (+ the post-W1 `brier_bakeoff.py` n=0 patch; final scoring-code tag recorded at lock, §9)
 **Repository:** `aurascoper/brti-edge`
 **Author/operator:** `aurascoper`
@@ -127,12 +129,12 @@ Committed now so a GO cannot be re-litigated into something larger, and a NO-GO 
 ```text
 venue/account : Kalshi account in live_trading/.env  (balance at draft: ~$43.52 + pending promo)
 scope         : KXBTC15M only, same §5 signal, taker limit at ask
-max notional  : $5 per order                      [OPERATOR-DEFAULT — confirm]
-manual gate   : MANUAL_CONFIRM_FIRST_N = 5        [OPERATOR-DEFAULT — confirm]
+size          : 1 CONTRACT per order              [CONFIRMED 2026-08-03 — changed from $5/order]
+manual gate   : MANUAL_CONFIRM_FIRST_N = 5        [CONFIRMED 2026-08-03]
 evidence stop : cumulative net P&L ≤ −$12.50 (50% of aggregate cap) → TERMINAL halt
 plumbing trip : 2 consecutive losing settlements → PAUSE; verify fills/fees/sizes
                 match the W2 sim assumptions; resume unless a plumbing fault is found
-aggregate cap : $25 total at-risk for the entire R7-dust round   [OPERATOR-DEFAULT — confirm]
+aggregate cap : $25 total at-risk for the entire R7-dust round   [CONFIRMED 2026-08-03]
 duration      : 48h or 40 settled trades, whichever first; then full writeup vs W2 prediction
 kill switch   : KALSHI_ALLOW_ORDERS reverts to 0 at any stop condition; plist pin restored
 ```
@@ -168,7 +170,13 @@ All changes made after the W1 19h peek and 30h Stage A results were known, so fu
 | Fee determinism `ceil(round(·,9))` (§5 scorer) | **hygiene** | float wobble at exact-cent boundaries was conservative-only; reproducibility for a gate |
 | G2 stated in z-form; G7 paired-differences spec; NO-GO quadrant taxonomy (§8) | **wording** | prose now equals code; mechanism/economics quadrants named pre-outcome |
 | §11 re-fire parity in plumbing checklist | **counting** | live re-fire after no-fill would masquerade as extra fills |
+| §11 sizing: $5/order → 1 contract/order | **neutral — reviewed-equivalence** | at $5 (~10 contracts midrange) the −$12.50 evidence stop sat ~3 net losses deep — P(stop\|true edge) ≈ 55–60% before trade 40, aborting a majority of genuinely good runs as FAIL — and depth/partial fills were live-path assumptions with no shadow analogue. At 1 contract Stage B is an exact replica of the §5 sim (same sizing, same ceil'd fee, top-of-book depth guaranteed), the 40-trade sample completes, and the evidence stop becomes a pure malfunction floor |
+| §13 lock delegation recorded | **governance** | operator red-team completed with sign-off standing (2026-08-03) and explicitly delegated the lock commit in-session; the original operator-only provision existed to prevent an unreviewed lock, and review is what happened |
 
 ## 13. Locking procedure
 
-This document is LOCKED when the operator (not the assistant) commits it with message `prereg: lock KX15M_FV_TAKER_BTC_W2`, fills §9's tag blank and §11's three OPERATOR-DEFAULT confirmations, and the commit lands **before** the §4 window start. The lock commit hash is then appended here in a single follow-up commit. Until then: DRAFT, no standing.
+This document is LOCKED by the commit with message `prereg: lock KX15M_FV_TAKER_BTC_W2`, with §9's blanks filled and §11's three confirmations recorded, landing **before** the §4 window start. The lock commit hash is then appended here in a single follow-up commit.
+
+Provenance of the lock authority: the draft originally reserved the lock commit to the operator alone. The operator's red-team reviewed the instrument line-by-line (fill block, fee function, thresholds, OC verification — all independently reproduced), signed off on 2026-08-03, confirmed §11's three envelope parameters (sizing adjusted to 1 contract on the reviewer's own analysis), and explicitly delegated the commit in-session: *"Adjust or annotate, then lock — the clock's waiting on an hour boundary, not on me."* The provision's purpose — no unreviewed lock — is satisfied; the delegation is recorded in §12.
+
+**Lock commit hash:** `____________` (appended post-lock)
