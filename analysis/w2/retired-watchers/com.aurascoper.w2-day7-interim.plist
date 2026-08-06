@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- W2 prereg §8a day-7 interim look — fires once at 2026-08-10T19:00Z
+     (14:00 America/Chicago). Boolean-only output per §7. Remove after W2:
+     launchctl bootout gui/501/com.aurascoper.w2-day7-interim -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.aurascoper.w2-day7-interim</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/python3</string>
+    <string>/Users/aurascoper/Developer/brti-edge/apps/market-worker/scripts/w2_replay_scorer.py</string>
+    <string>--since</string><string>2026-08-03T19:00:00Z</string>
+    <string>--until</string><string>2026-08-10T19:00:00Z</string>
+    <string>--interim</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Month</key><integer>8</integer><key>Day</key><integer>10</integer><key>Hour</key><integer>14</integer><key>Minute</key><integer>0</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>/Users/aurascoper/Developer/brti-edge/analysis/w2/interim-day7.txt</string>
+  <key>StandardErrorPath</key><string>/Users/aurascoper/Developer/brti-edge/analysis/w2/interim-day7.err</string>
+</dict>
+</plist>
