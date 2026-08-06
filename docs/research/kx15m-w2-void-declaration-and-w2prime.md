@@ -94,6 +94,24 @@ hour, same document, same thresholds, 14 days, same single day-7 interim — now
 only through the close wrapper. Eligibility is measured by the same §4 rule that just
 voided W2, computed continuously rather than discovered by audit.
 
+## 6a. W2′ lock record (appended at restart, 2026-08-06)
+
+The Bin A/B/C set landed as commits `2264e3b` (conformance), `371e754` (amendments),
+`a56cad3` (reproducibility) on top of declaration `2c07abb`. Instrument tag:
+**`w2prime-instrument-20260806`**. Collector and worker restarted at ~06:40Z so the
+running code equals the tag (F6 part-file writer, F8 staleness guard, F10 unit guard
+active). **W2′ window: 2026-08-06T07:00:00Z → 2026-08-20T07:00:00Z**, freeze re-engaged
+from the start boundary. Watchers armed against the close wrapper (never the bare
+scorer): `com.aurascoper.w2prime-day7-interim` (2026-08-13T07:05Z) and
+`com.aurascoper.w2prime-close` (2026-08-20T07:05Z); repo copies under
+`apps/market-worker/launchd/`. Env-at-lock vector (in-document per annex §4): worker
+launchd env with `KALSHI_ALLOW_ORDERS=0`, `AUTO_SUBMIT=0`, `DUST_ENABLED=0`,
+`KALSHI_SCAN_INTERVAL_MS` at code default 15000, strategy knobs at code defaults,
+`KALSHI_SPOT_MAX_AGE_MS` at new code default 30000, `calibration.json` absent.
+Reproducibility note recorded before the window: the OC table reproduces (F11 closed);
+the W1 fade-audit archive covers 39/93 fills — the 13/71 figure stands as directionally
+supported, not exactly reproduced (annex §6).
+
 ## 7. Review-chain note (recorded per the lock's provenance discipline)
 
 Two audit findings land on the review chain itself, recorded here as the lock recorded its
