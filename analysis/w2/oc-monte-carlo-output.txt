@@ -1,0 +1,7 @@
+# OC Monte Carlo — trials/row=20000 seed=20260806
+# sd=48¢  96 signals/day × 14d × 59% fill  G1>=2.5¢  G3>=200  z_final>=1.7  z_interim>=2.8
+ true edge |   P(GO) | P(early GO) | prereg claim
+     0.00¢ |   3.6% |       0.3% | P(GO) 3.4%, early 0.3%
+     2.50¢ |  37.7% |       4.0% | P(GO) 36.3%, early 3.7%
+     3.83¢ |  67.9% |      11.6% | P(GO) 65.9%, early 10.9%
+     7.00¢ |  99.0% |      53.9% | P(GO) 98.8%, early 54.7%

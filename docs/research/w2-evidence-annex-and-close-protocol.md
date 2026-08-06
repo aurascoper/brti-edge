@@ -107,10 +107,18 @@ No gate line — interim or final — is read from the bare scorer again. The in
   checkable; if the committed run disagrees materially, the §12 log records the true OC
   before W2′ starts.
 - **W1 fade audit** (`apps/market-worker/scripts/w1_fade_audit.py`): replays the book
-  ±15 s around each W1 S1 fill from the collector tick archive, recomputing the
-  "13 of 71 fills fade within 2 s" claim and the +2.2¢/+3.7¢ sensitivity brackets;
-  committed with output where the archive spans the fills, with unreachable fills
-  enumerated rather than skipped.
+  ±15 s around each W1 S1 fill from the collector tick archive. **Result (committed
+  output `analysis/w2/w1-fade-audit-output.txt`): of 93 pre-lock S1 fills, the archive
+  covers 39 — 4 FADE_2S / 35 STABLE (10.3% over covered, vs the claimed 13/71 = 18%) —
+  and 54 are INSUFFICIENT (no orderbook snapshot at/before signal), each enumerated.**
+  Disposition of F12: the claim reproduces *directionally* (2 s single-tick fades are
+  real and material) but the exact 13/71 is **not recoverable from this archive** —
+  the snapshot channel does not span 58% of the fills. That coverage hole is itself a
+  finding: any future "targeted book replay" claim must state its archive coverage
+  alongside its rate, and the W2′ close wrapper's G4 now measures exactly this class
+  of degradation. The covered-subset sensitivity (as-scored +10.92¢, drop-fades
+  +9.46¢, reprice −0.10¢ effect) is subset-selected and must not be compared to the
+  official 71-fill brackets.
 - Band-divergence check (§1): `ceil(round(c·p·(1−p)·100, 9))/100` for c ∈ {0.07, 0.0625}
   over p = 0.01…0.99 — divergence exactly at {18, 19, 20, 80, 81, 82}¢.
 
