@@ -12,6 +12,11 @@
 // ticker symbols (BTCUSDT, ETHUSDT, etc.) and response shape. Override via
 // SPOT_FEED_REST env if needed (e.g., switch to coinbase, cryptocompare).
 const BINANCE_REST = process.env.SPOT_FEED_REST ?? "https://api.binance.us";
+// Staleness bound for served prices/σ (audit F8; W2′ §12 amendment). The
+// poll cadence is ~3s, so 30s tolerates transient jitter while refusing to
+// quote through a real outage. Perp feed enforces 10s; this is the laxer
+// bound because REST polling has coarser cadence than the perp WS.
+const MAX_SPOT_AGE_MS = Number(process.env.KALSHI_SPOT_MAX_AGE_MS ?? 30_000);
 
 export interface SpotTick {
   ts: number; // unix ms
@@ -51,6 +56,13 @@ export class SpotFeed {
   }
 
   getSpot(): number | null {
+    // Staleness guard (W2′ amendment, audit F8): never serve a price older
+    // than MAX_SPOT_AGE_MS. Without it a feed outage freezes `latest`
+    // forever and the scanner manufactures phantom edges against a dead
+    // price. A null here flows to SKIP downstream — harshening only.
+    if (this.latest !== null && Date.now() - this.latestAt > MAX_SPOT_AGE_MS) {
+      return null;
+    }
     return this.latest;
   }
 
@@ -58,6 +70,9 @@ export class SpotFeed {
   // Uses simple sample stdev × √(periods_per_year).
   getSigmaAnnual(): number | null {
     if (this.tape.length < 10) return null;
+    // Same staleness guard as getSpot(): a σ computed from a dead tape is
+    // a phantom volatility estimate (audit F8).
+    if (Date.now() - this.latestAt > MAX_SPOT_AGE_MS) return null;
     const logRets: number[] = [];
     for (let i = 1; i < this.tape.length; i++) {
       const prev = this.tape[i - 1]!.price;

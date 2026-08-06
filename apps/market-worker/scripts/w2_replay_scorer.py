@@ -99,7 +99,15 @@ def main():
     ap.add_argument("--until", required=True)
     ap.add_argument("--interim", action="store_true",
                     help="§8a day-7 look: full battery at harsh bound, prints ONLY GO/CONTINUE")
+    ap.add_argument("--settled-listing", default=None,
+                    help="JSON file: exchange's settled KXBTC15M listing for the span "
+                         "(from w2_close_check.py). Enables the §4 fire-coverage tripwire "
+                         "(W2′ amendment, audit F5): denominator is the exchange's list, "
+                         "not this repo's own capture. REQUIRED with --interim.")
     args = ap.parse_args()
+    if args.interim and not args.settled_listing:
+        ap.error("--interim requires --settled-listing: a GO must never be minted "
+                 "without the fire-coverage tripwire evaluated (audit F2/F5)")
     t0, t1 = ts_ms(args.since), ts_ms(args.until)
     out = (lambda *a, **k: None) if args.interim else print
 
@@ -156,9 +164,38 @@ def main():
     out(f"settled tickers in window: {len(settle)}")
     out(f"first-fire signals: {n_signals}  filled: {len(trades)}  "
         f"no-fill: {len(no_fills)} ({len(no_fills) / max(1, n_signals) * 100:.1f}%)")
+    # Unquoted stays COUNTED (§5 — never a silent drop) but is a diagnostic
+    # only: structurally it cannot fire (post-null-book-gate asks are non-null
+    # by construction — audit F5). The §4 tripwire role moved to fire-coverage.
     uq_rate = len(unquoted) / max(1, len(settle))
-    out(f"unquoted first-fires: {len(unquoted)} ({uq_rate * 100:.2f}% of settled)"
-        + ("  ⚠ TRIPWIRE — window suspect (§4)" if uq_rate > UNQUOTED_TRIPWIRE else ""))
+    out(f"unquoted first-fires: {len(unquoted)} ({uq_rate * 100:.2f}% of settled) [diagnostic]")
+
+    # §4 tripwire (W2′ amendment, audit F1/F5): fire-coverage against the
+    # EXCHANGE's settled listing. The validator's own capture shrinks under
+    # the same degradation it must detect; the exchange list does not.
+    suspect = False
+    if args.settled_listing:
+        with open(args.settled_listing) as f:
+            listing = json.load(f)
+        ex_tickers = set()
+        for item in listing:
+            tk = item if isinstance(item, str) else item.get("ticker")
+            ct = None if isinstance(item, str) else item.get("close_time")
+            if tk and (ct is None or t0 <= ts_ms(ct) <= t1):
+                ex_tickers.add(tk)
+        seen = {t for t, rows in per_ticker.items() if rows}
+        uncovered = sorted(ex_tickers - seen)
+        fc_rate = len(uncovered) / max(1, len(ex_tickers))
+        suspect = fc_rate > UNQUOTED_TRIPWIRE
+        out(f"fire-coverage: {len(ex_tickers) - len(uncovered)}/{len(ex_tickers)} exchange-settled "
+            f"tickers have shadow rows — {len(uncovered)} uncovered ({fc_rate * 100:.2f}%)"
+            + ("  ⚠ TRIPWIRE — window suspect (§4)" if suspect else ""))
+        if uncovered:
+            out(f"  uncovered: {', '.join(uncovered[:12])}"
+                + (f" … +{len(uncovered) - 12} more" if len(uncovered) > 12 else ""))
+    else:
+        out("fire-coverage: NOT EVALUATED (no --settled-listing) — §4 tripwire unarmed; "
+            "gate line below is not authoritative, use w2_close_check.py")
 
     gates = {}
     for s in ("S1", "S2", "S3"):
@@ -224,7 +261,8 @@ def main():
 
     if args.interim:
         # §8a: full battery at the harsh bound; boolean-only disclosure.
-        print("GO" if gates and all(gates.values()) else "CONTINUE")
+        # A suspect window (fire-coverage tripwire) can never mint GO.
+        print("GO" if gates and all(gates.values()) and not suspect else "CONTINUE")
 
 
 if __name__ == "__main__":
