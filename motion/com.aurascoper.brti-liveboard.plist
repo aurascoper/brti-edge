@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS LaunchAgent for the brti-edge motion live board (live-server.mjs).
+  Serves http://localhost:4180 — KeepAlive restarts it on crash and reboot.
+
+  Install (repo copy lives at motion/com.aurascoper.brti-liveboard.plist):
+    cp motion/com.aurascoper.brti-liveboard.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.aurascoper.brti-liveboard.plist
+  Stop / remove:
+    launchctl bootout gui/$(id -u)/com.aurascoper.brti-liveboard
+
+  NOTE: node path is machine-specific (Homebrew arm64). launchd's PATH does
+  not include /opt/homebrew/bin, so the binary is referenced absolutely.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.aurascoper.brti-liveboard</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/node</string>
+        <string>/Users/aurascoper/Developer/brti-edge/motion/live-server.mjs</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/aurascoper/Developer/brti-edge/motion</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Don't relaunch faster than this if the server keeps dying
+         (e.g. port 4180 already taken by a stray manual instance). -->
+    <key>ThrottleInterval</key>
+    <integer>15</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/aurascoper/Developer/brti-edge/motion/live-server.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/aurascoper/Developer/brti-edge/motion/live-server.err.log</string>
+</dict>
+</plist>
