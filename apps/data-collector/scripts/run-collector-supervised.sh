@@ -99,7 +99,9 @@ newest_delta_mtime() {
   local newest=0 m f
   for f in "$LOG_DIR"/orderbook-deltas-*.jsonl.gz; do
     [ -e "$f" ] || continue
-    m="$(stat -f %m "$f" 2>/dev/null)" || continue
+    # BSD stat (macOS) first, GNU stat (Linux) fallback — without the
+    # fallback the watchdog silently never fires on Linux.
+    m="$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null)" || continue
     [ "$m" -gt "$newest" ] && newest="$m"
   done
   echo "$newest"
