@@ -1,0 +1,28 @@
+[Unit]
+Description=Kalshi 15M shadow scan worker (brti-edge)
+Wants=network-online.target time-sync.target
+After=network-online.target time-sync.target
+
+[Service]
+Type=simple
+User=bonzos
+WorkingDirectory=/home/bonzos/brti-edge/apps/market-worker
+EnvironmentFile=/home/bonzos/.config/brti-edge/brti.env
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+# belt-and-braces with the supervisor's pinned gates
+Environment=KALSHI_ALLOW_ORDERS=0 KALSHI_AUTO_SUBMIT=0 KALSHI_DUST_ENABLED=0
+# same hard clock gate as the collector (see kalshi-collector.service)
+ExecStartPre=/usr/bin/bash -c 'until timedatectl show -p NTPSynchronized --value | grep -qx yes; do sleep 5; done'
+TimeoutStartSec=infinity
+ExecStart=/usr/bin/bash /home/bonzos/brti-edge/apps/market-worker/scripts/run-worker-shadow.sh
+Restart=always
+RestartSec=30
+KillMode=mixed
+TimeoutStopSec=10
+# EXACT filename — w2_close_check.py G5 env attestation reads this file
+StandardOutput=append:/home/bonzos/brti-edge/apps/market-worker/logs/launchd-kalshi-worker.out.log
+StandardError=append:/home/bonzos/brti-edge/apps/market-worker/logs/launchd-kalshi-worker.err.log
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
