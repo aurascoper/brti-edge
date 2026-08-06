@@ -77,12 +77,20 @@ export class GzipRotator {
       // Cleanly end the previous gzip; the file becomes a valid .gz.
       prev.gz.end();
     }
-    const filename = `${this.channel}-${hour}.jsonl.gz`;
-    const path = resolve(this.logDir, filename);
+    // Never append into an existing hour file: readers recover only
+    // truncation-at-EOF, so a second gzip member appended after a
+    // crash-relaunch is silently unreadable. If the base file already
+    // exists (relaunch within the same hour), rotate to a fresh .pN part.
+    let filename = `${this.channel}-${hour}.jsonl.gz`;
+    let path = resolve(this.logDir, filename);
+    for (let part = 2; existsSync(path); part++) {
+      filename = `${this.channel}-${hour}.p${part}.jsonl.gz`;
+      path = resolve(this.logDir, filename);
+    }
     if (!existsSync(dirname(path))) {
       mkdirSync(dirname(path), { recursive: true });
     }
-    const file = createWriteStream(path, { flags: "a" });
+    const file = createWriteStream(path, { flags: "w" });
     const gz = createGzip({ level: 6 });
     gz.pipe(file);
     this.state = {

@@ -111,7 +111,9 @@ function discoverFiles(args: Args): FileInfo[] {
   const out: FileInfo[] = [];
   for (const f of files) {
     if (!f.endsWith(".jsonl.gz")) continue;
-    const m = f.match(/^(.+)-(\d{4}-\d{2}-\d{2}T\d{2})\.jsonl\.gz$/);
+    // .pN part files are written on crash-relaunch within an hour
+    // (persistence.ts never appends into an existing hour file).
+    const m = f.match(/^(.+)-(\d{4}-\d{2}-\d{2}T\d{2})(?:\.p\d+)?\.jsonl\.gz$/);
     if (!m) continue;
     const channel = m[1]!;
     const hour = m[2]!;

@@ -173,12 +173,27 @@ export class KalshiApiError extends Error {
 function parseOrderbook(ticker: string, raw: KalshiOrderbookRawResponse): KalshiOrderbook {
   // Source arrays are BIDS only, sorted ascending by price.
   // We flip to descending so top-of-book is at index 0 for downstream code.
+  // Units: orderbook_fp carries dollars; the legacy orderbook arrays carry
+  // integer CENTS and must be divided by 100. The range guard makes any
+  // future unit regression loud instead of silently poisoning shadow data.
+  const legacyYes = raw.orderbook_fp?.yes_dollars === undefined;
+  const legacyNo = raw.orderbook_fp?.no_dollars === undefined;
   const yesAsc = raw.orderbook_fp?.yes_dollars ?? raw.orderbook?.yes ?? [];
   const noAsc = raw.orderbook_fp?.no_dollars ?? raw.orderbook?.no ?? [];
+  const guard = (price: number, side: string): number => {
+    if (!Number.isFinite(price) || price <= 0 || price >= 1) {
+      throw new Error(
+        `parseOrderbook(${ticker}): ${side} bid ${price} outside (0,1) — orderbook unit guard`,
+      );
+    }
+    return price;
+  };
   const yes_bids = yesAsc
-    .map(([p, s]) => ({ price: Number(p), size: Number(s) }))
+    .map(([p, s]) => ({ price: guard(legacyYes ? Number(p) / 100 : Number(p), "yes"), size: Number(s) }))
     .reverse();
-  const no_bids = noAsc.map(([p, s]) => ({ price: Number(p), size: Number(s) })).reverse();
+  const no_bids = noAsc
+    .map(([p, s]) => ({ price: guard(legacyNo ? Number(p) / 100 : Number(p), "no"), size: Number(s) }))
+    .reverse();
   const best_yes_bid = yes_bids[0]?.price ?? null;
   const best_no_bid = no_bids[0]?.price ?? null;
   // No-arbitrage derived asks. Round to 4dp to match Kalshi tick precision.
