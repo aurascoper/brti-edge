@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- W2′ day-14 close — runs the CLOSE WRAPPER: G4 eligibility + exchange
      reconciliation + G5 freeze BEFORE any gate line; quadrant named.
-     2026-08-20T07:05Z = 02:05 America/Chicago (CDT). -->
+     2026-08-20T10:05Z = 05:05 America/Chicago (CDT). -->
 <plist version="1.0">
 <dict>
   <key>Label</key><string>com.aurascoper.w2prime-close</string>
@@ -10,12 +10,12 @@
   <array>
     <string>/opt/homebrew/bin/python3</string>
     <string>/Users/aurascoper/Developer/brti-edge/apps/market-worker/scripts/w2_close_check.py</string>
-    <string>--since</string><string>2026-08-06T07:00:00Z</string>
-    <string>--until</string><string>2026-08-20T07:00:00Z</string>
+    <string>--since</string><string>2026-08-06T10:00:00Z</string>
+    <string>--until</string><string>2026-08-20T10:00:00Z</string>
     <string>--tag</string><string>w2prime-instrument-20260806</string>
   </array>
   <key>StartCalendarInterval</key>
-  <dict><key>Month</key><integer>8</integer><key>Day</key><integer>20</integer><key>Hour</key><integer>2</integer><key>Minute</key><integer>5</integer></dict>
+  <dict><key>Month</key><integer>8</integer><key>Day</key><integer>20</integer><key>Hour</key><integer>5</integer><key>Minute</key><integer>5</integer></dict>
   <key>RunAtLoad</key><false/>
   <key>StandardOutPath</key><string>/Users/aurascoper/Developer/brti-edge/analysis/w2/w2prime-close-report.txt</string>
   <key>StandardErrorPath</key><string>/Users/aurascoper/Developer/brti-edge/analysis/w2/w2prime-close-report.err</string>

@@ -112,6 +112,21 @@ Reproducibility note recorded before the window: the OC table reproduces (F11 cl
 the W1 fade-audit archive covers 39/93 fills — the 13/71 figure stands as directionally
 supported, not exactly reproduced (annex §6).
 
+## 6b. Start re-anchor (2026-08-06, ~18:40Z — before any window data was consulted)
+
+The 07:00Z start hour turned out not to be clean: a ~2h connectivity outage
+(07:00→09:00:31Z; machine awake — pmset shows no sleep) left the worker network-blind
+(same PID throughout, zero shadow rows) while the collector's stall watchdog relaunched
+it ~every 65s — 224 `.pN` lifecycle part files, which is the F6 fix working exactly as
+intended: under the pre-fix writer those restarts would have appended ~110 unreadable
+gzip members into two hour files. Under §4's own start rule ("first **clean** UTC hour
+boundary"), the start **rolls forward to 2026-08-06T10:00:00Z**; window
+**→ 2026-08-20T10:00:00Z**, day-7 interim 2026-08-13T10:05Z. Watchers re-anchored and
+re-bootstrapped; measured from 10:00Z: zero gaps, all four collector channels present
+every hour, settlement capture at par with elapsed slots. No thresholds, semantics, or
+duration changed; the 07:00–10:00Z sliver joins the dead span (unscored). This entry is
+the §12-discipline record of the shift.
+
 ## 7. Review-chain note (recorded per the lock's provenance discipline)
 
 Two audit findings land on the review chain itself, recorded here as the lock recorded its
