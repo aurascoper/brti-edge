@@ -54,6 +54,17 @@ now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 # collector). Backgrounding + `wait` lets on_signal run within ~0s of SIGTERM.
 nap() { sleep "$1" & wait "$!" 2>/dev/null; }
 
+# Cap the launchd StandardErrorPath log (gzip-backpressure warns flood it —
+# 77MB observed 2026-08-15). launchd holds the fd open, so truncate via
+# cat-copy-back to preserve the inode — tail|mv would orphan the fd and the
+# file would keep growing invisibly. Checked each health tick; fires >1MB.
+ERR_LOG="$STATE_DIR/launchd-collector.err.log"
+cap_err_log() {
+  [ -f "$ERR_LOG" ] || return 0
+  [ "$(stat -f%z "$ERR_LOG" 2>/dev/null || stat -c%s "$ERR_LOG" 2>/dev/null || echo 0)" -gt 1048576 ] || return 0
+  tail -n 5000 "$ERR_LOG" > "$ERR_LOG.captmp" && cat "$ERR_LOG.captmp" > "$ERR_LOG" && rm -f "$ERR_LOG.captmp"
+}
+
 log_event() {
   local ev="$1" reason="${2:-}" ts; ts="$(now_iso)"
   printf '{"ts":"%s","event":"%s","reason":"%s","child_pid":%s,"restarts":%s}\n' \
@@ -155,6 +166,7 @@ while true; do
   while kill -0 "$CHILD_PID" 2>/dev/null; do
     nap "$WATCH_INTERVAL"
     $STOPPING && break
+    cap_err_log
     mt="$(newest_delta_mtime)"
     if [ "$mt" -gt 0 ]; then
       age=$(( $(date +%s) - mt ))
