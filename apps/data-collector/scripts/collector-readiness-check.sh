@@ -23,7 +23,7 @@ args=()
 [ -n "$SINCE" ] && args+=("--since=$SINCE")
 [ -n "$UNTIL" ] && args+=("--until=$UNTIL")
 
-out="$(cd "$APP_DIR" && pnpm run report -- "${args[@]}" 2>/dev/null)"
+out="$(cd "$APP_DIR" && pnpm run report -- ${args[@]+"${args[@]}"} 2>/dev/null)"
 
 echo "$out" | grep -iE 'window:|files matched|worst-channel|longest gap|continuous_holdout_eligible|Adequate for replay' || true
 echo "----------------------------------------------------------------------"
@@ -35,6 +35,6 @@ if [ "$elig" = "true" ]; then
   exit 0
 else
   echo "⛔ NOT READY — continuous_holdout_eligible: ${elig:-unknown (no data in window?)}"
-  echo "   The 2026-06-02 holdout must NOT be scored until this returns READY."
+  echo "   The current window must NOT be scored until this returns READY."
   exit 1
 fi
