@@ -16,12 +16,14 @@
     "run-btc-yes-late-asia-v1-capped": "tsx src/replay/btcYesLateAsiaV1Capped.ts",
     "run-btc-maker-v2": "tsx src/replay/btcMakerV2.ts",
     "run-btc-maker-v2-capped": "tsx src/replay/btcMakerV2Capped.ts",
+    "polymarket-collector": "tsx src/polymarket/index.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
     "@polyterminal/kalshi-client": "workspace:*",
+    "@polyterminal/polymarket-client": "workspace:*",
     "ws": "^8.18.0"
   },
   "devDependencies": {
