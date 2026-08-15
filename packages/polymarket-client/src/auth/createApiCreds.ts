@@ -18,6 +18,13 @@ export interface DeriveCredsOptions {
   host?: string;
 }
 
+// L1 headers and /auth responses contain live credentials (POLY_SIGNATURE,
+// apiKey/secret/passphrase) — never log payloads. Status-only debug lines are
+// gated behind POLYMARKET_AUTH_DEBUG=1 (default silent).
+function debugAuth(msg: string): void {
+  if (process.env.POLYMARKET_AUTH_DEBUG === "1") console.error(`[polymarket-auth] ${msg}`);
+}
+
 function resolveSignerAddress(signer: SdkSigner): string {
   const addr = signer.account?.address;
   if (!addr) throw new Error("WalletClient.account.address missing");
@@ -70,19 +77,34 @@ async function deriveApiKeyForFunder(
   const ts = Math.floor(Date.now() / 1000);
   const nonce = 0;
   const headers = await createL1Headers(signer, chainId, nonce, ts, funderAddress);
-  console.log("[deriveApiKeyForFunder] headers:", headers);
+  debugAuth("L1 headers built for funder derivation");
   const created = await fetchAuthDetail(`${host}/auth/api-key`, "POST", headers);
-  console.log("[deriveApiKeyForFunder] POST /auth/api-key →", created);
+  debugAuth(`POST /auth/api-key status=${created.status}`);
   if (created.body && (created.body as ApiKeyRaw).apiKey) {
     return mapCreds(created.body as ApiKeyRaw);
   }
   const derived = await fetchAuthDetail(`${host}/auth/derive-api-key`, "GET", headers);
-  console.log("[deriveApiKeyForFunder] GET /auth/derive-api-key →", derived);
+  debugAuth(`GET /auth/derive-api-key status=${derived.status}`);
   if (derived.body && (derived.body as ApiKeyRaw).apiKey) {
     return mapCreds(derived.body as ApiKeyRaw);
   }
-  const detail = `create: status=${created.status} body=${JSON.stringify(created.body).slice(0, 200)} | derive: status=${derived.status} body=${JSON.stringify(derived.body).slice(0, 200)}`;
+  const detail = `create: status=${created.status} body=${JSON.stringify(redactCreds(created.body)).slice(0, 200)} | derive: status=${derived.status} body=${JSON.stringify(redactCreds(derived.body)).slice(0, 200)}`;
   throw new Error(`API key for funder failed — ${detail}`);
+}
+
+// Bodies embedded in error text could carry live credentials if the /auth
+// response schema ever drifts (today creds only appear under the checked
+// apiKey field on success) — redact credential-shaped keys before stringifying.
+const SENSITIVE_KEY_RE = /^(api[-_]?key|secret|passphrase|password|token)$/i;
+
+function redactCreds(body: unknown): unknown {
+  if (body === null || typeof body !== "object") return body;
+  if (Array.isArray(body)) return body.map(redactCreds);
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
+    out[k] = SENSITIVE_KEY_RE.test(k) ? "<redacted>" : redactCreds(v);
+  }
+  return out;
 }
 
 interface ApiKeyRaw {
@@ -106,13 +128,19 @@ async function fetchAuthDetail(
       method,
       headers: headers as Record<string, string>,
     });
+    // Read the body ONCE as text — a Response body cannot be read twice with
+    // Node's fetch, so a res.json() that fails leaves res.text() throwing and
+    // the actual server response (Cloudflare HTML, plain-text 429) invisible.
     let body: unknown = null;
     try {
-      body = await res.json();
-    } catch {
+      const text = await res.text();
       try {
-        body = await res.text();
-      } catch {}
+        body = JSON.parse(text) as unknown;
+      } catch {
+        body = text;
+      }
+    } catch {
+      body = null;
     }
     return { status: res.status, body };
   } catch (err) {
