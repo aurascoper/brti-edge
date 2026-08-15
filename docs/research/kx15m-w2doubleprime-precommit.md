@@ -78,3 +78,38 @@ of this record). Terms of the read:
 - The W2-void blind-statement precedent (dead spans permanently unread, void declaration
   §1/§5) is **broken by this read**, by explicit operator decision. Future documents must
   not cite that precedent as unbroken.
+
+## 6. Addendum — root cause resolved (2026-08-14, recorded post-read)
+
+**The "site outage" does not exist. The root cause is Kalshi's published weekly
+maintenance window: every Thursday 3:00–5:00 AM ET = 07:00–09:00 UTC, with a trading
+pause** (docs.kalshi.com, "Maintenance and Pauses"). Evidence chain, none of it derived
+from any P&L number:
+
+1. During the 08-13 window, the Pi's tailscaled established fresh DERP connections
+   (dfw/ord/sea, 35–41 ms) — the WAN was up; the Pi's Ethernet link never dropped.
+2. The exchange's own settled listing shows **zero** KXBTC15M closes between 06:45Z and
+   09:15Z on Thursday, against a full 4-per-hour cadence at those hours on all six other
+   weekdays. There was nothing to collect.
+3. Shadow-log recovery at 09:00:10Z (08-13) and 09:00:31Z (08-06) — the pause's end.
+
+Corrections to the record: §2 of this document (mechanism: "scheduled weekly site event
+… router/ISP/DNS") is wrong as to mechanism; no site fault exists. Void declaration §6b's
+"connectivity outage" at the W2′ start was the same exchange pause, misdiagnosed. The
+Aug-4 7.96 h hole that voided W2 remains a genuine machine-wide power outage — unrelated.
+
+Consequence for §4 (cure gate): "eliminated or routed around" is inapplicable to the
+venue's own calendar. The cure is definitional: **W2″'s lock must carry a §12-logged
+amendment computing G4's coverage denominators and continuous-gap rule over
+exchange-open time** (per the exchange's published pause windows, verified against its
+settled listing), not wall-clock. This amendment is sound independent of any dead-span
+outcome — it follows from the venue calendar alone, and without it no 14-day window on a
+24/7-minus-maintenance venue can ever be eligible. Per §5 it is flagged as proposed
+post-read; its incentive direction is named: on the dead span it could only reclassify
+NO-GO (data) toward the harsher quadrants, never toward GO. §4(3) is restated
+accordingly: one Thursday observed where the only capture gap is the published
+maintenance window.
+
+W2′ disposition unchanged: it closes 2026-08-20T10:05Z as **NO-GO (data)** under its
+locked text — no mid-window edits (prereg §6), even ones that would only make the verdict
+harsher. The 08-20 Thursday pause sits inside the span's final hours; expected, no action.
