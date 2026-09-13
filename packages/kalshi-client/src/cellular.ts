@@ -15,7 +15,7 @@ export interface V2Order {
   ticker: string; client_order_id: string; side: "bid" | "ask";
   price: string; count: string; time_in_force: "immediate_or_cancel";
   post_only: false; reduce_only: boolean; cancel_order_on_pause: true;
-  self_trade_prevention_type: "taker_at_cross"; subaccount: number;
+  self_trade_prevention_type: "taker_at_cross"; subaccount: number; exchange_index: 0;
 }
 
 function fail(reason: string): never { throw new Error(reason); }
@@ -39,14 +39,14 @@ export function translate(intent: Intent): V2Order {
   return { ticker: intent.ticker, client_order_id: intent.clientOrderId,
     side: bid ? "bid" : "ask", price: dollars(yesPrice), count: `${BigInt(intent.quantity.split(".")[0]!)}.00`,
     time_in_force: "immediate_or_cancel", post_only: false, reduce_only: intent.action === "sell",
-    cancel_order_on_pause: true, self_trade_prevention_type: "taker_at_cross", subaccount: intent.subaccount };
+    cancel_order_on_pause: true, self_trade_prevention_type: "taker_at_cross", subaccount: intent.subaccount, exchange_index: 0 };
 }
 
 /** Validate the deliberately narrower cellular schema before any network call. */
 export function validateV2(raw: unknown): asserts raw is V2Order {
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) fail("invalid_v2_shape");
   const r = raw as Record<string, unknown>;
-  const keys = ["ticker", "client_order_id", "side", "price", "count", "time_in_force", "post_only", "reduce_only", "cancel_order_on_pause", "self_trade_prevention_type", "subaccount"].sort();
+  const keys = ["ticker", "client_order_id", "side", "price", "count", "time_in_force", "post_only", "reduce_only", "cancel_order_on_pause", "self_trade_prevention_type", "subaccount", "exchange_index"].sort();
   if (JSON.stringify(Object.keys(r).sort()) !== JSON.stringify(keys)) fail("legacy_or_unknown_v2_field");
   if (typeof r.ticker !== "string" || !r.ticker.startsWith("KXBTC15M-") || typeof r.client_order_id !== "string" || !r.client_order_id) fail("invalid_order_identity");
   if (!["bid", "ask"].includes(String(r.side)) || typeof r.price !== "string") fail("invalid_v2_side");
@@ -54,6 +54,7 @@ export function validateV2(raw: unknown): asserts raw is V2Order {
   if (typeof r.count !== "string" || !/^[1-9]\d*\.00$/.test(r.count)) fail("invalid_v2_count");
   if (r.time_in_force !== "immediate_or_cancel" || r.post_only !== false || r.cancel_order_on_pause !== true || r.self_trade_prevention_type !== "taker_at_cross") fail("taker_policy_required");
   if (typeof r.reduce_only !== "boolean" || !Number.isSafeInteger(r.subaccount) || Number(r.subaccount) < 0) fail("invalid_v2_options");
+  if (r.exchange_index !== 0) fail("unsupported_exchange_index");
 }
 
 export function checkEnvironment(env: NodeJS.ProcessEnv, mode: "PAPER" | "DEMO"): void {
@@ -100,17 +101,18 @@ export class CellularDemoAdapter {
   constructor(private readonly credentials: KalshiCredentials, private readonly transport: typeof fetch = fetch,
               env: NodeJS.ProcessEnv = process.env) { checkEnvironment(env, "DEMO"); }
 
-  async request(method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<unknown> {
+  async request(method: "GET" | "POST" | "DELETE", path: string, body?: unknown, expectedStatus?: number, submitBeforeMs?: number): Promise<unknown> {
     if (!path.startsWith("/") || path.startsWith("//")) fail("invalid_relative_path");
     const headers = signRequest(this.credentials, method, pathForSigning("/trade-api/v2", path));
+    if (submitBeforeMs !== undefined && (!Number.isFinite(submitBeforeMs) || Date.now() >= submitBeforeMs)) fail("demo_submission_deadline_elapsed");
     const response = await this.transport(this.baseUrl + path, { method, headers: { ...headers, "content-type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(5000), redirect: "error" });
-    if (!response.ok) fail(`demo_http_${response.status}`);
+    if (!response.ok || (expectedStatus !== undefined && response.status !== expectedStatus)) fail(`demo_http_${response.status}`);
     return response.json();
   }
 
-  async submit(order: V2Order): Promise<unknown> {
+  async submit(order: V2Order, submitBeforeMs?: number): Promise<unknown> {
     validateV2(order);
-    return this.request("POST", "/portfolio/events/orders", order);
+    return this.request("POST", "/portfolio/events/orders", order, 201, submitBeforeMs);
   }
 }
