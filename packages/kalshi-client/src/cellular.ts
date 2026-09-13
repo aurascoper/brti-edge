@@ -117,7 +117,7 @@ export async function collectPages<T>(read: (cursor: string) => Promise<unknown>
 
 /** DEMO only. A timeout is propagated as ambiguous; there is no retry loop. */
 export class CellularDemoAdapter {
-  readonly baseUrl = "https://external-api.demo.kalshi.co/trade-api/v2";
+  readonly baseUrl: string = "https://external-api.demo.kalshi.co/trade-api/v2";
   constructor(private readonly credentials: KalshiCredentials, private readonly transport: typeof fetch = fetch,
               env: NodeJS.ProcessEnv = process.env) { checkEnvironment(env, "DEMO"); }
 
@@ -141,4 +141,10 @@ export class CellularDemoAdapter {
     return this.request("DELETE", `/portfolio/events/orders/${target.order_id}?subaccount=0&exchange_index=${target.exchange_index}`,
       undefined, 200, cancelBeforeMs);
   }
+}
+
+/** Separate production entry point. OBI checks its durable activation before
+ * this transport is handed a request; the bridge never selects environment. */
+export class CellularProductionAdapter extends CellularDemoAdapter {
+  override readonly baseUrl = "https://external-api.kalshi.com/trade-api/v2";
 }

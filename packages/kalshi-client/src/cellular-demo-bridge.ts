@@ -1,10 +1,10 @@
-/** One private-pipe request per process; DEMO only, no automatic retries.
+/** One private-pipe request per process; fixed executable environment, no retries.
  * Credentials travel only on stdin. Nothing from an error response is echoed.
  * Python persists the reservation and submission intent before invoking submit.
  */
 import { createHash, createPrivateKey, createPublicKey } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { CellularDemoAdapter, checkEnvironment, requireManualCount, validateV2, validateCancelTarget } from "./cellular.js";
+import { CellularDemoAdapter, CellularProductionAdapter, checkEnvironment, requireManualCount, validateV2, validateCancelTarget } from "./cellular.js";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function fail(reason: string): never { throw new Error(reason); }
@@ -19,13 +19,22 @@ function quantity(raw: unknown): bigint {
 
 export async function demoBridgeRequest(raw: unknown, transport: typeof fetch = fetch,
                                        env: NodeJS.ProcessEnv = process.env): Promise<Record<string, unknown>> {
+  return venueBridgeRequest(raw, transport, env, false);
+}
+
+export async function venueBridgeRequest(raw: unknown, transport: typeof fetch,
+                                        env: NodeJS.ProcessEnv, production: boolean): Promise<Record<string, unknown>> {
   checkEnvironment(env, "DEMO");
+  const environment = production ? "PRODUCTION" : "DEMO";
+  const prefix = production ? "production" : "demo";
+  const Adapter = production ? CellularProductionAdapter : CellularDemoAdapter;
   const r = record(raw);
   const keys = ["schemaId", "id", "command", "environment", "credentials", "firstN", "seriesUntested", ...(r.command === "submit" ? ["wire", "submitBefore"] : r.command === "cancel" ? ["target", "cancelBefore"] : [])].sort();
   if (JSON.stringify(Object.keys(r).sort()) !== JSON.stringify(keys) ||
-      r.schemaId !== "cellular.demo-adapter-request.v1" || r.environment !== "DEMO" ||
+      r.schemaId !== `cellular.${prefix}-adapter-request.v1` || r.environment !== environment ||
       typeof r.id !== "string" || !uuid.test(r.id) || !["ping", "submit", "cancel"].includes(String(r.command))) fail("demo_bridge_identity_or_command");
   if (typeof r.seriesUntested !== "boolean" || typeof r.firstN !== "number" || r.firstN < 3) fail("demo_first_three_required");
+  if (production && r.firstN !== 3) fail("production_first_three_required");
   requireManualCount(r.seriesUntested, r.firstN);
   const creds = record(r.credentials);
   if (Object.keys(creds).sort().join(",") !== "keyId,privateKeyPem" ||
@@ -34,12 +43,13 @@ export async function demoBridgeRequest(raw: unknown, transport: typeof fetch = 
   const privateKey = createPrivateKey(creds.privateKeyPem);
   if (privateKey.asymmetricKeyType !== "rsa" || (privateKey.asymmetricKeyDetails?.modulusLength ?? 0) < 2048) fail("demo_rsa_key_required");
   const identity = createHash("sha256").update(createPublicKey(privateKey).export({type:"spki",format:"der"})).digest("hex");
-  const base = {schemaId:"cellular.demo-adapter-response.v1", id:r.id, environment:"DEMO", accountIdentity:identity};
-  if (r.command === "ping") return {...base, status:"READY", transport:"brti_demo"};
+  const base = {schemaId:`cellular.${prefix}-adapter-response.v1`, id:r.id, environment, accountIdentity:identity};
+  if (r.command === "ping") return {...base, status:"READY", transport:`brti_${prefix}`};
   if (r.command === "cancel") {
     validateCancelTarget(r.target);
+    if (production && r.target.exchange_index !== 2) fail("production_exchange_two_required");
     if (typeof r.cancelBefore !== "string" || !/(Z|\+00:00)$/.test(r.cancelBefore) || !Number.isFinite(Date.parse(r.cancelBefore))) fail("demo_cancel_deadline_required");
-    const adapter = new CellularDemoAdapter({keyId:creds.keyId, privateKey}, transport, env);
+    const adapter = new Adapter({keyId:creds.keyId, privateKey}, transport, env);
     const ack = record(await adapter.cancel(r.target, Date.parse(r.cancelBefore)));
     if (ack.order_id !== r.target.order_id || ack.client_order_id !== r.target.client_order_id ||
         !Number.isSafeInteger(ack.ts_ms) || Number(ack.ts_ms) <= 0 ||
@@ -48,9 +58,10 @@ export async function demoBridgeRequest(raw: unknown, transport: typeof fetch = 
     return {...base, status:"ACKNOWLEDGED", order_id:ack.order_id, client_order_id:ack.client_order_id};
   }
   validateV2(r.wire);
+  if (production && r.wire.exchange_index !== 2) fail("production_exchange_two_required");
   if (typeof r.submitBefore !== "string" || !/(Z|\+00:00)$/.test(r.submitBefore) || !Number.isFinite(Date.parse(r.submitBefore))) fail("demo_submission_deadline_required");
   if (!uuid.test(r.wire.client_order_id) || r.wire.reduce_only || r.wire.subaccount !== 0) fail("demo_entry_primary_scope_required");
-  const adapter = new CellularDemoAdapter({keyId:creds.keyId, privateKey}, transport, env);
+  const adapter = new Adapter({keyId:creds.keyId, privateKey}, transport, env);
   const ack = record(await adapter.submit(r.wire, Date.parse(r.submitBefore)));
   if (typeof ack.order_id !== "string" || !uuid.test(ack.order_id) ||
       ack.client_order_id !== r.wire.client_order_id || !Number.isSafeInteger(ack.ts_ms) || Number(ack.ts_ms) <= 0) fail("demo_ack_identity_or_timestamp");
@@ -61,7 +72,7 @@ export async function demoBridgeRequest(raw: unknown, transport: typeof fetch = 
   return {...base, status:"ACKNOWLEDGED", order_id:ack.order_id, client_order_id:ack.client_order_id};
 }
 
-export async function demoBridgeMain(transport: typeof fetch = fetch): Promise<void> {
+export async function demoBridgeMain(transport: typeof fetch = fetch, production = false): Promise<void> {
   if (process.argv.length !== 2) fail("demo_bridge_arguments_refused");
   const chunks: Buffer[] = [];
   let size = 0;
@@ -70,7 +81,7 @@ export async function demoBridgeMain(transport: typeof fetch = fetch): Promise<v
     if (size > 65536) fail("demo_bridge_request_size");
     chunks.push(chunk);
   }
-  const response = await demoBridgeRequest(JSON.parse(Buffer.concat(chunks).toString("utf8")), transport);
+  const response = await venueBridgeRequest(JSON.parse(Buffer.concat(chunks).toString("utf8")), transport, process.env, production);
   process.stdout.write(JSON.stringify(response) + "\n");
 }
 

@@ -3,6 +3,9 @@
 import * as React from "react";
 
 interface CellularState {
+  transport:string;
+  day1?: {status:string; ordersEnabled:boolean; day1StartedAt:string|null;
+    activationRequest?:Record<string,unknown>|null};
   campaign: {mode:string; reading:string|null; terminal:number};
   risk: {settled_capital_usd:string; daily_gross_loss_usd:string; unresolved_risk_usd:string};
   remaining: Record<string,string>;
@@ -32,6 +35,8 @@ export function CellularPanel() {
   const [ticker,setTicker] = React.useState("");
   const [outcome,setOutcome] = React.useState<"YES"|"NO">("YES");
   const [quantity,setQuantity] = React.useState("1");
+  const [activationDecision,setActivationDecision] = React.useState("");
+  const production = state?.transport === "brti_production";
   const loading = React.useRef(false);
   const load = React.useCallback(async () => {
     if (!token) { setState(null); return; }
@@ -57,9 +62,18 @@ export function CellularPanel() {
     } catch(e) { setError(e instanceof Error ? e.message : "control_refused"); }
     finally { setBusy(false); }
   };
+  const activate = async () => {
+    try {
+      const decision = JSON.parse(activationDecision);
+      if (!decision || typeof decision !== "object" || !decision.signature || !decision.record)
+        throw new Error("A signed activation decision is required.");
+      await action("activate-live",undefined,{decision});
+      setActivationDecision("");
+    } catch(e) { setError(e instanceof Error ? e.message : "Invalid activation decision."); }
+  };
   return <section className="mb-3 rounded border border-zinc-700 p-3 text-xs text-zinc-300">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <strong>Cellular · Kalshi {state?.demoMechanics ? "DEMO mechanics" : "paper pilot"}</strong>
+      <strong>Cellular · Kalshi {production ? "PRODUCTION pilot" : state?.demoMechanics ? "DEMO mechanics" : "paper pilot"}</strong>
       <input type="password" aria-label="Cellular operator token" autoComplete="off" placeholder="Operator token" value={token}
         onChange={e=>setToken(e.target.value)} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1" />
     </div>
@@ -80,6 +94,14 @@ export function CellularPanel() {
       <p className="mt-2 text-amber-300">{state.monitor.reasons.join(" · ")}</p>
       <details className="my-2"><summary>Activation blockers ({state.activationBlockers.length})</summary>
         <ul>{state.activationBlockers.map(reason=><li key={reason}>{reason}</li>)}</ul></details>
+      {production && state.day1 && <div className="my-3 space-y-2 rounded border border-amber-700 p-3" aria-label="Production activation">
+        <p>Day 1: {state.day1.status} · Orders {state.day1.ordersEnabled ? "enabled" : "disabled"} · Started {state.day1.day1StartedAt ?? "not started"}</p>
+        <p>Activation requires reviewed evidence and a separate signed operator decision. Resuming preserves the original start time and all loss and confirmation counters.</p>
+        {state.day1.activationRequest && <details><summary>Activation request to sign</summary><pre className="overflow-x-auto whitespace-pre-wrap">{JSON.stringify(state.day1.activationRequest,null,2)}</pre></details>}
+        <textarea aria-label="Signed activation decision" autoComplete="off" placeholder="Signed decision JSON" value={activationDecision} onChange={e=>setActivationDecision(e.target.value)} className="w-full rounded border bg-zinc-900 px-2 py-1" />
+        <button disabled={busy || state.day1.status !== "READY_FOR_ACTIVATION" || !activationDecision} onClick={()=>void activate()} className="rounded border px-2 py-1">{state.day1.day1StartedAt ? "Resume production with signed decision" : "Activate Day 1 with signed decision"}</button>
+        {state.campaign.reading === "VOID" && <button disabled={busy} onClick={()=>void action("restart-void-live")} className="ml-2 rounded border px-2 py-1">Record permitted VOID restart → manage only</button>}
+      </div>}
       {state.demoMechanics && <div className="my-3 space-y-2 rounded border border-zinc-600 p-3" aria-label="Demo order preparation">
         <p>DEMO account only. Select a BTC 15-minute market. Every order needs confirmation and a separate release.</p>
         <div className="flex flex-wrap gap-2">
@@ -105,18 +127,18 @@ export function CellularPanel() {
           <p>Expires: {preview.expiresAt} · {preview.reservationStatus === "NOT_RESERVED" ? "Risk is checked again and reserved at release." : "Risk reserved."}</p>
           <div className="mt-2 flex gap-2">
             {preview.status === "HELD" && <button disabled={busy} onClick={()=>void action("confirm-preview",preview)} className="rounded border px-2 py-1">Confirm translated order</button>}
-            {preview.status === "CONFIRMED" && <button disabled={busy} onClick={()=>void action("release-preview",preview)} className="rounded border px-2 py-1">Release {state.confirmations.environment === "DEMO" ? "demo" : "paper"} order</button>}
+            {preview.status === "CONFIRMED" && <button disabled={busy} onClick={()=>void action("release-preview",preview)} className="rounded border px-2 py-1">Release {state.confirmations.environment === "PRODUCTION" ? "production" : state.confirmations.environment === "DEMO" ? "demo" : "paper"} order</button>}
             {["HELD","CONFIRMED"].includes(preview.status) && <button disabled={busy} onClick={()=>void action("cancel-preview",preview)} className="rounded border px-2 py-1">Cancel preview</button>}
           </div>
         </article>)}
       </div>}
-      <div className="flex gap-2">{[["pause","Pause"],["acknowledge","Acknowledge → manage only"],state.demoMechanics ? ["resume-demo","Enable demo mechanics"] : ["resume-paper","Resume paper"]].map(([name,label])=>
+      <div className="flex gap-2">{[["pause","Pause"],["acknowledge","Acknowledge → manage only"],...(production ? [] : [state.demoMechanics ? ["resume-demo","Enable demo mechanics"] : ["resume-paper","Resume paper"]])].map(([name,label])=>
         <button key={name} disabled={busy} onClick={()=>void action(name!)} className="rounded border border-zinc-600 px-2 py-1">{label}</button>)}</div>
-      {state.protectiveCancellation && <div className="my-3 space-y-2" aria-label="Protective demo cancellation">
-        <p>Cancel an owned DEMO order’s unfilled remainder. A fresh venue read verifies ownership. Risk stays charged until reconciliation; filled contracts remain held to settlement.</p>
+      {state.protectiveCancellation && <div className="my-3 space-y-2" aria-label={production ? "Protective production cancellation" : "Protective demo cancellation"}>
+        <p>Cancel an owned {production ? "PRODUCTION" : "DEMO"} order’s unfilled remainder. A fresh venue read verifies ownership. Risk stays charged until reconciliation; filled contracts remain held to settlement.</p>
         {state.protectiveCancellation.orders.filter(order=>Number(state.remaining[order.clientOrderId] ?? 0)>0).map(order=><div key={order.clientOrderId}>
           <span>{order.ticker} · order {order.clientOrderId} </span>
-          <button disabled={busy} onClick={()=>void action("cancel-owned-order",undefined,{clientOrderId:order.clientOrderId,requestId:crypto.randomUUID()})} className="rounded border px-2 py-1">Cancel owned demo order</button>
+          <button disabled={busy} onClick={()=>void action("cancel-owned-order",undefined,{clientOrderId:order.clientOrderId,requestId:crypto.randomUUID()})} className="rounded border px-2 py-1">Cancel owned {production ? "production" : "demo"} order</button>
         </div>)}
         {state.protectiveCancellation.attempts.map(attempt=><p key={attempt.requestId}>Cancellation result for {attempt.clientOrderId}: {attempt.status}</p>)}
       </div>}

@@ -1,5 +1,9 @@
 # Cellular demo integration — revision 10
 
+The [R15 production integration](CELLULAR-PRODUCTION-INTEGRATION.md) adds a
+separate executable and signed activation UI. The DEMO executable remains
+environment-scoped; it cannot select production through a request parameter.
+
 The isolated cellular adapter now has a one-request executable,
 `packages/kalshi-client/dist/cellular-demo-bridge.js`, consumed by OBI's
 `cellular_engine.demo.BrtiDemoVenue`. The existing translation-only bridge
