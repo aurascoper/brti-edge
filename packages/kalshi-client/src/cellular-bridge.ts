@@ -10,7 +10,7 @@ export function bridgeRequest(raw: unknown): Record<string, unknown> {
   if (r.command === "ping" && Object.keys(r).length === 3) return {schemaId:"cellular.adapter-response.v1",id:r.id,status:"READY",transport:"translation_only"};
   if (r.command !== "translate" || Object.keys(r).sort().join(",") !== "command,id,intent,schemaId") throw new Error("bridge_command_refused");
   const intent = r.intent as Intent;
-  if (!intent || Object.keys(intent).sort().join(",") !== "action,clientOrderId,outcome,priceDollars,quantity,subaccount,ticker") throw new Error("bridge_intent_shape");
+  if (!intent || !["action,clientOrderId,outcome,priceDollars,quantity,subaccount,ticker", "action,clientOrderId,exchangeIndex,outcome,priceDollars,quantity,subaccount,ticker"].includes(Object.keys(intent).sort().join(","))) throw new Error("bridge_intent_shape");
   const wire = translate(intent);
   validateV2(wire);
   return {schemaId:"cellular.adapter-response.v1",id:r.id,status:"TRANSLATED",wire};

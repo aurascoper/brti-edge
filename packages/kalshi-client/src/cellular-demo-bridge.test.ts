@@ -60,6 +60,21 @@ test("DEMO bridge rejects production, missing manual slots, foreign scopes and c
   assert.equal(calls,0);
 });
 
+test("explicit BTC exchange 2 survives translation and signed demo handoff; other shards refuse", async () => {
+  const wire = translate({ticker:"KXBTC15M-FIXTURE",clientOrderId:clientId,outcome:"NO",action:"buy",priceDollars:"0.48",quantity:"1",subaccount:0,exchangeIndex:2});
+  let calls = 0;
+  const transport: typeof fetch = async (_url, options) => {
+    calls++; assert.deepEqual(JSON.parse(String(options?.body)),wire);
+    assert.equal(wire.exchange_index,2); assert.equal(wire.subaccount,0);
+    return response();
+  };
+  assert.equal((await demoBridgeRequest({...request,wire},transport,env)).status,"ACKNOWLEDGED");
+  assert.equal(calls,1);
+  for (const exchange_index of [-1,1,3,2.5,"2",null])
+    await assert.rejects(demoBridgeRequest({...request,wire:{...wire,exchange_index}},transport,env));
+  assert.equal(calls,1);
+});
+
 test("Timeout after delivery, HTTP failure and non-201 never retry or acknowledge", async () => {
   for (const status of [0, 401, 429, 500, 200]) {
     let calls = 0;

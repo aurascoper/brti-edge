@@ -9,13 +9,13 @@ export type Outcome = "YES" | "NO";
 export type Action = "buy" | "sell";
 export interface Intent {
   ticker: string; clientOrderId: string; outcome: Outcome; action: Action;
-  priceDollars: string; quantity: string; subaccount: number;
+  priceDollars: string; quantity: string; subaccount: number; exchangeIndex?: 0 | 2;
 }
 export interface V2Order {
   ticker: string; client_order_id: string; side: "bid" | "ask";
   price: string; count: string; time_in_force: "immediate_or_cancel";
   post_only: false; reduce_only: boolean; cancel_order_on_pause: true;
-  self_trade_prevention_type: "taker_at_cross"; subaccount: number; exchange_index: 0;
+  self_trade_prevention_type: "taker_at_cross"; subaccount: number; exchange_index: 0 | 2;
 }
 
 function fail(reason: string): never { throw new Error(reason); }
@@ -33,13 +33,15 @@ export function translate(intent: Intent): V2Order {
   if (!["YES", "NO"].includes(intent.outcome) || !["buy", "sell"].includes(intent.action)) fail("unknown_side_or_action");
   if (!/^\d+(?:\.0{1,2})?$/.test(intent.quantity) || BigInt(intent.quantity.split(".")[0]!) <= 0n) fail("whole_contracts_only");
   if (!Number.isSafeInteger(intent.subaccount) || intent.subaccount < 0) fail("invalid_subaccount");
+  const exchange = intent.exchangeIndex === undefined ? 0 : intent.exchangeIndex;
+  if (exchange !== 0 && exchange !== 2) fail("unsupported_exchange_index");
   const units = fixedPrice(intent.priceDollars);
   const yesPrice = intent.outcome === "YES" ? units : 10000n - units;
   const bid = (intent.outcome === "YES") === (intent.action === "buy");
   return { ticker: intent.ticker, client_order_id: intent.clientOrderId,
     side: bid ? "bid" : "ask", price: dollars(yesPrice), count: `${BigInt(intent.quantity.split(".")[0]!)}.00`,
     time_in_force: "immediate_or_cancel", post_only: false, reduce_only: intent.action === "sell",
-    cancel_order_on_pause: true, self_trade_prevention_type: "taker_at_cross", subaccount: intent.subaccount, exchange_index: 0 };
+    cancel_order_on_pause: true, self_trade_prevention_type: "taker_at_cross", subaccount: intent.subaccount, exchange_index: exchange };
 }
 
 /** Validate the deliberately narrower cellular schema before any network call. */
@@ -54,7 +56,7 @@ export function validateV2(raw: unknown): asserts raw is V2Order {
   if (typeof r.count !== "string" || !/^[1-9]\d*\.00$/.test(r.count)) fail("invalid_v2_count");
   if (r.time_in_force !== "immediate_or_cancel" || r.post_only !== false || r.cancel_order_on_pause !== true || r.self_trade_prevention_type !== "taker_at_cross") fail("taker_policy_required");
   if (typeof r.reduce_only !== "boolean" || !Number.isSafeInteger(r.subaccount) || Number(r.subaccount) < 0) fail("invalid_v2_options");
-  if (r.exchange_index !== 0) fail("unsupported_exchange_index");
+  if (r.exchange_index !== 0 && r.exchange_index !== 2) fail("unsupported_exchange_index");
 }
 
 export function checkEnvironment(env: NodeJS.ProcessEnv, mode: "PAPER" | "DEMO"): void {

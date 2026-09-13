@@ -8,6 +8,8 @@ test("translation bridge rejects submission commands and unknown intent fields",
   const base = {schemaId:"cellular.adapter-request.v1",id:"fixture",command:"translate",intent:{ticker:"KXBTC15M-TEST",clientOrderId:"fixture",outcome:"NO",action:"buy",priceDollars:"0.48",quantity:"1",subaccount:0}};
   const response = bridgeRequest(base);
   assert.equal((response.wire as {side:string}).side, "ask");
+  assert.equal((bridgeRequest({...base,intent:{...base.intent,exchangeIndex:2}}).wire as {exchange_index:number}).exchange_index,2);
+  assert.throws(()=>bridgeRequest({...base,intent:{...base.intent,exchangeIndex:1}}),/exchange_index/);
   assert.throws(()=>bridgeRequest({...base,command:"submit"}),/command_refused/);
   assert.throws(()=>bridgeRequest({...base,intent:{...base.intent,apiKey:"dummy"}}),/intent_shape/);
 });

@@ -7,6 +7,7 @@ interface CellularState {
   risk: {settled_capital_usd:string; daily_gross_loss_usd:string; unresolved_risk_usd:string};
   remaining: Record<string,string>;
   monitor: {status:string; reasons:string[]; availableRiskUsd:string;
+    executionExchangeIndex?:number; executionCashUsd?:string|null;
     arenas:Record<string,{status:string}>; geolocator:{status:string;reason?:string}};
   activationBlockers:string[];
   confirmations: {firstN:number; remaining:number; environment:string; pending:OrderPreview[]};
@@ -17,7 +18,7 @@ interface CellularState {
 interface OrderPreview {
   previewId:string; digest:string; status:string; expiresAt:string; reservationStatus:string;
   intent:{ticker:string;outcome:string;action:string;priceDollars:string;quantity:string;subaccount:number};
-  translatedOrder:{side:string;price:string;count:string;time_in_force:string};
+  translatedOrder:{side:string;price:string;count:string;time_in_force:string;exchange_index?:number};
   risk:{worst_loss_usd:string;fee_reserve_usd:string};
 }
 
@@ -68,6 +69,7 @@ export function CellularPanel() {
         <span>Settled capital: ${state.risk.settled_capital_usd}</span>
         <span>Daily gross loss: ${state.risk.daily_gross_loss_usd}</span>
         <span>Available risk: ${state.monitor.availableRiskUsd}</span>
+        {state.demoMechanics && <span>Exchange {state.monitor.executionExchangeIndex} cash: {state.monitor.executionCashUsd == null ? "unverified" : `$${state.monitor.executionCashUsd}`}</span>}
         {Object.entries(state.monitor.arenas).map(([host,item])=><span key={host}>{host}: {item.status}</span>)}
         <span>Geolocator shadow: {state.monitor.geolocator.status}</span>
         <span>Unresolved risk: ${state.risk.unresolved_risk_usd}</span>
@@ -96,7 +98,7 @@ export function CellularPanel() {
         {state.confirmations.pending.map(preview=><article key={preview.previewId} className="rounded border border-amber-700 p-3">
           <strong>{preview.intent.ticker} · {preview.status}</strong>
           <p>Intended: {preview.intent.action} {preview.intent.quantity} {preview.intent.outcome} at ${preview.intent.priceDollars}</p>
-          <p>Kalshi translation: YES-book {preview.translatedOrder.side} · ${preview.translatedOrder.price} · {preview.translatedOrder.count} contracts · IOC</p>
+          <p>Kalshi translation: YES-book {preview.translatedOrder.side} · ${preview.translatedOrder.price} · {preview.translatedOrder.count} contracts · IOC · exchange {preview.translatedOrder.exchange_index ?? "undeclared"}</p>
           <p>Maximum loss: ${preview.risk.worst_loss_usd} including up to ${preview.risk.fee_reserve_usd} fees.</p>
           <p>Expires: {preview.expiresAt} · {preview.reservationStatus === "NOT_RESERVED" ? "Risk is checked again and reserved at release." : "Risk reserved."}</p>
           <div className="mt-2 flex gap-2">
