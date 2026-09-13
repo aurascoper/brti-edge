@@ -11,6 +11,8 @@ interface CellularState {
     arenas:Record<string,{status:string}>; geolocator:{status:string;reason?:string}};
   activationBlockers:string[];
   confirmations: {firstN:number; remaining:number; environment:string; pending:OrderPreview[]};
+  protectiveCancellation?: {orders:{clientOrderId:string; ticker:string}[];
+    attempts:{requestId:string;clientOrderId:string;status:string}[]};
   demoMechanics?: {selectedTicker:string|null; allOrdersRequireConfirmation:boolean;
     quote:{ticker:string; quoteDigest:string; asksUsd:{YES:string;NO:string}; closeTime:string}|null};
 }
@@ -110,6 +112,14 @@ export function CellularPanel() {
       </div>}
       <div className="flex gap-2">{[["pause","Pause"],["acknowledge","Acknowledge → manage only"],state.demoMechanics ? ["resume-demo","Enable demo mechanics"] : ["resume-paper","Resume paper"]].map(([name,label])=>
         <button key={name} disabled={busy} onClick={()=>void action(name!)} className="rounded border border-zinc-600 px-2 py-1">{label}</button>)}</div>
+      {state.protectiveCancellation && <div className="my-3 space-y-2" aria-label="Protective demo cancellation">
+        <p>Cancel an owned DEMO order’s unfilled remainder. A fresh venue read verifies ownership. Risk stays charged until reconciliation; filled contracts remain held to settlement.</p>
+        {state.protectiveCancellation.orders.filter(order=>Number(state.remaining[order.clientOrderId] ?? 0)>0).map(order=><div key={order.clientOrderId}>
+          <span>{order.ticker} · order {order.clientOrderId} </span>
+          <button disabled={busy} onClick={()=>void action("cancel-owned-order",undefined,{clientOrderId:order.clientOrderId,requestId:crypto.randomUUID()})} className="rounded border px-2 py-1">Cancel owned demo order</button>
+        </div>)}
+        {state.protectiveCancellation.attempts.map(attempt=><p key={attempt.requestId}>Cancellation result for {attempt.clientOrderId}: {attempt.status}</p>)}
+      </div>}
       {error && <p className="mt-2 text-rose-300">{error}</p>}
     </>}
   </section>;

@@ -18,6 +18,10 @@ const request = {
   wire:translate({ticker:"KXBTC15M-FIXTURE",clientOrderId:clientId,outcome:"NO",action:"buy",priceDollars:"0.48",quantity:"1",subaccount:0}),
 };
 const ack = {order_id:orderId, client_order_id:clientId, fill_count:"0.25", remaining_count:"0.00", ts_ms:Date.now()};
+const {wire: ignoredWire, submitBefore: ignoredDeadline, ...cancelBase} = request;
+const cancel = {...cancelBase, command:"cancel", cancelBefore:request.submitBefore,
+  target:{order_id:orderId,client_order_id:clientId,ticker:"KXBTC15M-FIXTURE",exchange_index:2,subaccount:0,remaining_count:"0.75"}};
+const cancelAck = {order_id:orderId,client_order_id:clientId,reduced_by:"0.75",ts_ms:Date.now()};
 function response(body: unknown = ack, status = 201) { return new Response(JSON.stringify(body), {status}); }
 
 test("DEMO bridge calls the real BRTI adapter, signs the fixed route, and preserves the exact NO preview", async () => {
@@ -102,4 +106,47 @@ test("one-shot executable validates a private-pipe ping and redacts malformed ke
   const bad = spawnSync(process.execPath,[path],{input:JSON.stringify({...base,command:"ping",credentials:{...base.credentials,privateKeyPem:secret}}),env:{...env,PATH:process.env.PATH},encoding:"utf8"});
   assert.equal(bad.status,1); assert.equal(JSON.parse(bad.stdout).status,"REFUSED");
   assert.equal(bad.stderr,""); assert.ok(!bad.stdout.includes(secret));
+});
+
+test("protective cancellation signs one fixed DEMO DELETE with explicit exchange and no body", async () => {
+  let calls = 0;
+  const result = await demoBridgeRequest(cancel,async (url,opts)=>{
+    calls++;
+    assert.equal(url,`https://external-api.demo.kalshi.co/trade-api/v2/portfolio/events/orders/${orderId}?subaccount=0&exchange_index=2`);
+    assert.equal(opts?.method,"DELETE"); assert.equal(opts?.body,undefined);
+    assert.equal(opts?.redirect,"error"); assert.ok(opts?.signal);
+    const headers = new Headers(opts?.headers);
+    const content = headers.get("KALSHI-ACCESS-TIMESTAMP") + `DELETE/trade-api/v2/portfolio/events/orders/${orderId}`;
+    assert.ok(verify("RSA-SHA256",Buffer.from(content),{key:publicKey,padding:constants.RSA_PKCS1_PSS_PADDING,saltLength:32},Buffer.from(headers.get("KALSHI-ACCESS-SIGNATURE")!,"base64")));
+    return response(cancelAck,200);
+  },env);
+  assert.equal(calls,1); assert.equal(result.status,"ACKNOWLEDGED");
+  assert.ok(!("reduced_by" in result));
+});
+
+test("cancel refuses arbitrary scope, route, deadlines and shape before DELETE", async () => {
+  let calls=0;
+  const transport: typeof fetch = async ()=>{calls++; return response(cancelAck,200);};
+  for (const target of [
+    {...cancel.target,exchange_index:-1},{...cancel.target,subaccount:1},
+    {...cancel.target,order_id:"../all"},{...cancel.target,client_order_id:"unknown"},
+    {...cancel.target,remaining_count:"0.00"},{...cancel.target,remaining_count:"0.001"},
+    {...cancel.target,ticker:"KXOTHER-TEST"},{...cancel.target,path:"/all"},
+  ]) await assert.rejects(demoBridgeRequest({...cancel,target},transport,env));
+  for (const raw of [{...cancel,cancelBefore:new Date(0).toISOString()},
+    {...cancel,cancelBefore:"bad"},{...cancel,environment:"PRODUCTION"},{...cancel,wire:request.wire}])
+    await assert.rejects(demoBridgeRequest(raw,transport,env));
+  assert.equal(calls,0);
+});
+
+test("cancel acknowledgment cannot invent released risk, and ambiguous transport never retries", async () => {
+  for (const bad of [{}, {...cancelAck,order_id:clientId},{...cancelAck,client_order_id:orderId},
+    {...cancelAck,reduced_by:"0.76"},{...cancelAck,reduced_by:"NaN"},{...cancelAck,ts_ms:0}])
+    await assert.rejects(demoBridgeRequest(cancel,async()=>response(bad,200),env));
+  for (const status of [0,201,404,429,500]) {
+    let calls=0;
+    await assert.rejects(demoBridgeRequest(cancel,async()=>{calls++; if (!status) throw new Error("lost"); return response(cancelAck,status);},env));
+    assert.equal(calls,1);
+  }
+  assert.equal((await demoBridgeRequest(cancel,async()=>response({...cancelAck,reduced_by:"0.00"},200),env)).status,"ACKNOWLEDGED");
 });

@@ -18,6 +18,24 @@ export interface V2Order {
   self_trade_prevention_type: "taker_at_cross"; subaccount: number; exchange_index: 0 | 2;
 }
 
+export interface CancelTarget {
+  order_id: string; client_order_id: string; ticker: string;
+  subaccount: 0; exchange_index: 0 | 2; remaining_count: string;
+}
+
+export function validateCancelTarget(raw: unknown): asserts raw is CancelTarget {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) fail("invalid_cancel_target");
+  const r = raw as Record<string, unknown>;
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (Object.keys(r).sort().join(",") !== "client_order_id,exchange_index,order_id,remaining_count,subaccount,ticker" ||
+      typeof r.order_id !== "string" || !uuid.test(r.order_id) ||
+      typeof r.client_order_id !== "string" || !uuid.test(r.client_order_id) ||
+      typeof r.ticker !== "string" || !/^KXBTC15M-[A-Z0-9-]+$/.test(r.ticker) ||
+      r.subaccount !== 0 || (r.exchange_index !== 0 && r.exchange_index !== 2) ||
+      typeof r.remaining_count !== "string" || !/^\d+\.\d{2}$/.test(r.remaining_count) ||
+      BigInt(r.remaining_count.replace(".", "")) <= 0n) fail("invalid_cancel_target");
+}
+
 function fail(reason: string): never { throw new Error(reason); }
 
 export function fixedPrice(value: string): bigint {
@@ -116,5 +134,11 @@ export class CellularDemoAdapter {
   async submit(order: V2Order, submitBeforeMs?: number): Promise<unknown> {
     validateV2(order);
     return this.request("POST", "/portfolio/events/orders", order, 201, submitBeforeMs);
+  }
+
+  async cancel(target: CancelTarget, cancelBeforeMs: number): Promise<unknown> {
+    validateCancelTarget(target);
+    return this.request("DELETE", `/portfolio/events/orders/${target.order_id}?subaccount=0&exchange_index=${target.exchange_index}`,
+      undefined, 200, cancelBeforeMs);
   }
 }

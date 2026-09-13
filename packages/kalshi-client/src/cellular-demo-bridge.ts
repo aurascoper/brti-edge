@@ -4,7 +4,7 @@
  */
 import { createHash, createPrivateKey, createPublicKey } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { CellularDemoAdapter, checkEnvironment, requireManualCount, validateV2 } from "./cellular.js";
+import { CellularDemoAdapter, checkEnvironment, requireManualCount, validateV2, validateCancelTarget } from "./cellular.js";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function fail(reason: string): never { throw new Error(reason); }
@@ -21,10 +21,10 @@ export async function demoBridgeRequest(raw: unknown, transport: typeof fetch = 
                                        env: NodeJS.ProcessEnv = process.env): Promise<Record<string, unknown>> {
   checkEnvironment(env, "DEMO");
   const r = record(raw);
-  const keys = ["schemaId", "id", "command", "environment", "credentials", "firstN", "seriesUntested", ...(r.command === "submit" ? ["wire", "submitBefore"] : [])].sort();
+  const keys = ["schemaId", "id", "command", "environment", "credentials", "firstN", "seriesUntested", ...(r.command === "submit" ? ["wire", "submitBefore"] : r.command === "cancel" ? ["target", "cancelBefore"] : [])].sort();
   if (JSON.stringify(Object.keys(r).sort()) !== JSON.stringify(keys) ||
       r.schemaId !== "cellular.demo-adapter-request.v1" || r.environment !== "DEMO" ||
-      typeof r.id !== "string" || !uuid.test(r.id) || !["ping", "submit"].includes(String(r.command))) fail("demo_bridge_identity_or_command");
+      typeof r.id !== "string" || !uuid.test(r.id) || !["ping", "submit", "cancel"].includes(String(r.command))) fail("demo_bridge_identity_or_command");
   if (typeof r.seriesUntested !== "boolean" || typeof r.firstN !== "number" || r.firstN < 3) fail("demo_first_three_required");
   requireManualCount(r.seriesUntested, r.firstN);
   const creds = record(r.credentials);
@@ -36,6 +36,17 @@ export async function demoBridgeRequest(raw: unknown, transport: typeof fetch = 
   const identity = createHash("sha256").update(createPublicKey(privateKey).export({type:"spki",format:"der"})).digest("hex");
   const base = {schemaId:"cellular.demo-adapter-response.v1", id:r.id, environment:"DEMO", accountIdentity:identity};
   if (r.command === "ping") return {...base, status:"READY", transport:"brti_demo"};
+  if (r.command === "cancel") {
+    validateCancelTarget(r.target);
+    if (typeof r.cancelBefore !== "string" || !/(Z|\+00:00)$/.test(r.cancelBefore) || !Number.isFinite(Date.parse(r.cancelBefore))) fail("demo_cancel_deadline_required");
+    const adapter = new CellularDemoAdapter({keyId:creds.keyId, privateKey}, transport, env);
+    const ack = record(await adapter.cancel(r.target, Date.parse(r.cancelBefore)));
+    if (ack.order_id !== r.target.order_id || ack.client_order_id !== r.target.client_order_id ||
+        !Number.isSafeInteger(ack.ts_ms) || Number(ack.ts_ms) <= 0 ||
+        quantity(ack.reduced_by) > quantity(r.target.remaining_count)) fail("demo_cancel_ack_mismatch");
+    // GET reconciliation alone may release risk or recognize a racing fill.
+    return {...base, status:"ACKNOWLEDGED", order_id:ack.order_id, client_order_id:ack.client_order_id};
+  }
   validateV2(r.wire);
   if (typeof r.submitBefore !== "string" || !/(Z|\+00:00)$/.test(r.submitBefore) || !Number.isFinite(Date.parse(r.submitBefore))) fail("demo_submission_deadline_required");
   if (!uuid.test(r.wire.client_order_id) || r.wire.reduce_only || r.wire.subaccount !== 0) fail("demo_entry_primary_scope_required");

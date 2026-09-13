@@ -52,3 +52,18 @@ import the closed maker or establish strategy edge.
 node_modules/.bin/tsc -p packages/kalshi-client/tsconfig.json
 node --test packages/kalshi-client/dist/cellular.test.js packages/kalshi-client/dist/cellular-bridge.test.js packages/kalshi-client/dist/cellular-demo-bridge.test.js
 ```
+# Revision 13: protective cancellation
+
+The DEMO private-pipe bridge accepts a strict `cancel` command with an owned
+target and deadline. It signs a single DELETE on the fixed DEMO host using the
+confirmed exchange/subaccount; arbitrary routes, automatic routing and unknown
+fields are refused. Identity/count validation governs acknowledgment, which
+never releases risk. OBI owns the durable intent, fresh receipt/preview/handoff
+ownership checks, restart recovery and full GET reconciliation.
+
+The dashboard exposes cancellation of locally unresolved owned DEMO orders,
+including while entries are halted. Filled positions remain held to settlement.
+All 16 Node tests and both TypeScript builds pass; the complete OBI suite passes
+317 tests. Chromium captured one synthetic exchange-2 DELETE while HALTED and
+$0.51 unresolved risk persisted. No authenticated venue order/cancellation or
+live activation ran; Noether/import and real mechanics acceptance remain open.
