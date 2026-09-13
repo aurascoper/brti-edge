@@ -10,7 +10,7 @@ async function proxy(request: NextRequest, method: "GET" | "POST") {
   try {
     const response = await fetch(base + (method === "GET" ? "/state" : "/control"), {
       method, headers: {authorization, "content-type":"application/json"}, cache:"no-store",
-      ...(method === "POST" ? {body:await request.text()} : {}), signal:AbortSignal.timeout(3000), redirect:"error",
+      ...(method === "POST" ? {body:await request.text()} : {}), signal:AbortSignal.timeout(25000), redirect:"error",
     });
     return new NextResponse(await response.text(), {status:response.status, headers:{"content-type":"application/json","cache-control":"no-store"}});
   } catch {
