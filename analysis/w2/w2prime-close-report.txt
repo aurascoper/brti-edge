@@ -1,0 +1,21 @@
+# W2 close protocol — 2026-08-06T10:00:00Z -> 2026-08-20T10:00:00Z  (tag w2prime-instrument-20260806)
+
+[1] G4 eligibility
+  shadow: coverage 29.82%  max gap 228.01h  -> FAIL
+    gap 2026-08-06T10:00:00Z -> 2026-08-15T22:00:34Z
+    gap 2026-08-17T11:16:48Z -> 2026-08-17T14:06:21Z
+    gap 2026-08-19T12:15:08Z -> 2026-08-19T14:58:47Z
+    gap 2026-08-20T06:45:23Z -> 2026-08-20T09:00:35Z
+  collector: worst-channel 94.94%  max missing run 3h  -> FAIL
+
+[2] settlement reconciliation (F1)
+  exchange settled: 1327  captured locally: 1299  missing: 28  extra-local: 0
+    missing: KXBTC15M-26AUG080215-15, KXBTC15M-26AUG101145-45, KXBTC15M-26AUG140315-15, KXBTC15M-26AUG142215-15, KXBTC15M-26AUG151715-15, KXBTC15M-26AUG151730-30, KXBTC15M-26AUG170730-30, KXBTC15M-26AUG170745-45, KXBTC15M-26AUG170800-00, KXBTC15M-26AUG170815-15 … +18
+
+[3] G5 freeze integrity -> PASS
+  diff vs w2prime-instrument-20260806: (clean)
+  working tree: (clean)
+  calibration.json absent: True
+  env: [kalshi-worker] starting; scan interval 15000ms; port 4001
+
+VERDICT: NO-GO (data) — window ineligible (§4); scorer not consulted

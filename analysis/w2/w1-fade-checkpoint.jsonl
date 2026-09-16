@@ -1,0 +1,93 @@
+{"ticker": "KXBTC15M-26AUG020030-30", "side": "NO", "ask": 0.21, "ts_ms": 1785644844625.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.21, "max_2s": 0.21, "max_15s": 0.22, "events_2s": 672}
+{"ticker": "KXBTC15M-26AUG020100-00", "side": "NO", "ask": 0.49, "ts_ms": 1785645939727.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.49, "max_2s": 0.49, "max_15s": 0.49, "events_2s": 897}
+{"ticker": "KXBTC15M-26AUG020115-15", "side": "NO", "ask": 0.54, "ts_ms": 1785646839747.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.54, "max_2s": 0.54, "max_15s": 0.54, "events_2s": 861}
+{"ticker": "KXBTC15M-26AUG020130-30", "side": "NO", "ask": 0.68, "ts_ms": 1785647739823.0, "y": 0.0, "class": "FADE_2S", "ask_at_signal": 0.68, "max_2s": 0.69, "max_15s": 0.69, "events_2s": 486}
+{"ticker": "KXBTC15M-26AUG020200-00", "side": "NO", "ask": 0.44, "ts_ms": 1785649539896.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.44, "max_2s": 0.44, "max_15s": 0.45, "events_2s": 464}
+{"ticker": "KXBTC15M-26AUG020215-15", "side": "NO", "ask": 0.44, "ts_ms": 1785650424886.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020245-45", "side": "NO", "ask": 0.48, "ts_ms": 1785652270101.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.45, "max_2s": 0.45, "max_15s": 0.45, "events_2s": 863}
+{"ticker": "KXBTC15M-26AUG020300-00", "side": "NO", "ask": 0.52, "ts_ms": 1785653125110.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020315-15", "side": "NO", "ask": 0.53, "ts_ms": 1785654010310.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020330-30", "side": "NO", "ask": 0.43, "ts_ms": 1785654910388.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020345-45", "side": "NO", "ask": 0.51, "ts_ms": 1785655825396.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020415-15", "side": "NO", "ask": 0.34, "ts_ms": 1785657640685.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020500-00", "side": "NO", "ask": 0.64, "ts_ms": 1785660340934.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.64, "max_2s": 0.64, "max_15s": 0.64, "events_2s": 278}
+{"ticker": "KXBTC15M-26AUG020530-30", "side": "NO", "ask": 0.5, "ts_ms": 1785662126047.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020545-45", "side": "NO", "ask": 0.51, "ts_ms": 1785663011212.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020600-00", "side": "NO", "ask": 0.5, "ts_ms": 1785663956238.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.45, "max_2s": 0.45, "max_15s": 0.45, "events_2s": 486}
+{"ticker": "KXBTC15M-26AUG020615-15", "side": "YES", "ask": 0.28, "ts_ms": 1785664946315.0, "y": 0.0, "class": "FADE_2S", "ask_at_signal": 0.28, "max_2s": 0.29, "max_15s": 0.29, "events_2s": 381}
+{"ticker": "KXBTC15M-26AUG020630-30", "side": "NO", "ask": 0.26, "ts_ms": 1785665771532.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020645-45", "side": "NO", "ask": 0.39, "ts_ms": 1785666626511.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020700-00", "side": "NO", "ask": 0.51, "ts_ms": 1785667526600.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020730-30", "side": "NO", "ask": 0.39, "ts_ms": 1785669326802.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020800-00", "side": "NO", "ask": 0.37, "ts_ms": 1785671112032.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020915-15", "side": "NO", "ask": 0.48, "ts_ms": 1785675642571.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.48, "max_2s": 0.48, "max_15s": 0.48, "events_2s": 183}
+{"ticker": "KXBTC15M-26AUG020930-30", "side": "NO", "ask": 0.65, "ts_ms": 1785676527560.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG020945-45", "side": "NO", "ask": 0.53, "ts_ms": 1785677427689.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021000-00", "side": "NO", "ask": 0.42, "ts_ms": 1785678327782.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021015-15", "side": "NO", "ask": 0.55, "ts_ms": 1785679242931.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021030-30", "side": "NO", "ask": 0.42, "ts_ms": 1785680128009.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021045-45", "side": "YES", "ask": 0.25, "ts_ms": 1785681118053.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.25, "max_2s": 0.25, "max_15s": 0.25, "events_2s": 830}
+{"ticker": "KXBTC15M-26AUG021130-30", "side": "NO", "ask": 0.49, "ts_ms": 1785683773428.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.48, "max_2s": 0.48, "max_15s": 0.48, "events_2s": 323}
+{"ticker": "KXBTC15M-26AUG021145-45", "side": "NO", "ask": 0.39, "ts_ms": 1785684628439.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021200-00", "side": "NO", "ask": 0.53, "ts_ms": 1785685528500.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021400-00", "side": "NO", "ask": 0.36, "ts_ms": 1785692714338.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021415-15", "side": "NO", "ask": 0.5, "ts_ms": 1785693629366.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021430-30", "side": "YES", "ask": 0.32, "ts_ms": 1785694559417.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.26, "max_2s": 0.26, "max_15s": 0.26, "events_2s": 572}
+{"ticker": "KXBTC15M-26AUG021445-45", "side": "NO", "ask": 0.54, "ts_ms": 1785695414601.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021515-15", "side": "YES", "ask": 0.36, "ts_ms": 1785697229731.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021600-00", "side": "NO", "ask": 0.35, "ts_ms": 1785699915047.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021615-15", "side": "NO", "ask": 0.51, "ts_ms": 1785700860102.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021630-30", "side": "NO", "ask": 0.52, "ts_ms": 1785701745281.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.49, "max_2s": 0.49, "max_15s": 0.5, "events_2s": 446}
+{"ticker": "KXBTC15M-26AUG021645-45", "side": "NO", "ask": 0.5, "ts_ms": 1785702630294.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.5, "max_2s": 0.5, "max_15s": 0.5, "events_2s": 362}
+{"ticker": "KXBTC15M-26AUG021730-30", "side": "NO", "ask": 0.38, "ts_ms": 1785705330538.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.38, "max_2s": 0.38, "max_15s": 0.38, "events_2s": 899}
+{"ticker": "KXBTC15M-26AUG021745-45", "side": "YES", "ask": 0.63, "ts_ms": 1785706245721.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.63, "max_2s": 0.63, "max_15s": 0.63, "events_2s": 350}
+{"ticker": "KXBTC15M-26AUG021800-00", "side": "YES", "ask": 0.65, "ts_ms": 1785707160710.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021815-15", "side": "YES", "ask": 0.76, "ts_ms": 1785708030889.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021845-45", "side": "YES", "ask": 0.49, "ts_ms": 1785709846050.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021900-00", "side": "NO", "ask": 0.37, "ts_ms": 1785710716142.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021930-30", "side": "NO", "ask": 0.45, "ts_ms": 1785712516323.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG021945-45", "side": "NO", "ask": 0.47, "ts_ms": 1785713431318.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG022030-30", "side": "NO", "ask": 0.43, "ts_ms": 1785716131556.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG022100-00", "side": "NO", "ask": 0.47, "ts_ms": 1785717931772.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.47, "max_2s": 0.47, "max_15s": 0.47, "events_2s": 696}
+{"ticker": "KXBTC15M-26AUG022130-30", "side": "NO", "ask": 0.5, "ts_ms": 1785719731972.0, "y": 0.0, "class": "FADE_2S", "ask_at_signal": 0.5, "max_2s": 0.51, "max_15s": 0.51, "events_2s": 582}
+{"ticker": "KXBTC15M-26AUG022200-00", "side": "NO", "ask": 0.45, "ts_ms": 1785721517200.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG022215-15", "side": "YES", "ask": 0.33, "ts_ms": 1785722447283.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG022245-45", "side": "NO", "ask": 0.38, "ts_ms": 1785724217500.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG022315-15", "side": "NO", "ask": 0.59, "ts_ms": 1785726032546.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.59, "max_2s": 0.59, "max_15s": 0.59, "events_2s": 648}
+{"ticker": "KXBTC15M-26AUG022345-45", "side": "NO", "ask": 0.47, "ts_ms": 1785727832748.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030015-15", "side": "NO", "ask": 0.53, "ts_ms": 1785729632977.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.52, "max_2s": 0.52, "max_15s": 0.52, "events_2s": 360}
+{"ticker": "KXBTC15M-26AUG030030-30", "side": "NO", "ask": 0.26, "ts_ms": 1785730548095.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.25, "max_2s": 0.25, "max_15s": 0.25, "events_2s": 1114}
+{"ticker": "KXBTC15M-26AUG030045-45", "side": "NO", "ask": 0.42, "ts_ms": 1785731433199.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.42, "max_2s": 0.42, "max_15s": 0.42, "events_2s": 549}
+{"ticker": "KXBTC15M-26AUG030115-15", "side": "NO", "ask": 0.39, "ts_ms": 1785733218358.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030200-00", "side": "NO", "ask": 0.49, "ts_ms": 1785735933607.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.49, "max_2s": 0.49, "max_15s": 0.49, "events_2s": 373}
+{"ticker": "KXBTC15M-26AUG030215-15", "side": "NO", "ask": 0.49, "ts_ms": 1785736833700.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.48, "max_2s": 0.48, "max_15s": 0.48, "events_2s": 516}
+{"ticker": "KXBTC15M-26AUG030245-45", "side": "NO", "ask": 0.46, "ts_ms": 1785738633859.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.46, "max_2s": 0.46, "max_15s": 0.46, "events_2s": 345}
+{"ticker": "KXBTC15M-26AUG030345-45", "side": "NO", "ask": 0.51, "ts_ms": 1785742249234.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030400-00", "side": "NO", "ask": 0.46, "ts_ms": 1785743134314.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.43, "max_2s": 0.43, "max_15s": 0.43, "events_2s": 378}
+{"ticker": "KXBTC15M-26AUG030500-00", "side": "NO", "ask": 0.47, "ts_ms": 1785746719678.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030515-15", "side": "NO", "ask": 0.48, "ts_ms": 1785747634778.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.48, "max_2s": 0.48, "max_15s": 0.48, "events_2s": 275}
+{"ticker": "KXBTC15M-26AUG030530-30", "side": "NO", "ask": 0.5, "ts_ms": 1785748519865.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030545-45", "side": "NO", "ask": 0.51, "ts_ms": 1785749449918.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030600-00", "side": "NO", "ask": 0.44, "ts_ms": 1785750334954.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.44, "max_2s": 0.44, "max_15s": 0.45, "events_2s": 400}
+{"ticker": "KXBTC15M-26AUG030630-30", "side": "NO", "ask": 0.51, "ts_ms": 1785752150182.0, "y": 0.0, "class": "FADE_2S", "ask_at_signal": 0.51, "max_2s": 0.52, "max_15s": 0.52, "events_2s": 323}
+{"ticker": "KXBTC15M-26AUG030645-45", "side": "NO", "ask": 0.67, "ts_ms": 1785753080253.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030730-30", "side": "NO", "ask": 0.43, "ts_ms": 1785755735539.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.43, "max_2s": 0.43, "max_15s": 0.43, "events_2s": 939}
+{"ticker": "KXBTC15M-26AUG030745-45", "side": "NO", "ask": 0.47, "ts_ms": 1785756665629.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030815-15", "side": "NO", "ask": 0.54, "ts_ms": 1785758420856.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030830-30", "side": "NO", "ask": 0.41, "ts_ms": 1785759335903.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.41, "max_2s": 0.41, "max_15s": 0.41, "events_2s": 229}
+{"ticker": "KXBTC15M-26AUG030845-45", "side": "NO", "ask": 0.53, "ts_ms": 1785760221023.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG030900-00", "side": "NO", "ask": 0.37, "ts_ms": 1785761196104.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.26, "max_2s": 0.26, "max_15s": 0.26, "events_2s": 723}
+{"ticker": "KXBTC15M-26AUG030930-30", "side": "NO", "ask": 0.45, "ts_ms": 1785762936270.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.45, "max_2s": 0.45, "max_15s": 0.46, "events_2s": 326}
+{"ticker": "KXBTC15M-26AUG030945-45", "side": "NO", "ask": 0.6, "ts_ms": 1785763821308.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG031030-30", "side": "NO", "ask": 0.41, "ts_ms": 1785766566735.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.41, "max_2s": 0.41, "max_15s": 0.41, "events_2s": 428}
+{"ticker": "KXBTC15M-26AUG031045-45", "side": "YES", "ask": 0.49, "ts_ms": 1785767436693.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.49, "max_2s": 0.49, "max_15s": 0.49, "events_2s": 1066}
+{"ticker": "KXBTC15M-26AUG031115-15", "side": "YES", "ask": 0.48, "ts_ms": 1785769221917.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG031130-30", "side": "NO", "ask": 0.45, "ts_ms": 1785770126204.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG031145-45", "side": "NO", "ask": 0.45, "ts_ms": 1785771026222.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG031200-00", "side": "NO", "ask": 0.45, "ts_ms": 1785771926281.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG031330-30", "side": "NO", "ask": 0.52, "ts_ms": 1785777319842.0, "y": 0.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG031345-45", "side": "NO", "ask": 0.54, "ts_ms": 1785778249904.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.54, "max_2s": 0.54, "max_15s": 0.54, "events_2s": 369}
+{"ticker": "KXBTC15M-26AUG031400-00", "side": "NO", "ask": 0.48, "ts_ms": 1785779134978.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}
+{"ticker": "KXBTC15M-26AUG031415-15", "side": "YES", "ask": 0.47, "ts_ms": 1785780049871.0, "y": 1.0, "class": "STABLE", "ask_at_signal": 0.47, "max_2s": 0.47, "max_15s": 0.47, "events_2s": 1496}
+{"ticker": "KXBTC15M-26AUG031430-30", "side": "YES", "ask": 0.46, "ts_ms": 1785780994968.0, "y": 0.0, "class": "STABLE", "ask_at_signal": 0.44, "max_2s": 0.44, "max_15s": 0.44, "events_2s": 1434}
+{"ticker": "KXBTC15M-26AUG031445-45", "side": "NO", "ask": 0.35, "ts_ms": 1785781820012.0, "y": 1.0, "class": "INSUFFICIENT", "why": "no snapshot at/before signal"}

@@ -1,0 +1,3322 @@
+[
+ {
+  "ticker": "KXBTC15M-26AUG130600-00",
+  "close_time": "2026-08-13T10:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130545-45",
+  "close_time": "2026-08-13T09:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130530-30",
+  "close_time": "2026-08-13T09:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130515-15",
+  "close_time": "2026-08-13T09:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130245-45",
+  "close_time": "2026-08-13T06:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130230-30",
+  "close_time": "2026-08-13T06:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130215-15",
+  "close_time": "2026-08-13T06:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130200-00",
+  "close_time": "2026-08-13T06:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130145-45",
+  "close_time": "2026-08-13T05:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130130-30",
+  "close_time": "2026-08-13T05:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130115-15",
+  "close_time": "2026-08-13T05:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130100-00",
+  "close_time": "2026-08-13T05:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130045-45",
+  "close_time": "2026-08-13T04:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130030-30",
+  "close_time": "2026-08-13T04:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130015-15",
+  "close_time": "2026-08-13T04:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG130000-00",
+  "close_time": "2026-08-13T04:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122345-45",
+  "close_time": "2026-08-13T03:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122330-30",
+  "close_time": "2026-08-13T03:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122315-15",
+  "close_time": "2026-08-13T03:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122300-00",
+  "close_time": "2026-08-13T03:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122245-45",
+  "close_time": "2026-08-13T02:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122230-30",
+  "close_time": "2026-08-13T02:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122215-15",
+  "close_time": "2026-08-13T02:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122200-00",
+  "close_time": "2026-08-13T02:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122145-45",
+  "close_time": "2026-08-13T01:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122130-30",
+  "close_time": "2026-08-13T01:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122115-15",
+  "close_time": "2026-08-13T01:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122100-00",
+  "close_time": "2026-08-13T01:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122045-45",
+  "close_time": "2026-08-13T00:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122030-30",
+  "close_time": "2026-08-13T00:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122015-15",
+  "close_time": "2026-08-13T00:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG122000-00",
+  "close_time": "2026-08-13T00:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121945-45",
+  "close_time": "2026-08-12T23:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121930-30",
+  "close_time": "2026-08-12T23:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121915-15",
+  "close_time": "2026-08-12T23:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121900-00",
+  "close_time": "2026-08-12T23:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121845-45",
+  "close_time": "2026-08-12T22:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121830-30",
+  "close_time": "2026-08-12T22:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121815-15",
+  "close_time": "2026-08-12T22:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121800-00",
+  "close_time": "2026-08-12T22:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121745-45",
+  "close_time": "2026-08-12T21:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121730-30",
+  "close_time": "2026-08-12T21:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121715-15",
+  "close_time": "2026-08-12T21:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121700-00",
+  "close_time": "2026-08-12T21:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121645-45",
+  "close_time": "2026-08-12T20:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121630-30",
+  "close_time": "2026-08-12T20:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121615-15",
+  "close_time": "2026-08-12T20:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121600-00",
+  "close_time": "2026-08-12T20:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121545-45",
+  "close_time": "2026-08-12T19:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121530-30",
+  "close_time": "2026-08-12T19:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121515-15",
+  "close_time": "2026-08-12T19:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121500-00",
+  "close_time": "2026-08-12T19:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121445-45",
+  "close_time": "2026-08-12T18:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121430-30",
+  "close_time": "2026-08-12T18:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121415-15",
+  "close_time": "2026-08-12T18:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121400-00",
+  "close_time": "2026-08-12T18:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121345-45",
+  "close_time": "2026-08-12T17:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121330-30",
+  "close_time": "2026-08-12T17:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121315-15",
+  "close_time": "2026-08-12T17:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121300-00",
+  "close_time": "2026-08-12T17:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121245-45",
+  "close_time": "2026-08-12T16:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121230-30",
+  "close_time": "2026-08-12T16:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121215-15",
+  "close_time": "2026-08-12T16:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121200-00",
+  "close_time": "2026-08-12T16:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121145-45",
+  "close_time": "2026-08-12T15:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121130-30",
+  "close_time": "2026-08-12T15:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121115-15",
+  "close_time": "2026-08-12T15:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121100-00",
+  "close_time": "2026-08-12T15:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121045-45",
+  "close_time": "2026-08-12T14:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121030-30",
+  "close_time": "2026-08-12T14:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121015-15",
+  "close_time": "2026-08-12T14:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG121000-00",
+  "close_time": "2026-08-12T14:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120945-45",
+  "close_time": "2026-08-12T13:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120930-30",
+  "close_time": "2026-08-12T13:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120915-15",
+  "close_time": "2026-08-12T13:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120900-00",
+  "close_time": "2026-08-12T13:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120845-45",
+  "close_time": "2026-08-12T12:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120830-30",
+  "close_time": "2026-08-12T12:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120815-15",
+  "close_time": "2026-08-12T12:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120800-00",
+  "close_time": "2026-08-12T12:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120745-45",
+  "close_time": "2026-08-12T11:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120730-30",
+  "close_time": "2026-08-12T11:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120715-15",
+  "close_time": "2026-08-12T11:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120700-00",
+  "close_time": "2026-08-12T11:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120645-45",
+  "close_time": "2026-08-12T10:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120630-30",
+  "close_time": "2026-08-12T10:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120615-15",
+  "close_time": "2026-08-12T10:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120600-00",
+  "close_time": "2026-08-12T10:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120545-45",
+  "close_time": "2026-08-12T09:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120530-30",
+  "close_time": "2026-08-12T09:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120515-15",
+  "close_time": "2026-08-12T09:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120500-00",
+  "close_time": "2026-08-12T09:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120445-45",
+  "close_time": "2026-08-12T08:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120430-30",
+  "close_time": "2026-08-12T08:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120415-15",
+  "close_time": "2026-08-12T08:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120400-00",
+  "close_time": "2026-08-12T08:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120345-45",
+  "close_time": "2026-08-12T07:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120330-30",
+  "close_time": "2026-08-12T07:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120315-15",
+  "close_time": "2026-08-12T07:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120300-00",
+  "close_time": "2026-08-12T07:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120245-45",
+  "close_time": "2026-08-12T06:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120230-30",
+  "close_time": "2026-08-12T06:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120215-15",
+  "close_time": "2026-08-12T06:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120200-00",
+  "close_time": "2026-08-12T06:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120145-45",
+  "close_time": "2026-08-12T05:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120130-30",
+  "close_time": "2026-08-12T05:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120115-15",
+  "close_time": "2026-08-12T05:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120100-00",
+  "close_time": "2026-08-12T05:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120045-45",
+  "close_time": "2026-08-12T04:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120030-30",
+  "close_time": "2026-08-12T04:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120015-15",
+  "close_time": "2026-08-12T04:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG120000-00",
+  "close_time": "2026-08-12T04:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112345-45",
+  "close_time": "2026-08-12T03:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112330-30",
+  "close_time": "2026-08-12T03:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112315-15",
+  "close_time": "2026-08-12T03:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112300-00",
+  "close_time": "2026-08-12T03:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112245-45",
+  "close_time": "2026-08-12T02:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112230-30",
+  "close_time": "2026-08-12T02:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112215-15",
+  "close_time": "2026-08-12T02:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112200-00",
+  "close_time": "2026-08-12T02:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112145-45",
+  "close_time": "2026-08-12T01:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112130-30",
+  "close_time": "2026-08-12T01:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112115-15",
+  "close_time": "2026-08-12T01:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112100-00",
+  "close_time": "2026-08-12T01:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112045-45",
+  "close_time": "2026-08-12T00:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112030-30",
+  "close_time": "2026-08-12T00:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112015-15",
+  "close_time": "2026-08-12T00:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG112000-00",
+  "close_time": "2026-08-12T00:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111945-45",
+  "close_time": "2026-08-11T23:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111930-30",
+  "close_time": "2026-08-11T23:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111915-15",
+  "close_time": "2026-08-11T23:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111900-00",
+  "close_time": "2026-08-11T23:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111845-45",
+  "close_time": "2026-08-11T22:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111830-30",
+  "close_time": "2026-08-11T22:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111815-15",
+  "close_time": "2026-08-11T22:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111800-00",
+  "close_time": "2026-08-11T22:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111745-45",
+  "close_time": "2026-08-11T21:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111730-30",
+  "close_time": "2026-08-11T21:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111715-15",
+  "close_time": "2026-08-11T21:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111700-00",
+  "close_time": "2026-08-11T21:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111645-45",
+  "close_time": "2026-08-11T20:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111630-30",
+  "close_time": "2026-08-11T20:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111615-15",
+  "close_time": "2026-08-11T20:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111600-00",
+  "close_time": "2026-08-11T20:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111545-45",
+  "close_time": "2026-08-11T19:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111530-30",
+  "close_time": "2026-08-11T19:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111515-15",
+  "close_time": "2026-08-11T19:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111500-00",
+  "close_time": "2026-08-11T19:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111445-45",
+  "close_time": "2026-08-11T18:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111430-30",
+  "close_time": "2026-08-11T18:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111415-15",
+  "close_time": "2026-08-11T18:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111400-00",
+  "close_time": "2026-08-11T18:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111345-45",
+  "close_time": "2026-08-11T17:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111330-30",
+  "close_time": "2026-08-11T17:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111315-15",
+  "close_time": "2026-08-11T17:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111300-00",
+  "close_time": "2026-08-11T17:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111245-45",
+  "close_time": "2026-08-11T16:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111230-30",
+  "close_time": "2026-08-11T16:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111215-15",
+  "close_time": "2026-08-11T16:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111200-00",
+  "close_time": "2026-08-11T16:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111145-45",
+  "close_time": "2026-08-11T15:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111130-30",
+  "close_time": "2026-08-11T15:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111115-15",
+  "close_time": "2026-08-11T15:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111100-00",
+  "close_time": "2026-08-11T15:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111045-45",
+  "close_time": "2026-08-11T14:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111030-30",
+  "close_time": "2026-08-11T14:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111015-15",
+  "close_time": "2026-08-11T14:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG111000-00",
+  "close_time": "2026-08-11T14:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110945-45",
+  "close_time": "2026-08-11T13:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110930-30",
+  "close_time": "2026-08-11T13:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110915-15",
+  "close_time": "2026-08-11T13:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110900-00",
+  "close_time": "2026-08-11T13:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110845-45",
+  "close_time": "2026-08-11T12:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110830-30",
+  "close_time": "2026-08-11T12:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110815-15",
+  "close_time": "2026-08-11T12:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110800-00",
+  "close_time": "2026-08-11T12:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110745-45",
+  "close_time": "2026-08-11T11:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110730-30",
+  "close_time": "2026-08-11T11:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110715-15",
+  "close_time": "2026-08-11T11:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110700-00",
+  "close_time": "2026-08-11T11:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110645-45",
+  "close_time": "2026-08-11T10:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110630-30",
+  "close_time": "2026-08-11T10:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110615-15",
+  "close_time": "2026-08-11T10:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110600-00",
+  "close_time": "2026-08-11T10:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110545-45",
+  "close_time": "2026-08-11T09:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110530-30",
+  "close_time": "2026-08-11T09:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110515-15",
+  "close_time": "2026-08-11T09:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110500-00",
+  "close_time": "2026-08-11T09:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110445-45",
+  "close_time": "2026-08-11T08:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110430-30",
+  "close_time": "2026-08-11T08:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110415-15",
+  "close_time": "2026-08-11T08:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110400-00",
+  "close_time": "2026-08-11T08:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110345-45",
+  "close_time": "2026-08-11T07:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110330-30",
+  "close_time": "2026-08-11T07:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110315-15",
+  "close_time": "2026-08-11T07:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110300-00",
+  "close_time": "2026-08-11T07:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110245-45",
+  "close_time": "2026-08-11T06:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110230-30",
+  "close_time": "2026-08-11T06:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110215-15",
+  "close_time": "2026-08-11T06:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110200-00",
+  "close_time": "2026-08-11T06:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110145-45",
+  "close_time": "2026-08-11T05:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110130-30",
+  "close_time": "2026-08-11T05:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110115-15",
+  "close_time": "2026-08-11T05:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110100-00",
+  "close_time": "2026-08-11T05:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110045-45",
+  "close_time": "2026-08-11T04:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110030-30",
+  "close_time": "2026-08-11T04:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110015-15",
+  "close_time": "2026-08-11T04:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG110000-00",
+  "close_time": "2026-08-11T04:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102345-45",
+  "close_time": "2026-08-11T03:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102330-30",
+  "close_time": "2026-08-11T03:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102315-15",
+  "close_time": "2026-08-11T03:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102300-00",
+  "close_time": "2026-08-11T03:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102245-45",
+  "close_time": "2026-08-11T02:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102230-30",
+  "close_time": "2026-08-11T02:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102215-15",
+  "close_time": "2026-08-11T02:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102200-00",
+  "close_time": "2026-08-11T02:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102145-45",
+  "close_time": "2026-08-11T01:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102130-30",
+  "close_time": "2026-08-11T01:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102115-15",
+  "close_time": "2026-08-11T01:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102100-00",
+  "close_time": "2026-08-11T01:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102045-45",
+  "close_time": "2026-08-11T00:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102030-30",
+  "close_time": "2026-08-11T00:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102015-15",
+  "close_time": "2026-08-11T00:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG102000-00",
+  "close_time": "2026-08-11T00:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101945-45",
+  "close_time": "2026-08-10T23:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101930-30",
+  "close_time": "2026-08-10T23:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101915-15",
+  "close_time": "2026-08-10T23:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101900-00",
+  "close_time": "2026-08-10T23:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101845-45",
+  "close_time": "2026-08-10T22:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101830-30",
+  "close_time": "2026-08-10T22:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101815-15",
+  "close_time": "2026-08-10T22:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101800-00",
+  "close_time": "2026-08-10T22:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101745-45",
+  "close_time": "2026-08-10T21:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101730-30",
+  "close_time": "2026-08-10T21:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101715-15",
+  "close_time": "2026-08-10T21:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101700-00",
+  "close_time": "2026-08-10T21:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101645-45",
+  "close_time": "2026-08-10T20:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101630-30",
+  "close_time": "2026-08-10T20:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101615-15",
+  "close_time": "2026-08-10T20:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101600-00",
+  "close_time": "2026-08-10T20:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101545-45",
+  "close_time": "2026-08-10T19:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101530-30",
+  "close_time": "2026-08-10T19:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101515-15",
+  "close_time": "2026-08-10T19:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101500-00",
+  "close_time": "2026-08-10T19:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101445-45",
+  "close_time": "2026-08-10T18:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101430-30",
+  "close_time": "2026-08-10T18:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101415-15",
+  "close_time": "2026-08-10T18:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101400-00",
+  "close_time": "2026-08-10T18:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101345-45",
+  "close_time": "2026-08-10T17:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101330-30",
+  "close_time": "2026-08-10T17:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101315-15",
+  "close_time": "2026-08-10T17:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101300-00",
+  "close_time": "2026-08-10T17:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101245-45",
+  "close_time": "2026-08-10T16:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101230-30",
+  "close_time": "2026-08-10T16:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101215-15",
+  "close_time": "2026-08-10T16:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101200-00",
+  "close_time": "2026-08-10T16:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101145-45",
+  "close_time": "2026-08-10T15:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101130-30",
+  "close_time": "2026-08-10T15:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101115-15",
+  "close_time": "2026-08-10T15:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101100-00",
+  "close_time": "2026-08-10T15:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101045-45",
+  "close_time": "2026-08-10T14:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101030-30",
+  "close_time": "2026-08-10T14:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101015-15",
+  "close_time": "2026-08-10T14:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG101000-00",
+  "close_time": "2026-08-10T14:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100945-45",
+  "close_time": "2026-08-10T13:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100930-30",
+  "close_time": "2026-08-10T13:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100915-15",
+  "close_time": "2026-08-10T13:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100900-00",
+  "close_time": "2026-08-10T13:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100845-45",
+  "close_time": "2026-08-10T12:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100830-30",
+  "close_time": "2026-08-10T12:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100815-15",
+  "close_time": "2026-08-10T12:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100800-00",
+  "close_time": "2026-08-10T12:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100745-45",
+  "close_time": "2026-08-10T11:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100730-30",
+  "close_time": "2026-08-10T11:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100715-15",
+  "close_time": "2026-08-10T11:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100700-00",
+  "close_time": "2026-08-10T11:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100645-45",
+  "close_time": "2026-08-10T10:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100630-30",
+  "close_time": "2026-08-10T10:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100615-15",
+  "close_time": "2026-08-10T10:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100600-00",
+  "close_time": "2026-08-10T10:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100545-45",
+  "close_time": "2026-08-10T09:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100530-30",
+  "close_time": "2026-08-10T09:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100515-15",
+  "close_time": "2026-08-10T09:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100500-00",
+  "close_time": "2026-08-10T09:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100445-45",
+  "close_time": "2026-08-10T08:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100430-30",
+  "close_time": "2026-08-10T08:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100415-15",
+  "close_time": "2026-08-10T08:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100400-00",
+  "close_time": "2026-08-10T08:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100345-45",
+  "close_time": "2026-08-10T07:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100330-30",
+  "close_time": "2026-08-10T07:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100315-15",
+  "close_time": "2026-08-10T07:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100300-00",
+  "close_time": "2026-08-10T07:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100245-45",
+  "close_time": "2026-08-10T06:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100230-30",
+  "close_time": "2026-08-10T06:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100215-15",
+  "close_time": "2026-08-10T06:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100200-00",
+  "close_time": "2026-08-10T06:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100145-45",
+  "close_time": "2026-08-10T05:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100130-30",
+  "close_time": "2026-08-10T05:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100115-15",
+  "close_time": "2026-08-10T05:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100100-00",
+  "close_time": "2026-08-10T05:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100045-45",
+  "close_time": "2026-08-10T04:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100030-30",
+  "close_time": "2026-08-10T04:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100015-15",
+  "close_time": "2026-08-10T04:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG100000-00",
+  "close_time": "2026-08-10T04:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092345-45",
+  "close_time": "2026-08-10T03:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092330-30",
+  "close_time": "2026-08-10T03:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092315-15",
+  "close_time": "2026-08-10T03:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092300-00",
+  "close_time": "2026-08-10T03:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092245-45",
+  "close_time": "2026-08-10T02:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092230-30",
+  "close_time": "2026-08-10T02:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092215-15",
+  "close_time": "2026-08-10T02:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092200-00",
+  "close_time": "2026-08-10T02:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092145-45",
+  "close_time": "2026-08-10T01:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092130-30",
+  "close_time": "2026-08-10T01:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092115-15",
+  "close_time": "2026-08-10T01:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092100-00",
+  "close_time": "2026-08-10T01:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092045-45",
+  "close_time": "2026-08-10T00:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092030-30",
+  "close_time": "2026-08-10T00:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092015-15",
+  "close_time": "2026-08-10T00:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG092000-00",
+  "close_time": "2026-08-10T00:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091945-45",
+  "close_time": "2026-08-09T23:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091930-30",
+  "close_time": "2026-08-09T23:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091915-15",
+  "close_time": "2026-08-09T23:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091900-00",
+  "close_time": "2026-08-09T23:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091845-45",
+  "close_time": "2026-08-09T22:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091830-30",
+  "close_time": "2026-08-09T22:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091815-15",
+  "close_time": "2026-08-09T22:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091800-00",
+  "close_time": "2026-08-09T22:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091745-45",
+  "close_time": "2026-08-09T21:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091730-30",
+  "close_time": "2026-08-09T21:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091715-15",
+  "close_time": "2026-08-09T21:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091700-00",
+  "close_time": "2026-08-09T21:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091645-45",
+  "close_time": "2026-08-09T20:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091630-30",
+  "close_time": "2026-08-09T20:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091615-15",
+  "close_time": "2026-08-09T20:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091600-00",
+  "close_time": "2026-08-09T20:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091545-45",
+  "close_time": "2026-08-09T19:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091530-30",
+  "close_time": "2026-08-09T19:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091515-15",
+  "close_time": "2026-08-09T19:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091500-00",
+  "close_time": "2026-08-09T19:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091445-45",
+  "close_time": "2026-08-09T18:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091430-30",
+  "close_time": "2026-08-09T18:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091415-15",
+  "close_time": "2026-08-09T18:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091400-00",
+  "close_time": "2026-08-09T18:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091345-45",
+  "close_time": "2026-08-09T17:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091330-30",
+  "close_time": "2026-08-09T17:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091315-15",
+  "close_time": "2026-08-09T17:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091300-00",
+  "close_time": "2026-08-09T17:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091245-45",
+  "close_time": "2026-08-09T16:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091230-30",
+  "close_time": "2026-08-09T16:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091215-15",
+  "close_time": "2026-08-09T16:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091200-00",
+  "close_time": "2026-08-09T16:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091145-45",
+  "close_time": "2026-08-09T15:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091130-30",
+  "close_time": "2026-08-09T15:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091115-15",
+  "close_time": "2026-08-09T15:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091100-00",
+  "close_time": "2026-08-09T15:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091045-45",
+  "close_time": "2026-08-09T14:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091030-30",
+  "close_time": "2026-08-09T14:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091015-15",
+  "close_time": "2026-08-09T14:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG091000-00",
+  "close_time": "2026-08-09T14:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090945-45",
+  "close_time": "2026-08-09T13:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090930-30",
+  "close_time": "2026-08-09T13:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090915-15",
+  "close_time": "2026-08-09T13:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090900-00",
+  "close_time": "2026-08-09T13:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090845-45",
+  "close_time": "2026-08-09T12:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090830-30",
+  "close_time": "2026-08-09T12:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090815-15",
+  "close_time": "2026-08-09T12:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090800-00",
+  "close_time": "2026-08-09T12:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090745-45",
+  "close_time": "2026-08-09T11:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090730-30",
+  "close_time": "2026-08-09T11:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090715-15",
+  "close_time": "2026-08-09T11:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090700-00",
+  "close_time": "2026-08-09T11:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090645-45",
+  "close_time": "2026-08-09T10:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090630-30",
+  "close_time": "2026-08-09T10:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090615-15",
+  "close_time": "2026-08-09T10:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090600-00",
+  "close_time": "2026-08-09T10:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090545-45",
+  "close_time": "2026-08-09T09:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090530-30",
+  "close_time": "2026-08-09T09:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090515-15",
+  "close_time": "2026-08-09T09:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090500-00",
+  "close_time": "2026-08-09T09:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090445-45",
+  "close_time": "2026-08-09T08:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090430-30",
+  "close_time": "2026-08-09T08:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090415-15",
+  "close_time": "2026-08-09T08:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090400-00",
+  "close_time": "2026-08-09T08:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090345-45",
+  "close_time": "2026-08-09T07:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090330-30",
+  "close_time": "2026-08-09T07:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090315-15",
+  "close_time": "2026-08-09T07:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090300-00",
+  "close_time": "2026-08-09T07:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090245-45",
+  "close_time": "2026-08-09T06:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090230-30",
+  "close_time": "2026-08-09T06:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090215-15",
+  "close_time": "2026-08-09T06:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090200-00",
+  "close_time": "2026-08-09T06:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090145-45",
+  "close_time": "2026-08-09T05:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090130-30",
+  "close_time": "2026-08-09T05:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090115-15",
+  "close_time": "2026-08-09T05:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090100-00",
+  "close_time": "2026-08-09T05:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090045-45",
+  "close_time": "2026-08-09T04:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090030-30",
+  "close_time": "2026-08-09T04:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090015-15",
+  "close_time": "2026-08-09T04:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG090000-00",
+  "close_time": "2026-08-09T04:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082345-45",
+  "close_time": "2026-08-09T03:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082330-30",
+  "close_time": "2026-08-09T03:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082315-15",
+  "close_time": "2026-08-09T03:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082300-00",
+  "close_time": "2026-08-09T03:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082245-45",
+  "close_time": "2026-08-09T02:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082230-30",
+  "close_time": "2026-08-09T02:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082215-15",
+  "close_time": "2026-08-09T02:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082200-00",
+  "close_time": "2026-08-09T02:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082145-45",
+  "close_time": "2026-08-09T01:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082130-30",
+  "close_time": "2026-08-09T01:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082115-15",
+  "close_time": "2026-08-09T01:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082100-00",
+  "close_time": "2026-08-09T01:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082045-45",
+  "close_time": "2026-08-09T00:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082030-30",
+  "close_time": "2026-08-09T00:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082015-15",
+  "close_time": "2026-08-09T00:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG082000-00",
+  "close_time": "2026-08-09T00:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081945-45",
+  "close_time": "2026-08-08T23:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081930-30",
+  "close_time": "2026-08-08T23:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081915-15",
+  "close_time": "2026-08-08T23:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081900-00",
+  "close_time": "2026-08-08T23:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081845-45",
+  "close_time": "2026-08-08T22:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081830-30",
+  "close_time": "2026-08-08T22:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081815-15",
+  "close_time": "2026-08-08T22:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081800-00",
+  "close_time": "2026-08-08T22:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081745-45",
+  "close_time": "2026-08-08T21:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081730-30",
+  "close_time": "2026-08-08T21:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081715-15",
+  "close_time": "2026-08-08T21:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081700-00",
+  "close_time": "2026-08-08T21:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081645-45",
+  "close_time": "2026-08-08T20:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081630-30",
+  "close_time": "2026-08-08T20:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081615-15",
+  "close_time": "2026-08-08T20:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081600-00",
+  "close_time": "2026-08-08T20:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081545-45",
+  "close_time": "2026-08-08T19:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081530-30",
+  "close_time": "2026-08-08T19:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081515-15",
+  "close_time": "2026-08-08T19:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081500-00",
+  "close_time": "2026-08-08T19:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081445-45",
+  "close_time": "2026-08-08T18:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081430-30",
+  "close_time": "2026-08-08T18:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081415-15",
+  "close_time": "2026-08-08T18:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081400-00",
+  "close_time": "2026-08-08T18:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081345-45",
+  "close_time": "2026-08-08T17:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081330-30",
+  "close_time": "2026-08-08T17:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081315-15",
+  "close_time": "2026-08-08T17:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081300-00",
+  "close_time": "2026-08-08T17:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081245-45",
+  "close_time": "2026-08-08T16:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081230-30",
+  "close_time": "2026-08-08T16:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081215-15",
+  "close_time": "2026-08-08T16:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081200-00",
+  "close_time": "2026-08-08T16:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081145-45",
+  "close_time": "2026-08-08T15:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081130-30",
+  "close_time": "2026-08-08T15:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081115-15",
+  "close_time": "2026-08-08T15:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081100-00",
+  "close_time": "2026-08-08T15:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081045-45",
+  "close_time": "2026-08-08T14:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081030-30",
+  "close_time": "2026-08-08T14:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081015-15",
+  "close_time": "2026-08-08T14:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG081000-00",
+  "close_time": "2026-08-08T14:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080945-45",
+  "close_time": "2026-08-08T13:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080930-30",
+  "close_time": "2026-08-08T13:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080915-15",
+  "close_time": "2026-08-08T13:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080900-00",
+  "close_time": "2026-08-08T13:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080845-45",
+  "close_time": "2026-08-08T12:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080830-30",
+  "close_time": "2026-08-08T12:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080815-15",
+  "close_time": "2026-08-08T12:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080800-00",
+  "close_time": "2026-08-08T12:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080745-45",
+  "close_time": "2026-08-08T11:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080730-30",
+  "close_time": "2026-08-08T11:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080715-15",
+  "close_time": "2026-08-08T11:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080700-00",
+  "close_time": "2026-08-08T11:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080645-45",
+  "close_time": "2026-08-08T10:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080630-30",
+  "close_time": "2026-08-08T10:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080615-15",
+  "close_time": "2026-08-08T10:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080600-00",
+  "close_time": "2026-08-08T10:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080545-45",
+  "close_time": "2026-08-08T09:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080530-30",
+  "close_time": "2026-08-08T09:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080515-15",
+  "close_time": "2026-08-08T09:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080500-00",
+  "close_time": "2026-08-08T09:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080445-45",
+  "close_time": "2026-08-08T08:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080430-30",
+  "close_time": "2026-08-08T08:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080415-15",
+  "close_time": "2026-08-08T08:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080400-00",
+  "close_time": "2026-08-08T08:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080345-45",
+  "close_time": "2026-08-08T07:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080330-30",
+  "close_time": "2026-08-08T07:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080315-15",
+  "close_time": "2026-08-08T07:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080300-00",
+  "close_time": "2026-08-08T07:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080245-45",
+  "close_time": "2026-08-08T06:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080230-30",
+  "close_time": "2026-08-08T06:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080215-15",
+  "close_time": "2026-08-08T06:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080200-00",
+  "close_time": "2026-08-08T06:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080145-45",
+  "close_time": "2026-08-08T05:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080130-30",
+  "close_time": "2026-08-08T05:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080115-15",
+  "close_time": "2026-08-08T05:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080100-00",
+  "close_time": "2026-08-08T05:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080045-45",
+  "close_time": "2026-08-08T04:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080030-30",
+  "close_time": "2026-08-08T04:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080015-15",
+  "close_time": "2026-08-08T04:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG080000-00",
+  "close_time": "2026-08-08T04:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072345-45",
+  "close_time": "2026-08-08T03:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072330-30",
+  "close_time": "2026-08-08T03:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072315-15",
+  "close_time": "2026-08-08T03:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072300-00",
+  "close_time": "2026-08-08T03:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072245-45",
+  "close_time": "2026-08-08T02:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072230-30",
+  "close_time": "2026-08-08T02:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072215-15",
+  "close_time": "2026-08-08T02:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072200-00",
+  "close_time": "2026-08-08T02:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072145-45",
+  "close_time": "2026-08-08T01:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072130-30",
+  "close_time": "2026-08-08T01:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072115-15",
+  "close_time": "2026-08-08T01:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072100-00",
+  "close_time": "2026-08-08T01:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072045-45",
+  "close_time": "2026-08-08T00:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072030-30",
+  "close_time": "2026-08-08T00:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072015-15",
+  "close_time": "2026-08-08T00:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG072000-00",
+  "close_time": "2026-08-08T00:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071945-45",
+  "close_time": "2026-08-07T23:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071930-30",
+  "close_time": "2026-08-07T23:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071915-15",
+  "close_time": "2026-08-07T23:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071900-00",
+  "close_time": "2026-08-07T23:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071845-45",
+  "close_time": "2026-08-07T22:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071830-30",
+  "close_time": "2026-08-07T22:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071815-15",
+  "close_time": "2026-08-07T22:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071800-00",
+  "close_time": "2026-08-07T22:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071745-45",
+  "close_time": "2026-08-07T21:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071730-30",
+  "close_time": "2026-08-07T21:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071715-15",
+  "close_time": "2026-08-07T21:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071700-00",
+  "close_time": "2026-08-07T21:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071645-45",
+  "close_time": "2026-08-07T20:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071630-30",
+  "close_time": "2026-08-07T20:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071615-15",
+  "close_time": "2026-08-07T20:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071600-00",
+  "close_time": "2026-08-07T20:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071545-45",
+  "close_time": "2026-08-07T19:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071530-30",
+  "close_time": "2026-08-07T19:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071515-15",
+  "close_time": "2026-08-07T19:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071500-00",
+  "close_time": "2026-08-07T19:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071445-45",
+  "close_time": "2026-08-07T18:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071430-30",
+  "close_time": "2026-08-07T18:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071415-15",
+  "close_time": "2026-08-07T18:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071400-00",
+  "close_time": "2026-08-07T18:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071345-45",
+  "close_time": "2026-08-07T17:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071330-30",
+  "close_time": "2026-08-07T17:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071315-15",
+  "close_time": "2026-08-07T17:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071300-00",
+  "close_time": "2026-08-07T17:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071245-45",
+  "close_time": "2026-08-07T16:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071230-30",
+  "close_time": "2026-08-07T16:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071215-15",
+  "close_time": "2026-08-07T16:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071200-00",
+  "close_time": "2026-08-07T16:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071145-45",
+  "close_time": "2026-08-07T15:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071130-30",
+  "close_time": "2026-08-07T15:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071115-15",
+  "close_time": "2026-08-07T15:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071100-00",
+  "close_time": "2026-08-07T15:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071045-45",
+  "close_time": "2026-08-07T14:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071030-30",
+  "close_time": "2026-08-07T14:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071015-15",
+  "close_time": "2026-08-07T14:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG071000-00",
+  "close_time": "2026-08-07T14:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070945-45",
+  "close_time": "2026-08-07T13:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070930-30",
+  "close_time": "2026-08-07T13:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070915-15",
+  "close_time": "2026-08-07T13:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070900-00",
+  "close_time": "2026-08-07T13:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070845-45",
+  "close_time": "2026-08-07T12:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070830-30",
+  "close_time": "2026-08-07T12:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070815-15",
+  "close_time": "2026-08-07T12:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070800-00",
+  "close_time": "2026-08-07T12:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070745-45",
+  "close_time": "2026-08-07T11:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070730-30",
+  "close_time": "2026-08-07T11:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070715-15",
+  "close_time": "2026-08-07T11:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070700-00",
+  "close_time": "2026-08-07T11:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070645-45",
+  "close_time": "2026-08-07T10:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070630-30",
+  "close_time": "2026-08-07T10:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070615-15",
+  "close_time": "2026-08-07T10:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070600-00",
+  "close_time": "2026-08-07T10:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070545-45",
+  "close_time": "2026-08-07T09:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070530-30",
+  "close_time": "2026-08-07T09:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070515-15",
+  "close_time": "2026-08-07T09:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070500-00",
+  "close_time": "2026-08-07T09:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070445-45",
+  "close_time": "2026-08-07T08:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070430-30",
+  "close_time": "2026-08-07T08:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070415-15",
+  "close_time": "2026-08-07T08:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070400-00",
+  "close_time": "2026-08-07T08:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070345-45",
+  "close_time": "2026-08-07T07:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070330-30",
+  "close_time": "2026-08-07T07:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070315-15",
+  "close_time": "2026-08-07T07:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070300-00",
+  "close_time": "2026-08-07T07:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070245-45",
+  "close_time": "2026-08-07T06:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070230-30",
+  "close_time": "2026-08-07T06:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070215-15",
+  "close_time": "2026-08-07T06:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070200-00",
+  "close_time": "2026-08-07T06:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070145-45",
+  "close_time": "2026-08-07T05:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070130-30",
+  "close_time": "2026-08-07T05:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070115-15",
+  "close_time": "2026-08-07T05:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070100-00",
+  "close_time": "2026-08-07T05:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070045-45",
+  "close_time": "2026-08-07T04:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070030-30",
+  "close_time": "2026-08-07T04:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070015-15",
+  "close_time": "2026-08-07T04:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG070000-00",
+  "close_time": "2026-08-07T04:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062345-45",
+  "close_time": "2026-08-07T03:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062330-30",
+  "close_time": "2026-08-07T03:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062315-15",
+  "close_time": "2026-08-07T03:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062300-00",
+  "close_time": "2026-08-07T03:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062245-45",
+  "close_time": "2026-08-07T02:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062230-30",
+  "close_time": "2026-08-07T02:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062215-15",
+  "close_time": "2026-08-07T02:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062200-00",
+  "close_time": "2026-08-07T02:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062145-45",
+  "close_time": "2026-08-07T01:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062130-30",
+  "close_time": "2026-08-07T01:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062115-15",
+  "close_time": "2026-08-07T01:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062100-00",
+  "close_time": "2026-08-07T01:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062045-45",
+  "close_time": "2026-08-07T00:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062030-30",
+  "close_time": "2026-08-07T00:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062015-15",
+  "close_time": "2026-08-07T00:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG062000-00",
+  "close_time": "2026-08-07T00:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061945-45",
+  "close_time": "2026-08-06T23:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061930-30",
+  "close_time": "2026-08-06T23:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061915-15",
+  "close_time": "2026-08-06T23:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061900-00",
+  "close_time": "2026-08-06T23:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061845-45",
+  "close_time": "2026-08-06T22:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061830-30",
+  "close_time": "2026-08-06T22:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061815-15",
+  "close_time": "2026-08-06T22:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061800-00",
+  "close_time": "2026-08-06T22:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061745-45",
+  "close_time": "2026-08-06T21:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061730-30",
+  "close_time": "2026-08-06T21:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061715-15",
+  "close_time": "2026-08-06T21:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061700-00",
+  "close_time": "2026-08-06T21:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061645-45",
+  "close_time": "2026-08-06T20:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061630-30",
+  "close_time": "2026-08-06T20:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061615-15",
+  "close_time": "2026-08-06T20:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061600-00",
+  "close_time": "2026-08-06T20:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061545-45",
+  "close_time": "2026-08-06T19:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061530-30",
+  "close_time": "2026-08-06T19:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061515-15",
+  "close_time": "2026-08-06T19:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061500-00",
+  "close_time": "2026-08-06T19:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061445-45",
+  "close_time": "2026-08-06T18:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061430-30",
+  "close_time": "2026-08-06T18:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061415-15",
+  "close_time": "2026-08-06T18:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061400-00",
+  "close_time": "2026-08-06T18:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061345-45",
+  "close_time": "2026-08-06T17:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061330-30",
+  "close_time": "2026-08-06T17:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061315-15",
+  "close_time": "2026-08-06T17:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061300-00",
+  "close_time": "2026-08-06T17:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061245-45",
+  "close_time": "2026-08-06T16:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061230-30",
+  "close_time": "2026-08-06T16:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061215-15",
+  "close_time": "2026-08-06T16:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061200-00",
+  "close_time": "2026-08-06T16:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061145-45",
+  "close_time": "2026-08-06T15:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061130-30",
+  "close_time": "2026-08-06T15:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061115-15",
+  "close_time": "2026-08-06T15:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061100-00",
+  "close_time": "2026-08-06T15:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061045-45",
+  "close_time": "2026-08-06T14:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061030-30",
+  "close_time": "2026-08-06T14:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061015-15",
+  "close_time": "2026-08-06T14:15:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG061000-00",
+  "close_time": "2026-08-06T14:00:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060945-45",
+  "close_time": "2026-08-06T13:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060930-30",
+  "close_time": "2026-08-06T13:30:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060915-15",
+  "close_time": "2026-08-06T13:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060900-00",
+  "close_time": "2026-08-06T13:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060845-45",
+  "close_time": "2026-08-06T12:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060830-30",
+  "close_time": "2026-08-06T12:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060815-15",
+  "close_time": "2026-08-06T12:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060800-00",
+  "close_time": "2026-08-06T12:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060745-45",
+  "close_time": "2026-08-06T11:45:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060730-30",
+  "close_time": "2026-08-06T11:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060715-15",
+  "close_time": "2026-08-06T11:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060700-00",
+  "close_time": "2026-08-06T11:00:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060645-45",
+  "close_time": "2026-08-06T10:45:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060630-30",
+  "close_time": "2026-08-06T10:30:00Z",
+  "result": "yes"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060615-15",
+  "close_time": "2026-08-06T10:15:00Z",
+  "result": "no"
+ },
+ {
+  "ticker": "KXBTC15M-26AUG060600-00",
+  "close_time": "2026-08-06T10:00:00Z",
+  "result": "yes"
+ }
+]
