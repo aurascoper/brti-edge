@@ -6,13 +6,21 @@ F2/F20 and arming F1/F5:
 
   1. G4  — eligibility computed over the exact span: shadow-log continuity AND
            collector hour-file coverage (worst channel), bars per prereg §4:
-           worst-channel coverage >= 99%, no continuous gap > 1h.
+           worst-channel coverage >= 99%, no continuous gap > 1h. W2″ amendment
+           (precommit §6): both are measured in EXCHANGE-OPEN time. The only
+           time removed is a no-market interval in the settled listing that lies
+           inside a published Thursday pause (03:00–05:00 ET) padded by one
+           market. It is compressed out, not masked: a fault on either side of
+           the pause joins into one gap.
   2. F1  — settlement reconciliation: fetches the EXCHANGE's settled KXBTC15M
            listing for the span (one fetch; also the fire-coverage denominator)
            and reconciles against kalshi-settlement-validation.jsonl.
   3. G5  — freeze integrity: git diff of frozen paths against the instrument
            tag; env attestation from worker startup lines; calibration.json
-           must be ABSENT (§12 freeze rider, audit F7).
+           must be ABSENT (§12 freeze rider, audit F7). W2″: the running
+           worker's own /proc environ must show the three order gates at 0,
+           none of the five decision knobs, and feed endpoints equal to the
+           env vector committed at lock (--env-vector).
   4. Only if 1–3 pass is the scorer invoked (with --settled-listing so the §4
      fire-coverage tripwire is armed). The NO-GO quadrant is named from the
      printed gates. In --interim mode a 1–3 failure prints the failure class,
@@ -34,7 +42,8 @@ import subprocess
 import sys
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORKER = os.path.normpath(os.path.join(HERE, ".."))
@@ -51,9 +60,18 @@ CHANNELS = ("orderbook-snapshots", "orderbook-deltas")
 FROZEN_PATHS = (
     "apps/market-worker/src",
     "apps/market-worker/scripts/w2_replay_scorer.py",
+    "apps/market-worker/scripts/w2_close_check.py",  # W2″: the wrapper is frozen too
     "packages/kalshi-client/src",
     "packages/signals/src",
 )
+WORKER_CMD = b"src/kalshi/worker.ts"
+ORDER_GATES = ("KALSHI_ALLOW_ORDERS", "KALSHI_AUTO_SUBMIT", "KALSHI_DUST_ENABLED")
+KNOBS = ("KALSHI_SIGMA_MULTIPLIER", "KALSHI_MIN_Z_DISTANCE", "KALSHI_CALIBRATION_ALPHA",
+         "KALSHI_SPOT_MAX_AGE_MS", "KALSHI_SCAN_INTERVAL_MS")  # must stay at code defaults
+FEED_ENDPOINTS = ("SPOT_FEED_REST", "PERP_FEED_REST", "PERP_FEED_PATH")
+MARKET_MS = 15 * 60_000     # one KXBTC15M market; pads the published pause
+ET = ZoneInfo("America/New_York")
+PAUSE_ET_HOURS = (3, 5)     # Kalshi weekly maintenance, Thursday 03:00–05:00 ET
 
 
 def ts_ms(iso: str) -> float:
@@ -77,30 +95,74 @@ def load_jsonl(path):
     return rows
 
 
-# ---------- 1. G4 eligibility ----------
+# ---------- 1. G4 eligibility (exchange-open time) ----------
 
-def check_shadow_continuity(t0: float, t1: float):
-    rows = load_jsonl(os.path.join(LOGS, "kalshi-shadow.jsonl"))
-    ts = sorted(ts_ms(r["ts"]) for r in rows if "ts" in r and t0 <= ts_ms(r["ts"]) <= t1)
-    if not ts:
-        return {"ok": False, "why": "no shadow rows in span"}
+def published_pauses(t0: float, t1: float):
+    """Published Thursday pauses overlapping [t0, t1], in UTC ms, padded by one
+    market each side. Computed in ET, so the UTC hours follow DST."""
+    out = []
+    day = datetime.fromtimestamp(t0 / 1000, tz=ET).date() - timedelta(days=1)
+    last = datetime.fromtimestamp(t1 / 1000, tz=ET).date() + timedelta(days=1)
+    while day <= last:
+        if day.weekday() == 3:  # Thursday
+            a, b = (datetime(day.year, day.month, day.day, h, tzinfo=ET).timestamp() * 1000
+                    for h in PAUSE_ET_HOURS)
+            out.append((a - MARKET_MS, b + MARKET_MS))
+        day += timedelta(days=1)
+    return out
+
+
+def excluded_intervals(listing, t0: float, t1: float):
+    """No-market intervals from the exchange's settled listing: between a close
+    and the next close, no market is open until that next market's open
+    (close − one market). Only the part that overlaps a padded published pause
+    is excluded. An exchange overrun past the pad stays a counted gap, and no
+    time with an open market is ever excluded."""
+    closes = sorted({ts_ms(m["close_time"]) for m in listing if m.get("close_time")})
+    pauses = published_pauses(t0, t1)
+    out = []
+    for prev, nxt in zip(closes, closes[1:]):
+        for p0, p1 in pauses:
+            lo, hi = max(prev, p0, t0), min(nxt - MARKET_MS, p1, t1)
+            if hi > lo:
+                out.append((lo, hi))
+    return out
+
+
+def open_ms(t: float, excluded) -> float:
+    """Wall clock → exchange-open clock: removes excluded time before t. A time
+    inside an excluded interval maps to the interval's start, so the gap across
+    a pause is its open-time length (compression, not masking)."""
+    return t - sum(min(max(t - a, 0), b - a) for a, b in excluded)
+
+
+def shadow_gaps(ts, t0: float, t1: float, excluded):
+    bounds = [t0] + sorted(ts) + [t1]
     gaps = []
-    bounds = [t0] + ts + [t1]
     for a, b in zip(bounds, bounds[1:]):
-        if b - a > 60_000:  # ignore sub-minute jitter
-            gaps.append((a, b))
-    max_gap_h = max(((b - a) / 3_600_000 for a, b in gaps), default=0.0)
-    lost_h = sum((b - a) / 3_600_000 for a, b in gaps)
-    span_h = (t1 - t0) / 3_600_000
+        d = open_ms(b, excluded) - open_ms(a, excluded)
+        if d > 60_000:  # ignore sub-minute jitter
+            gaps.append((a, b, d))
+    max_gap_h = max((d / 3_600_000 for _, _, d in gaps), default=0.0)
+    lost_h = sum(d / 3_600_000 for _, _, d in gaps)
+    span_h = (open_ms(t1, excluded) - open_ms(t0, excluded)) / 3_600_000
     coverage = (span_h - lost_h) / span_h if span_h > 0 else 0.0
     return {
         "ok": max_gap_h <= MAX_GAP_HOURS and coverage >= MIN_WORST_COVERAGE,
         "coverage": coverage, "max_gap_h": max_gap_h,
-        "gaps": [(iso_utc(a), iso_utc(b)) for a, b in gaps if b - a > 600_000],
+        "gaps": [(iso_utc(a), iso_utc(b)) for a, b, d in gaps if d > 600_000],
     }
 
 
-def check_collector_hours(t0: float, t1: float):
+def check_shadow_continuity(t0: float, t1: float, excluded):
+    rows = load_jsonl(os.path.join(LOGS, "kalshi-shadow.jsonl"))
+    ts = [ts_ms(r["ts"]) for r in rows if "ts" in r and t0 <= ts_ms(r["ts"]) <= t1]
+    if not ts:
+        return {"ok": False, "why": "no shadow rows in span"}
+    return shadow_gaps(ts, t0, t1, excluded)
+
+
+def check_collector_hours(t0: float, t1: float, excluded):
     # Hour-file presence per channel, .pN crash-relaunch parts included.
     try:
         files = os.listdir(COLLECTOR_LOGS)
@@ -112,10 +174,19 @@ def check_collector_hours(t0: float, t1: float):
         m = pat.match(f)
         if m and m.group(1) in have:
             have[m.group(1)].add(m.group(2))
+    return collector_hours(have, t0, t1, excluded)
+
+
+def collector_hours(have, t0: float, t1: float, excluded):
+    # An hour wholly inside an excluded interval is not expected; dropping it
+    # makes the hours on either side adjacent, so missing runs join across it.
     expected = []
     t = t0 - (t0 % 3_600_000)
     while t < t1:
-        expected.append(datetime.fromtimestamp(t / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H"))
+        lo, hi = max(t, t0), min(t + 3_600_000, t1)
+        if not any(a <= lo and hi <= b for a, b in excluded):
+            expected.append(
+                datetime.fromtimestamp(t / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H"))
         t += 3_600_000
     worst = 1.0
     worst_gap = 0
@@ -204,6 +275,43 @@ def check_freeze(tag: str):
     }
 
 
+def worker_environs(proc: str = "/proc"):
+    """Environment of each running Kalshi worker this user can read, by pid."""
+    out = {}
+    for pid in os.listdir(proc):
+        if not pid.isdigit():
+            continue
+        try:
+            with open(os.path.join(proc, pid, "cmdline"), "rb") as f:
+                if WORKER_CMD not in f.read():
+                    continue
+            with open(os.path.join(proc, pid, "environ"), "rb") as f:
+                raw = f.read()
+        except OSError:
+            continue
+        out[int(pid)] = dict(
+            kv.split("=", 1) for kv in raw.decode(errors="replace").split("\0") if "=" in kv)
+    return out
+
+
+def check_worker_env(environs, vector):
+    """G5 env (W2″): every running worker has the three order gates at 0, none of
+    the five knobs set, and feed endpoints equal to the env vector fixed at lock.
+    No readable worker, or no vector, fails: an empty read must never pass."""
+    if vector is None:
+        return {"ok": False, "why": "no lock env vector given (--env-vector)"}
+    if not environs:
+        return {"ok": False, "why": "no readable kalshi worker process"}
+    problems = []
+    for pid, env in sorted(environs.items()):
+        problems += [f"{pid}: {g}={env.get(g)!r}" for g in ORDER_GATES if env.get(g) != "0"]
+        problems += [f"{pid}: {k} is set" for k in KNOBS if k in env]
+        endpoints = {k: env[k] for k in FEED_ENDPOINTS if k in env}
+        if endpoints != vector:
+            problems.append(f"{pid}: feed endpoints {endpoints} != lock vector {vector}")
+    return {"ok": not problems, "pids": sorted(environs), "problems": problems}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--since", required=True)
@@ -212,6 +320,8 @@ def main() -> int:
     ap.add_argument("--tag", default="w2-scorer-final-20260803")
     ap.add_argument("--offline-listing", default=None,
                     help="use a previously fetched listing JSON instead of hitting the API")
+    ap.add_argument("--env-vector", default=None,
+                    help="feed-endpoint JSON committed at lock; G5 compares the running worker to it")
     args = ap.parse_args()
     t0, t1 = ts_ms(args.since), ts_ms(args.until)
     quiet = args.interim
@@ -219,17 +329,7 @@ def main() -> int:
 
     say(f"# W2 close protocol — {args.since} -> {args.until}  (tag {args.tag})")
 
-    shadow = check_shadow_continuity(t0, t1)
-    hours = check_collector_hours(t0, t1)
-    say(f"\n[1] G4 eligibility")
-    say(f"  shadow: coverage {shadow.get('coverage', 0) * 100:.2f}%  max gap "
-        f"{shadow.get('max_gap_h', 0):.2f}h  -> {'PASS' if shadow['ok'] else 'FAIL'}")
-    for a, b in shadow.get("gaps", []):
-        say(f"    gap {a} -> {b}")
-    say(f"  collector: worst-channel {hours.get('worst_coverage', 0) * 100:.2f}%  "
-        f"max missing run {hours.get('worst_gap_h', 0)}h  -> {'PASS' if hours['ok'] else 'FAIL'}")
-    g4_ok = shadow["ok"] and hours["ok"]
-
+    # The listing comes first: G4's excluded intervals are derived from it.
     if args.offline_listing:
         with open(args.offline_listing) as f:
             listing = json.load(f)
@@ -244,6 +344,21 @@ def main() -> int:
         ANALYSIS_W2, f"settled-listing-{args.since[:10]}-{args.until[:10]}.json")
     with open(listing_path, "w") as f:
         json.dump(listing, f, indent=1)
+
+    excluded = excluded_intervals(listing, t0, t1)
+    shadow = check_shadow_continuity(t0, t1, excluded)
+    hours = check_collector_hours(t0, t1, excluded)
+    say(f"\n[1] G4 eligibility (exchange-open time)")
+    for a, b in excluded:
+        say(f"  excluded (published pause, from listing): {iso_utc(a)} -> {iso_utc(b)}")
+    say(f"  shadow: coverage {shadow.get('coverage', 0) * 100:.2f}%  max gap "
+        f"{shadow.get('max_gap_h', 0):.2f}h  -> {'PASS' if shadow['ok'] else 'FAIL'}")
+    for a, b in shadow.get("gaps", []):
+        say(f"    gap {a} -> {b}")
+    say(f"  collector: worst-channel {hours.get('worst_coverage', 0) * 100:.2f}%  "
+        f"max missing run {hours.get('worst_gap_h', 0)}h  -> {'PASS' if hours['ok'] else 'FAIL'}")
+    g4_ok = shadow["ok"] and hours["ok"]
+
     rec = reconcile(listing, t0, t1)
     say(f"\n[2] settlement reconciliation (F1)")
     say(f"  exchange settled: {rec['exchange']}  captured locally: {rec['captured']}  "
@@ -255,7 +370,17 @@ def main() -> int:
     rec_ok = rec_rate <= FIRE_COVERAGE_TRIPWIRE
 
     fz = check_freeze(args.tag)
+    vector = None
+    if args.env_vector:
+        with open(args.env_vector) as f:
+            vector = json.load(f)
+    wenv = check_worker_env(worker_environs(), vector)
+    fz["ok"] = fz["ok"] and wenv["ok"]
     say(f"\n[3] G5 freeze integrity -> {'PASS' if fz['ok'] else 'FAIL'}")
+    say(f"  worker env: pids {wenv.get('pids', [])} -> {'PASS' if wenv['ok'] else 'FAIL'}"
+        + (f" ({wenv['why']})" if "why" in wenv else ""))
+    for p in wenv.get("problems", []):
+        say(f"    {p}")
     say(f"  diff vs {args.tag}: {fz['diff_vs_tag']}")
     say(f"  working tree: {fz['working_tree']}")
     say(f"  calibration.json absent: {fz['calibration_json_absent']}")
