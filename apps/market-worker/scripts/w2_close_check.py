@@ -51,7 +51,8 @@ REPO = os.path.normpath(os.path.join(WORKER, "..", ".."))
 LOGS = os.path.join(WORKER, "logs")
 COLLECTOR_LOGS = os.path.join(REPO, "apps", "data-collector", "logs", "data-collector")
 ANALYSIS_W2 = os.path.join(REPO, "analysis", "w2")
-API_BASE = os.environ.get("KALSHI_API_BASE", "https://api.elections.kalshi.com/trade-api/v2")
+API_BASE_DEFAULT = "https://api.elections.kalshi.com/trade-api/v2"
+API_BASE = os.environ.get("KALSHI_API_BASE", API_BASE_DEFAULT)
 
 MIN_WORST_COVERAGE = 0.99   # §4 / holdout policy — policy, not tunable
 MAX_GAP_HOURS = 1.0         # §4 continuous-gap rule — policy, not tunable
@@ -68,7 +69,10 @@ WORKER_CMD = b"src/kalshi/worker.ts"
 ORDER_GATES = ("KALSHI_ALLOW_ORDERS", "KALSHI_AUTO_SUBMIT", "KALSHI_DUST_ENABLED")
 KNOBS = ("KALSHI_SIGMA_MULTIPLIER", "KALSHI_MIN_Z_DISTANCE", "KALSHI_CALIBRATION_ALPHA",
          "KALSHI_SPOT_MAX_AGE_MS", "KALSHI_SCAN_INTERVAL_MS")  # must stay at code defaults
-FEED_ENDPOINTS = ("SPOT_FEED_REST", "PERP_FEED_REST", "PERP_FEED_PATH")
+# The API base is in the vector too: the worker and this listing fetch both read it,
+# so a wrong endpoint would otherwise agree with itself.
+ENV_VECTOR_KEYS = ("KALSHI_API_BASE", "SPOT_FEED_REST", "PERP_FEED_REST", "PERP_FEED_PATH")
+LISTING_PAD_MS = 3 * 3_600_000  # anchors a pause that straddles a window edge
 MARKET_MS = 15 * 60_000     # one KXBTC15M market; pads the published pause
 ET = ZoneInfo("America/New_York")
 PAUSE_ET_HOURS = (3, 5)     # Kalshi weekly maintenance, Thursday 03:00–05:00 ET
@@ -294,22 +298,52 @@ def worker_environs(proc: str = "/proc"):
     return out
 
 
-def check_worker_env(environs, vector):
+def check_worker_env(environs, vector, wrapper_base=None):
     """G5 env (W2″): every running worker has the three order gates at 0, none of
-    the five knobs set, and feed endpoints equal to the env vector fixed at lock.
+    the five knobs set, and API/feed endpoints equal to the env vector fixed at
+    lock; this wrapper's own listing endpoint must match the vector as well.
     No readable worker, or no vector, fails: an empty read must never pass."""
     if vector is None:
         return {"ok": False, "why": "no lock env vector given (--env-vector)"}
+    if wrapper_base is not None and wrapper_base != vector.get("KALSHI_API_BASE", API_BASE_DEFAULT):
+        return {"ok": False, "why": f"wrapper listing endpoint {wrapper_base} != lock vector"}
     if not environs:
         return {"ok": False, "why": "no readable kalshi worker process"}
     problems = []
     for pid, env in sorted(environs.items()):
         problems += [f"{pid}: {g}={env.get(g)!r}" for g in ORDER_GATES if env.get(g) != "0"]
         problems += [f"{pid}: {k} is set" for k in KNOBS if k in env]
-        endpoints = {k: env[k] for k in FEED_ENDPOINTS if k in env}
+        endpoints = {k: env[k] for k in ENV_VECTOR_KEYS if k in env}
         if endpoints != vector:
-            problems.append(f"{pid}: feed endpoints {endpoints} != lock vector {vector}")
+            problems.append(f"{pid}: endpoints {endpoints} != lock vector {vector}")
     return {"ok": not problems, "pids": sorted(environs), "problems": problems}
+
+
+def verdict(returncode: int, stdout: str, interim: bool):
+    """The printed verdict and exit code for one scorer run. Fails closed: a
+    failed scorer or a missing gate line is NO-GO (integrity), and a tripped §4
+    tripwire is NO-GO (data) (prereg §8). The scorer enforces the tripwire itself
+    only under --interim; in final mode it only prints it."""
+    if returncode != 0:
+        return ("NO-GO (integrity)" if interim else
+                f"\nVERDICT: NO-GO (integrity) — scorer exited {returncode}"), 1
+    lines = stdout.strip().splitlines()
+    if interim:
+        return (lines[-1], 0) if lines else ("NO-GO (integrity)", 1)
+    if "TRIPWIRE" in stdout:
+        return "\nVERDICT: NO-GO (data) — §4 tripwire tripped; window suspect", 1
+    m = re.search(r"gates: (.+)$", stdout, re.MULTILINE)
+    if not m:
+        return "\nVERDICT: NO-GO (integrity) — scorer printed no gate line", 1
+    failed = re.findall(r"(G\d)\(FAIL\)", m.group(1))
+    if not failed:
+        return "\nVERDICT: GO — full battery PASS on an eligible, frozen window", 0
+    if set(failed) & {"G7"}:
+        return f"\nVERDICT: NO-GO (mechanism) — failed: {', '.join(failed)}", 0
+    if set(failed) & {"G3"}:
+        return f"\nVERDICT: NO-GO (execution) — failed: {', '.join(failed)}", 0
+    return (f"\nVERDICT: NO-GO (economics) — failed: {', '.join(failed)}"
+            "\n  (annex §3 erratum: at se ≈ 48¢/√n this is NOT evidence of no edge)"), 0
 
 
 def main() -> int:
@@ -329,23 +363,26 @@ def main() -> int:
 
     say(f"# W2 close protocol — {args.since} -> {args.until}  (tag {args.tag})")
 
-    # The listing comes first: G4's excluded intervals are derived from it.
+    # The listing comes first: G4's excluded intervals are derived from it. The fetch
+    # is padded so a pause that straddles t0 or t1 is still anchored by closes on both
+    # sides; reconciliation and the scorer keep the exact span.
     if args.offline_listing:
         with open(args.offline_listing) as f:
-            listing = json.load(f)
+            anchor = json.load(f)
     else:
         try:
-            listing = fetch_settled_listing(t0, t1)
+            anchor = fetch_settled_listing(t0 - LISTING_PAD_MS, t1 + LISTING_PAD_MS)
         except Exception as e:  # noqa: BLE001 — a failed fetch must fail the window, loudly
             print(f"NO-GO (data)" if args.interim else f"  exchange fetch FAILED: {e}")
             return 2
+    listing = [m for m in anchor if m.get("close_time") and t0 <= ts_ms(m["close_time"]) <= t1]
     os.makedirs(ANALYSIS_W2, exist_ok=True)
     listing_path = os.path.join(
         ANALYSIS_W2, f"settled-listing-{args.since[:10]}-{args.until[:10]}.json")
     with open(listing_path, "w") as f:
         json.dump(listing, f, indent=1)
 
-    excluded = excluded_intervals(listing, t0, t1)
+    excluded = excluded_intervals(anchor, t0, t1)
     shadow = check_shadow_continuity(t0, t1, excluded)
     hours = check_collector_hours(t0, t1, excluded)
     say(f"\n[1] G4 eligibility (exchange-open time)")
@@ -374,7 +411,7 @@ def main() -> int:
     if args.env_vector:
         with open(args.env_vector) as f:
             vector = json.load(f)
-    wenv = check_worker_env(worker_environs(), vector)
+    wenv = check_worker_env(worker_environs(), vector, API_BASE)
     fz["ok"] = fz["ok"] and wenv["ok"]
     say(f"\n[3] G5 freeze integrity -> {'PASS' if fz['ok'] else 'FAIL'}")
     say(f"  worker env: pids {wenv.get('pids', [])} -> {'PASS' if wenv['ok'] else 'FAIL'}"
@@ -402,23 +439,13 @@ def main() -> int:
     if args.interim:
         cmd.append("--interim")
     proc = subprocess.run(cmd, capture_output=True, text=True)
-    if args.interim:
-        print(proc.stdout.strip().splitlines()[-1] if proc.stdout.strip() else "CONTINUE")
-        return 0
-    print(proc.stdout, end="")
-    m = re.search(r"gates: (.+)$", proc.stdout, re.MULTILINE)
-    if m:
-        failed = re.findall(r"(G\d)\(FAIL\)", m.group(1))
-        if not failed:
-            print("\nVERDICT: GO — full battery PASS on an eligible, frozen window")
-        elif set(failed) & {"G7"}:
-            print(f"\nVERDICT: NO-GO (mechanism) — failed: {', '.join(failed)}")
-        elif set(failed) & {"G3"}:
-            print(f"\nVERDICT: NO-GO (execution) — failed: {', '.join(failed)}")
-        else:
-            print(f"\nVERDICT: NO-GO (economics) — failed: {', '.join(failed)}"
-                  "\n  (annex §3 erratum: at se ≈ 48¢/√n this is NOT evidence of no edge)")
-    return 0
+    if not args.interim:
+        print(proc.stdout, end="")
+        if proc.returncode:
+            print(proc.stderr, end="")
+    line, code = verdict(proc.returncode, proc.stdout, args.interim)
+    print(line)
+    return code
 
 
 if __name__ == "__main__":

@@ -161,6 +161,48 @@ def test_worker_env_check_fails_closed():
             assert not w2cc.check_worker_env({41: bad}, vector)["ok"], bad
 
 
+def test_verdict_fails_closed():
+    passing = "gates: G1(PASS) G2(PASS) G3(PASS) G6(PASS) G7(PASS)   [G2 bound z≥1.7]\n"
+    tripped = "fire-coverage: 200/210 exchange-settled  ⚠ TRIPWIRE — window suspect (§4)\n"
+    assert w2cc.verdict(0, passing, False)[1] == 0 and "GO —" in w2cc.verdict(0, passing, False)[0]
+    line, code = w2cc.verdict(0, tripped + passing, False)       # prereg §8: suspect window
+    assert code == 1 and "NO-GO (data)" in line, line
+    line, code = w2cc.verdict(1, passing, False)                  # scorer crashed
+    assert code == 1 and "NO-GO (integrity)" in line, line
+    line, code = w2cc.verdict(0, "window: …\n", False)            # no gate line printed
+    assert code == 1 and "NO-GO (integrity)" in line, line
+    assert "mechanism" in w2cc.verdict(0, "gates: G1(FAIL) G7(FAIL)", False)[0]
+    assert w2cc.verdict(0, "CONTINUE\n", True) == ("CONTINUE", 0)
+    assert w2cc.verdict(2, "", True) == ("NO-GO (integrity)", 1)
+    assert w2cc.verdict(0, "", True) == ("NO-GO (integrity)", 1)
+
+
+def test_pause_straddling_a_window_edge_is_anchored():
+    # A perfect host, with windows that start or end inside Thursday's pause.
+    pause = ("2026-08-20T06:45:00Z", "2026-08-20T09:15:00Z")         # no closes strictly inside
+    quiet = ("2026-08-20T06:45:10Z", "2026-08-20T09:00:10Z")         # no shadow rows (no market)
+    for since, until in (("2026-08-20T07:00:00Z", "2026-08-22T07:00:00Z"),
+                         ("2026-08-18T08:00:00Z", "2026-08-20T08:00:00Z")):
+        t0, t1 = ms(since), ms(until)
+        pad = w2cc.LISTING_PAD_MS
+        anchor = closes(iso(t0 - pad), iso(t1 + pad), skip=(pause,))
+        a, b = ms(quiet[0]), ms(quiet[1])
+        rows = [t for t in range(int(t0), int(t1) + 1, 15_000) if not a < t < b]
+        ex = w2cc.excluded_intervals(anchor, t0, t1)
+        r = w2cc.shadow_gaps(rows, t0, t1, ex)
+        assert r["ok"] and r["max_gap_h"] < 0.02, (since, ex, r)
+
+
+def test_api_base_is_part_of_the_env_vector():
+    gates = {g: "0" for g in w2cc.ORDER_GATES}
+    base = w2cc.API_BASE_DEFAULT
+    env = {41: {**gates, "KALSHI_API_BASE": base}}
+    vector = {"KALSHI_API_BASE": base}
+    assert w2cc.check_worker_env(env, vector, base)["ok"]
+    assert not w2cc.check_worker_env(env, {}, base)["ok"]                          # worker drifted
+    assert not w2cc.check_worker_env(env, vector, "https://demo-api.kalshi.co")["ok"]  # wrapper drifted
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:
