@@ -177,20 +177,29 @@ def test_verdict_fails_closed():
     assert w2cc.verdict(0, "", True) == ("NO-GO (integrity)", 1)
 
 
-def test_pause_straddling_a_window_edge_is_anchored():
-    # A perfect host, with windows that start or end inside Thursday's pause.
-    pause = ("2026-08-20T06:45:00Z", "2026-08-20T09:15:00Z")         # no closes strictly inside
-    quiet = ("2026-08-20T06:45:10Z", "2026-08-20T09:00:10Z")         # no shadow rows (no market)
-    for since, until in (("2026-08-20T07:00:00Z", "2026-08-22T07:00:00Z"),
-                         ("2026-08-18T08:00:00Z", "2026-08-20T08:00:00Z")):
-        t0, t1 = ms(since), ms(until)
-        pad = w2cc.LISTING_PAD_MS
-        anchor = closes(iso(t0 - pad), iso(t1 + pad), skip=(pause,))
-        a, b = ms(quiet[0]), ms(quiet[1])
-        rows = [t for t in range(int(t0), int(t1) + 1, 15_000) if not a < t < b]
-        ex = w2cc.excluded_intervals(anchor, t0, t1)
-        r = w2cc.shadow_gaps(rows, t0, t1, ex)
-        assert r["ok"] and r["max_gap_h"] < 0.02, (since, ex, r)
+def edge_run(since, until):
+    """A perfect host over a 14-day window, closed live 5 min after its end: the
+    listing starts 3 h early but holds no market that closes after the close runs."""
+    pause = ("2026-10-08T06:45:00Z", "2026-10-08T09:15:00Z")         # no closes strictly inside
+    pause0 = ("2026-09-24T06:45:00Z", "2026-09-24T09:15:00Z")
+    t0, t1 = ms(since), ms(until)
+    live = closes(iso(t0 - w2cc.LISTING_PAD_MS), iso(t1 + 300_000), skip=(pause0, pause))
+    quiet = [(ms("2026-09-24T07:00:00Z"), ms("2026-09-24T09:00:00Z")),
+             (ms("2026-10-08T07:00:00Z"), ms("2026-10-08T09:00:00Z"))]   # no market, no row
+    rows = [t for t in range(int(t0), int(t1) + 1, 15_000) if not any(a <= t < b for a, b in quiet)]
+    return w2cc.shadow_gaps(rows, t0, t1, w2cc.excluded_intervals(live, t0, t1))
+
+
+def test_live_close_fails_a_window_ending_late_in_the_pause():
+    # The pad anchors the start edge only: at a live close, no market after the
+    # end has settled. So a 14-day window may not start (and end) on a Thursday
+    # at 04:00 or 05:00 ET (08:00Z or 09:00Z in EDT). 03:00 ET and 06:00 ET pass.
+    # 04:00 ET leaves a gap of 1 h plus one scan interval, past the 1 h rule.
+    for hh, ok in (("07", True), ("08", False), ("09", False), ("10", True)):
+        r = edge_run(f"2026-09-24T{hh}:00:00Z", f"2026-10-08T{hh}:00:00Z")
+        assert r["ok"] is ok, (hh, r)
+    r = edge_run("2026-09-24T08:00:00Z", "2026-10-07T08:00:00Z")    # start in the pause, end Wednesday
+    assert r["ok"] and r["max_gap_h"] < 0.02, r
 
 
 def test_api_base_is_part_of_the_env_vector():

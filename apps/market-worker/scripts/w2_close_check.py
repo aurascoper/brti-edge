@@ -72,7 +72,7 @@ KNOBS = ("KALSHI_SIGMA_MULTIPLIER", "KALSHI_MIN_Z_DISTANCE", "KALSHI_CALIBRATION
 # The API base is in the vector too: the worker and this listing fetch both read it,
 # so a wrong endpoint would otherwise agree with itself.
 ENV_VECTOR_KEYS = ("KALSHI_API_BASE", "SPOT_FEED_REST", "PERP_FEED_REST", "PERP_FEED_PATH")
-LISTING_PAD_MS = 3 * 3_600_000  # anchors a pause that straddles a window edge
+LISTING_PAD_MS = 3 * 3_600_000  # anchors a pause at the start edge; see §12 boundary rule
 MARKET_MS = 15 * 60_000     # one KXBTC15M market; pads the published pause
 ET = ZoneInfo("America/New_York")
 PAUSE_ET_HOURS = (3, 5)     # Kalshi weekly maintenance, Thursday 03:00–05:00 ET
@@ -364,8 +364,10 @@ def main() -> int:
     say(f"# W2 close protocol — {args.since} -> {args.until}  (tag {args.tag})")
 
     # The listing comes first: G4's excluded intervals are derived from it. The fetch
-    # is padded so a pause that straddles t0 or t1 is still anchored by closes on both
-    # sides; reconciliation and the scorer keep the exact span.
+    # is padded so a pause that straddles t0 is anchored by closes on both sides. At a
+    # live close no market after t1 has settled, so the pad cannot anchor t1; the §12
+    # window boundary rule keeps t1 out of the pause. Reconciliation and the scorer
+    # keep the exact span.
     if args.offline_listing:
         with open(args.offline_listing) as f:
             anchor = json.load(f)

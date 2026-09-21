@@ -6,7 +6,6 @@
 Description=Kalshi WS data collector (brti-edge)
 Wants=network-online.target time-sync.target
 After=network-online.target time-sync.target
-RequiresMountsFor=/mnt/ssd
 
 [Service]
 Type=simple
