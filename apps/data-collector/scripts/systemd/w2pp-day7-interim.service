@@ -1,0 +1,11 @@
+[Unit]
+Description=W2'' day7-interim — mechanical close wrapper (never the bare scorer)
+
+[Service]
+Type=oneshot
+User=bonzos
+WorkingDirectory=/home/bonzos/brti-edge
+EnvironmentFile=/home/bonzos/.config/brti-edge/brti.env
+ExecStart=/usr/bin/python3 /home/bonzos/brti-edge/apps/market-worker/scripts/w2_close_check.py --since 2026-09-24T10:00:00Z --until 2026-10-01T10:00:00Z --interim --tag w2pp-instrument-20260924 --env-vector /home/bonzos/brti-edge/apps/market-worker/scripts/w2pp-env-vector.json
+StandardOutput=append:/home/bonzos/brti-edge/analysis/w2/w2pp-day7-interim-pi.txt
+StandardError=append:/home/bonzos/brti-edge/analysis/w2/w2pp-day7-interim-pi.err

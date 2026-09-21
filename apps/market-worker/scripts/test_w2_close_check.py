@@ -49,6 +49,35 @@ def test_wrapper_is_frozen():
     assert "apps/market-worker/scripts/w2_close_check.py" in w2cc.FROZEN_PATHS
 
 
+def test_env_vector_file_is_frozen_and_names_only_vector_keys():
+    rel = "apps/market-worker/scripts/w2pp-env-vector.json"
+    assert rel in w2cc.FROZEN_PATHS
+    with open(os.path.join(w2cc.REPO, rel)) as f:
+        v = json.load(f)
+    assert set(v) <= set(w2cc.ENV_VECTOR_KEYS) and v["KALSHI_API_BASE"] == w2cc.API_BASE_DEFAULT, v
+
+
+def test_freeze_fails_closed_on_a_missing_tag():
+    import subprocess, tempfile
+    logs, repo = w2cc.LOGS, w2cc.REPO
+    with tempfile.TemporaryDirectory() as tmp:     # a clean repo with no tag; env attestation passes
+        git = ["git", "-C", tmp, "-c", "user.name=t", "-c", "user.email=t@t"]
+        subprocess.run(git + ["init", "-q"], check=True)
+        subprocess.run(git + ["commit", "-q", "--allow-empty", "-m", "base"], check=True)
+        with open(os.path.join(tmp, "launchd-kalshi-worker.out.log"), "w") as f:
+            f.write("[kalshi-worker] starting; scan interval 15000ms; port 4001\n")
+        w2cc.LOGS, w2cc.REPO = tmp, tmp
+        try:
+            r = w2cc.check_freeze("no-such-tag-w2pp")         # git exits 128 with empty stdout
+            head = w2cc.check_freeze("HEAD")                   # the control: same repo, tag present
+        finally:
+            w2cc.LOGS, w2cc.REPO = logs, repo
+    assert head["ok"], head
+    assert r["env_attestation"].startswith("[kalshi-worker]") and r["calibration_json_absent"], r
+    assert not r["git_ok"] and not r["ok"] and r["diff_vs_tag"].startswith("git failed"), r
+    assert w2cc.check_freeze("w2prime-instrument-20260806")["git_ok"]
+
+
 def test_listing_yields_exactly_the_two_thursday_pauses():
     got = [(iso(a), iso(b)) for a, b in w2cc.excluded_intervals(listing(), T0, T1)]
     assert got == [("2026-08-13T06:45:00Z", "2026-08-13T09:00:00Z"),

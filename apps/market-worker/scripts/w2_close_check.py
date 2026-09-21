@@ -62,6 +62,7 @@ FROZEN_PATHS = (
     "apps/market-worker/src",
     "apps/market-worker/scripts/w2_replay_scorer.py",
     "apps/market-worker/scripts/w2_close_check.py",  # W2″: the wrapper is frozen too
+    "apps/market-worker/scripts/w2pp-env-vector.json",  # W2″: G5 compares workers to it
     "packages/kalshi-client/src",
     "packages/signals/src",
 )
@@ -270,9 +271,13 @@ def check_freeze(tag: str):
     except FileNotFoundError:
         pass
     env_ok = env_line is not None and "scan interval 15000ms" in env_line
+    # A missing tag makes git exit 128 with empty stdout; that must never read as clean.
+    git_ok = diff.returncode == 0 and dirty.returncode == 0
     return {
-        "ok": not diff.stdout.strip() and not dirty.stdout.strip() and calib_ok and env_ok,
-        "diff_vs_tag": diff.stdout.strip() or "(clean)",
+        "ok": git_ok and not diff.stdout.strip() and not dirty.stdout.strip() and calib_ok and env_ok,
+        "git_ok": git_ok,
+        "diff_vs_tag": (diff.stdout.strip() or "(clean)") if git_ok
+                       else f"git failed: {(diff.stderr or dirty.stderr).strip()}",
         "working_tree": dirty.stdout.strip() or "(clean)",
         "calibration_json_absent": calib_ok,
         "env_attestation": env_line or "(no startup line found)",

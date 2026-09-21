@@ -113,3 +113,48 @@ maintenance window.
 W2′ disposition unchanged: it closes 2026-08-20T10:05Z as **NO-GO (data)** under its
 locked text — no mid-window edits (prereg §6), even ones that would only make the verdict
 harsher. The 08-20 Thursday pause sits inside the span's final hours; expected, no action.
+
+## 7. W2″ lock record (2026-09-24)
+
+**Status:** DRAFT. The lock commit fills every `⟨fill at lock⟩` field and removes this line.
+
+**Window.** 2026-09-24T10:00:00Z → 2026-10-08T10:00:00Z. The §8a day-7 interim fires
+2026-10-01T10:05Z and the close fires 2026-10-08T10:05Z, both through the close wrapper.
+The start is 06:00 ET on a Thursday, so it obeys the §12 window boundary rule (not 04:00 or
+05:00 ET).
+
+**§4(3) cure record.** One full Thursday observed on the scoring host 1705bonzos, where the
+only capture gap is the published pause. Soak start 2026-09-21T21:00:03Z, the first passing
+read-back after the host reboot. Thursday 2026-09-24 dry run with the amended wrapper and
+`--env-vector`: `⟨fill at lock: G4 and G5 lines, and the gap list⟩`.
+
+**Instrument.** Tag `w2pp-instrument-20260924` on commit `⟨fill at lock⟩`. GitHub release
+created `⟨fill at lock⟩` (server time). The worker and collector started 2026-09-21T20:56Z
+from `532ff06`. `git diff --name-only 532ff06 w2pp-instrument-20260924 -- apps/market-worker/src
+apps/data-collector/src packages` is `⟨fill at lock: empty⟩`, so the running code is the
+tagged code.
+
+**Env-at-lock vector.** The frozen file `apps/market-worker/scripts/w2pp-env-vector.json`:
+`{"KALSHI_API_BASE": "https://api.elections.kalshi.com/trade-api/v2"}`. At
+`⟨fill at lock⟩` each worker's `/proc` environ showed `KALSHI_ALLOW_ORDERS=0`,
+`KALSHI_AUTO_SUBMIT=0`, `KALSHI_DUST_ENABLED=0`, that API base, and no knob.
+
+**Host during the window.** Beside OS housekeeping, 1705bonzos runs only these:
+
+- `kalshi-worker.service` and `kalshi-collector.service`, the instrument. The collector
+  writes to the SD card. The external disk is removed and its mount unit masked.
+- `w2pp-day7-interim.timer` and `w2pp-close.timer`, installed `⟨fill at lock⟩`.
+- `bookA-watchdog.service`, an account watchdog unrelated to Kalshi, kept on the operator's
+  decision.
+- `⟨fill at lock: the operator's line for the Robinhood poller timer, or "no poller"⟩`
+- A liveness monitor on another host opens one ssh session every 5 min. It reads unit
+  states, file times and names, the worker environ and board sensors, never a data row.
+
+The operator keeps the full host change log, each change with its undo, for the restore
+after the close.
+
+**Economic declaration.** obi commit `⟨fill at lock⟩`, GitHub release `⟨fill at lock⟩`,
+declares the holdout window `w2pp-holdout-20260924` and the economic design before
+10:00Z.
+
+**Lock authority.** `⟨fill at lock: the operator's words and time⟩`.
