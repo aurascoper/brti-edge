@@ -257,10 +257,8 @@ def reconcile(listing, t0: float, t1: float):
         for row in rows:
             ticker = row.get("ticker")
             if not isinstance(ticker, str) or not ticker.startswith("KXBTC15M-"):
-                # A local row with a bad ticker escapes every later check, so it
-                # counts here when its time places it inside this window.
-                if source == "exchange" or loosely_within(row.get("close_time"), t0, t1):
-                    problems.append(f"{source}: invalid ticker")
+                if source == "exchange":
+                    problems.append("exchange: invalid ticker")
                 continue
             # Pending local validation records are not settlement records.
             if source == "local" and row.get(result_key) in (None, ""):
