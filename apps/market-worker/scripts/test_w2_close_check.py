@@ -200,7 +200,7 @@ def test_verdict_fails_closed():
     assert code == 1 and "NO-GO (integrity)" in line, line
     line, code = w2cc.verdict(0, "window: …\n", False)            # no gate line printed
     assert code == 1 and "NO-GO (integrity)" in line, line
-    assert "mechanism" in w2cc.verdict(0, "gates: G1(FAIL) G7(FAIL)", False)[0]
+    assert "mechanism" in w2cc.verdict(0, passing.replace("G7(PASS)", "G7(FAIL)"), False)[0]
     assert w2cc.verdict(0, "CONTINUE\n", True) == ("CONTINUE", 0)
     assert w2cc.verdict(2, "", True) == ("NO-GO (integrity)", 1)
     assert w2cc.verdict(0, "", True) == ("NO-GO (integrity)", 1)

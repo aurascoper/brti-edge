@@ -237,18 +237,48 @@ def fetch_settled_listing(t0: float, t1: float):
 
 
 def reconcile(listing, t0: float, t1: float):
-    captured = set()
-    for r in load_jsonl(os.path.join(LOGS, "kalshi-settlement-validation.jsonl")):
-        if r.get("kalshi_result") in ("yes", "no") and r.get("close_time") \
-                and str(r.get("ticker", "")).startswith("KXBTC15M"):
-            ct = ts_ms(r["close_time"])
-            if t0 <= ct <= t1:
-                captured.add(r["ticker"])
-    ex = {m["ticker"] for m in listing if m.get("ticker")}
-    missing = sorted(ex - captured)
-    extra = sorted(captured - ex)
+    problems = []
+
+    def index(rows, result_key, source):
+        grouped = {}
+        for row in rows:
+            ticker = row.get("ticker")
+            if not isinstance(ticker, str) or not ticker.startswith("KXBTC15M-"):
+                if source == "exchange":
+                    problems.append("exchange: invalid ticker")
+                continue
+            # Pending local validation records are not settlement records.
+            if source == "local" and row.get(result_key) in (None, ""):
+                continue
+            try:
+                dt = datetime.fromisoformat(row["close_time"].replace("Z", "+00:00"))
+                if dt.tzinfo is None or row.get(result_key) not in ("yes", "no"):
+                    raise ValueError("invalid close or result")
+                identity = (dt.timestamp() * 1000, row[result_key])
+            except (KeyError, ValueError, TypeError, AttributeError, OverflowError):
+                problems.append(f"{source}: malformed settlement {ticker}")
+                continue
+            grouped.setdefault(ticker, set()).add(identity)
+        result = {}
+        for ticker, identities in grouped.items():
+            if not any(t0 <= ct <= t1 for ct, _ in identities):
+                continue
+            if len(identities) != 1:
+                problems.append(f"{source}: conflicting duplicate {ticker}")
+                continue
+            result[ticker] = next(iter(identities))
+        return result
+
+    local = index(load_jsonl(os.path.join(LOGS, "kalshi-settlement-validation.jsonl")),
+                  "kalshi_result", "local")
+    exchange = index(listing, "result", "exchange")
+    ex, captured = set(exchange), set(local)
+    conflicts = sorted(t for t in ex & captured if exchange[t] != local[t])
+    missing, extra = sorted(ex - captured), sorted(captured - ex)
     return {"exchange": len(ex), "captured": len(captured & ex),
-            "missing": missing, "extra_local": extra}
+            "missing": missing, "extra_local": extra, "conflicts": conflicts,
+            "problems": problems,
+            "integrity_ok": bool(ex) and not extra and not conflicts and not problems}
 
 
 # ---------- 3. G5 freeze ----------
@@ -334,13 +364,24 @@ def verdict(returncode: int, stdout: str, interim: bool):
                 f"\nVERDICT: NO-GO (integrity) — scorer exited {returncode}"), 1
     lines = stdout.strip().splitlines()
     if interim:
-        return (lines[-1], 0) if lines else ("NO-GO (integrity)", 1)
+        return (lines[0], 0) if len(lines) == 1 and lines[0] in ("GO", "CONTINUE") \
+            else ("NO-GO (integrity)", 1)
     if "TRIPWIRE" in stdout:
         return "\nVERDICT: NO-GO (data) — §4 tripwire tripped; window suspect", 1
-    m = re.search(r"gates: (.+)$", stdout, re.MULTILINE)
-    if not m:
-        return "\nVERDICT: NO-GO (integrity) — scorer printed no gate line", 1
-    failed = re.findall(r"(G\d)\(FAIL\)", m.group(1))
+    gate_lines = re.findall(r"^\s*gates:([^\n]*)$", stdout, re.MULTILINE)
+    malformed = "\nVERDICT: NO-GO (integrity) — malformed or incomplete gate output"
+    if len(gate_lines) != 1:
+        return malformed, 1
+    # Match the scorer's exact optional final-bound annotation, never free text.
+    body = re.sub(r"\s*\[G2 bound z≥1\.7\]\s*$", "", gate_lines[0]).strip()
+    tokens = body.split()
+    matches = [re.fullmatch(r"(G[12367])\((PASS|FAIL)\)", token) for token in tokens]
+    expected = {"G1", "G2", "G3", "G6", "G7"}
+    if len(matches) != len(expected) or any(m is None for m in matches):
+        return malformed, 1
+    if {m[1] for m in matches} != expected:
+        return malformed, 1
+    failed = [m[1] for m in matches if m[2] == "FAIL"]
     if not failed:
         return "\nVERDICT: GO — full battery PASS on an eligible, frozen window", 0
     if set(failed) & {"G7"}:
@@ -411,7 +452,13 @@ def main() -> int:
         say(f"    missing: {', '.join(rec['missing'][:10])}"
             + (f" … +{len(rec['missing']) - 10}" if len(rec['missing']) > 10 else ""))
     rec_rate = len(rec["missing"]) / max(1, rec["exchange"])
-    rec_ok = rec_rate <= FIRE_COVERAGE_TRIPWIRE
+    rec_ok = rec["integrity_ok"] and rec_rate <= FIRE_COVERAGE_TRIPWIRE
+    for problem in rec["problems"]:
+        say(f"    {problem}")
+    for ticker in rec["conflicts"]:
+        say(f"    settlement outcome/close mismatch: {ticker}")
+    if not rec["exchange"]:
+        say("    empty exchange settlement listing")
 
     fz = check_freeze(args.tag)
     vector = None
