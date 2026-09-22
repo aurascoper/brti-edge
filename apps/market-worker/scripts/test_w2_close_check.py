@@ -229,6 +229,9 @@ def test_verdict_fails_closed():
     line, code = w2cc.verdict(0, "window: …\n", False)            # no gate line printed
     assert code == 1 and "NO-GO (integrity)" in line, line
     assert "mechanism" in w2cc.verdict(0, passing.replace("G7(PASS)", "G7(FAIL)"), False)[0]
+    # The baseline required the scorer's own space after "gates:"; keep that bar
+    assert "integrity" in w2cc.verdict(0, passing.replace("gates: ", "gates:"), False)[0]
+    assert "integrity" in w2cc.verdict(0, passing.replace("gates: ", "gates:\t"), False)[0]
     assert w2cc.verdict(0, "CONTINUE\n", True) == ("CONTINUE", 0)
     assert w2cc.verdict(2, "", True) == ("NO-GO (integrity)", 1)
     assert w2cc.verdict(0, "", True) == ("NO-GO (integrity)", 1)

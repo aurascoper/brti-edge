@@ -385,7 +385,7 @@ def verdict(returncode: int, stdout: str, interim: bool):
             else ("NO-GO (integrity)", 1)
     if "TRIPWIRE" in stdout:
         return "\nVERDICT: NO-GO (data) — §4 tripwire tripped; window suspect", 1
-    gate_lines = re.findall(r"^\s*gates:([^\n]*)$", stdout, re.MULTILINE)
+    gate_lines = re.findall(r"^\s*gates: ([^\n]*)$", stdout, re.MULTILINE)  # the scorer's own space
     malformed = "\nVERDICT: NO-GO (integrity) — malformed or incomplete gate output"
     if len(gate_lines) != 1:
         return malformed, 1
