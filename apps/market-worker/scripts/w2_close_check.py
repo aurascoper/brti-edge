@@ -236,6 +236,19 @@ def fetch_settled_listing(t0: float, t1: float):
     return results
 
 
+def loosely_within(close_time, t0: float, t1: float) -> bool:
+    """Window test for a row too malformed for the strict parse. A time with no
+    zone reads as UTC; a time that will not parse cannot be placed, so it is not
+    this window's to fail on."""
+    try:
+        dt = datetime.fromisoformat(str(close_time).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return False
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return t0 <= dt.timestamp() * 1000 <= t1
+
+
 def reconcile(listing, t0: float, t1: float):
     problems = []
 
@@ -256,7 +269,11 @@ def reconcile(listing, t0: float, t1: float):
                     raise ValueError("invalid close or result")
                 identity = (dt.timestamp() * 1000, row[result_key])
             except (KeyError, ValueError, TypeError, AttributeError, OverflowError):
-                problems.append(f"{source}: malformed settlement {ticker}")
+                # The local file spans every window ever scored, so a malformed row
+                # from an earlier one must not fail this window. The exchange listing
+                # is already filtered to the span, so every bad row there counts.
+                if source == "exchange" or loosely_within(row.get("close_time"), t0, t1):
+                    problems.append(f"{source}: malformed settlement {ticker}")
                 continue
             grouped.setdefault(ticker, set()).add(identity)
         result = {}

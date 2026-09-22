@@ -78,6 +78,34 @@ def test_freeze_fails_closed_on_a_missing_tag():
     assert w2cc.check_freeze("w2prime-instrument-20260806")["git_ok"]
 
 
+def test_reconcile_ignores_a_malformed_row_from_an_earlier_window():
+    # The local settlement file spans every window ever scored. A bad row from
+    # August must not fail an October close; a bad row inside the span must.
+    import tempfile
+    t0, t1 = ms("2026-09-24T10:00:00Z"), ms("2026-09-24T11:00:00Z")
+    good = [{"ticker": f"KXBTC15M-26SEP24{h}", "close_time": t, "result": "yes"}
+            for h, t in (("1015", "2026-09-24T10:15:00Z"), ("1030", "2026-09-24T10:30:00Z"))]
+    local = [{"ticker": m["ticker"], "close_time": m["close_time"], "kalshi_result": "yes"} for m in good]
+    older = {"ticker": "KXBTC15M-26AUG13", "close_time": "2026-08-13T05:00:00", "kalshi_result": "yes"}
+    inside = {"ticker": "KXBTC15M-26SEP241045", "close_time": "2026-09-24T10:45:00Z", "kalshi_result": "void"}
+    logs = w2cc.LOGS
+    with tempfile.TemporaryDirectory() as tmp:
+        w2cc.LOGS = tmp
+        def write(rows):
+            with open(os.path.join(tmp, "kalshi-settlement-validation.jsonl"), "w") as f:
+                f.writelines(json.dumps(r) + "\n" for r in rows)
+        try:
+            write(local + [older])                      # a naive close time, last August
+            clean = w2cc.reconcile(good, t0, t1)
+            write(local + [older, inside])               # a result this window cannot read
+            dirty = w2cc.reconcile(good, t0, t1)
+        finally:
+            w2cc.LOGS = logs
+    assert clean["integrity_ok"] and clean["problems"] == [] and clean["captured"] == 2, clean
+    assert not dirty["integrity_ok"] and len(dirty["problems"]) == 1, dirty
+    assert "26SEP241045" in dirty["problems"][0], dirty["problems"]
+
+
 def test_listing_yields_exactly_the_two_thursday_pauses():
     got = [(iso(a), iso(b)) for a, b in w2cc.excluded_intervals(listing(), T0, T1)]
     assert got == [("2026-08-13T06:45:00Z", "2026-08-13T09:00:00Z"),
