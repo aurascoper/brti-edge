@@ -104,6 +104,22 @@ def test_reconcile_ignores_a_malformed_row_from_an_earlier_window():
     assert clean["integrity_ok"] and clean["problems"] == [] and clean["captured"] == 2, clean
     assert not dirty["integrity_ok"] and len(dirty["problems"]) == 1, dirty
     assert "26SEP241045" in dirty["problems"][0], dirty["problems"]
+    # A ticker of the wrong shape escapes every later check, so it counts in-window
+    odd = {"ticker": "KXBTC15M26SEP241015", "close_time": "2026-09-24T10:15:00Z", "kalshi_result": "yes"}
+    with tempfile.TemporaryDirectory() as tmp:
+        w2cc.LOGS = tmp
+        def write2(rows):
+            with open(os.path.join(tmp, "kalshi-settlement-validation.jsonl"), "w") as f:
+                f.writelines(json.dumps(r) + "\n" for r in rows)
+        try:
+            write2(local + [odd])
+            in_span = w2cc.reconcile(good, t0, t1)
+            write2(local + [dict(odd, close_time="2026-08-13T10:15:00Z")])
+            out_span = w2cc.reconcile(good, t0, t1)
+        finally:
+            w2cc.LOGS = logs
+    assert not in_span["integrity_ok"] and "invalid ticker" in in_span["problems"][0], in_span
+    assert out_span["integrity_ok"] and out_span["problems"] == [], out_span
 
 
 def test_listing_yields_exactly_the_two_thursday_pauses():

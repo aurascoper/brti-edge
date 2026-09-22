@@ -111,16 +111,25 @@ def main():
     t0, t1 = ts_ms(args.since), ts_ms(args.until)
     out = (lambda *a, **k: None) if args.interim else print
 
+    # Both files span every window ever scored. A row whose time cannot be read
+    # belongs to no window, so it is skipped here rather than ending the run;
+    # the close wrapper reports such a row when it falls inside this span.
     settle = {}
     for r in load_jsonl("kalshi-settlement-validation.jsonl"):
         if r.get("kalshi_result") in ("yes", "no") and r.get("close_time"):
-            ct = ts_ms(r["close_time"])
+            try:
+                ct = ts_ms(r["close_time"])
+            except (ValueError, TypeError, AttributeError):
+                continue
             if t0 <= ct <= t1:
                 settle[r["ticker"]] = 1.0 if r["kalshi_result"] == "yes" else 0.0
 
     per_ticker = defaultdict(list)
     for r in load_jsonl("kalshi-shadow.jsonl"):
-        t = ts_ms(r["ts"])
+        try:
+            t = ts_ms(r["ts"])
+        except (KeyError, ValueError, TypeError, AttributeError):
+            continue
         if t0 <= t <= t1:
             per_ticker[r["ticker"]].append(r)
 
@@ -129,6 +138,12 @@ def main():
     unquoted = []     # first fire had no usable fired-side ask (§4 tripwire)
     for ticker, rows in per_ticker.items():
         if ticker not in settle:
+            continue
+        # The stratum comes from the row's series (§3), and §8's unit of n is
+        # settled KXBTC15M tickers. So a ticker that does not belong to the
+        # series it would be scored under is not scored at all.
+        series = {str(r.get("series", "")) for r in rows}
+        if len(series) != 1 or not ticker.startswith(next(iter(series)) + "-"):
             continue
         y = settle[ticker]
         for i, r in enumerate(rows):
