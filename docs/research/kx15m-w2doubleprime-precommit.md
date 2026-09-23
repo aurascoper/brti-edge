@@ -313,6 +313,43 @@ append `--restore-permissions` only for recorded ACL restoration. Keep current
 state and compatible recovery. Prior authenticated evidence remains pinned to
 its prior release; this upgrade did not re-run venue checks or adopt history.
 
+**Canonical mapping and bounded reads, 2026-09-23T06:39–06:49Z.** The coordinator's
+GET-only diagnostic on `2b0a748e` made 37 requests in 4.820459 s, peak RSS 45024 KiB,
+process CPU 1.43423 s. All 12 selected existing orders had stable canonical fields
+and exact fill totals; five unrelated historical ticker rows were kept separate.
+Load was 0.94/0.95/0.92 → 1.03/0.97/0.93; source age 2.383 s → 7.182 s; NTP stayed
+synchronized. No order, journal or service was created by this diagnostic.
+
+Under the retained disarmed-install authorization, commit
+`05afd782724bc25fc74d692dca7b0655c5411c5c` was installed at 06:46:25Z. Source artifact
+`734839d28e5374e4024d91f5137f08cec462b41f1118398225d33f2480db12f1` and Pi execution
+hash `23c3994fa02c58f65d0cefeaa97a190fd667a09f9f77fd7d21dec8d1ea5f0564` match the
+17 committed runtime files and recomputed seal. Config contents, credential metadata,
+state and all 33 ACL undo records were retained. Entry stays masked/inactive;
+recovery stays inactive with no entry dependency and its GET-only guard intact.
+
+Upgrade time was 19.558 s; load 0.75/0.92/0.97 → 1.13/0.98/0.98; retained artifacts
+and stages 146476 → 177588 KiB. Available disk/inodes changed 170522619904
+bytes/14519070 → 170487144448 bytes/14517709. No producer/source change or new
+permission occurred; both consumers retain source read access and the same pin.
+
+At 06:48:55Z, one existing order with a unique client reference passed the installed
+adapter lookup with exact fills, principal and fees. The external capture helper
+made six GETs in 1.358660 s, peak RSS 46860 KiB, user/system CPU 0.498348/0.026482 s;
+it allows at most 40 attempts, 45 s admission time and five-second request timeouts.
+Other selected old orders have empty references and remain unverified for lookup.
+No reference was fabricated, no history adopted and no signal admitted.
+
+The W2 readback passed at 06:49:02Z: same PIDs, collector/shadow ages 1 s/1 s,
+current-hour files, zero gates, no calibration, 57.9 °C and `throttled=0x0`.
+NTP stayed synchronized. No pilot service, journal, arming, allocation or order
+write occurred. Evidence: obi `docs/pilot/KALSHI_CANONICAL_UPGRADE_RECEIPT.json`
+and `docs/pilot/fixtures/kalshi-production-adapter-readback-20260923.json`.
+These bounded checks do not establish steady-state consumer load or a new pilot
+execution. Account confirmation, source availability and alerts remain open.
+Undo is the pinned `kalshi_host.py rollback`; retain compatible recovery/current
+state and use `--restore-permissions` only for recorded ACL restoration.
+
 Rollback persists entry disarming, quarantines arming, masks entry across reboot and keeps
 a schema-compatible GET-only recovery executable and the current journal. Never restore
 an older journal snapshot or run the old executable without established schema
