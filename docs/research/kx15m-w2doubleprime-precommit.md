@@ -150,6 +150,94 @@ tagged code.
 - A liveness monitor on another host opens one ssh session every 5 min. It reads unit
   states, file times and names, the worker environ and board sensors, never a data row.
 
+**Independent Kalshi pilot amendment (Hunter; installation retained in the amended
+implementation request).** The existing “amend that freeze” / “install” authority
+permits the separate Kalshi consumer and its required source availability. The
+2026-09-23 installation is disarmed: production entry is masked, recovery inactive,
+and no consumer or trading journal exists. D1 isolates production as `obiexec` with
+private credentials/state and root-owned executable files. The actual instrument
+continues as `bonzos`; no worker/collector code, configuration, data or gates changed.
+The initial installation changed no source ACL. No Robinhood milestone or §8 GO is an integration dependency;
+any independent pilot execution is outside Stage B and cannot enter its writeup.
+
+Initial artifact `f598feb51b3440494dc74795bf3c2931cdbba488d92e98d1aa159708d9ae36f7`, execution hash
+`e70dbe62ba5c013f2d160e2a937a2cceecec045ea6f89ca7febabf4626c4d417`, installed 2026-09-23
+01:57–02:12Z. Host footprint including retained/staging artifacts: 53136 KiB. Load
+snapshots before/after were 1.16/1.16/1.07 and 1.13/1.21/1.15; the clock was synchronized.
+The standard readback passed at 02:14:17Z: live collector/shadow data (1 s/2 s), current
+hour files, both worker environments with zero order gates, no calibration,
+57.9 °C and throttled=0x0. These snapshots do not establish credentialed operating load.
+
+Hunter's later instruction permits demo acceptance on the GPD now; it supersedes the
+earlier October 8 provisioning wait and Pi-only demo location. Before any running
+consumer is accepted, append its actual activation/hash, owner-verified source pin and
+process identity, narrowly scoped source/log access (including rotation), a source
+availability endpoint at least the round's original start plus 48 hours, measured
+credentialed load/API rate/source lag and alert evidence. Configured limits are 200 MiB
+and 25% of one core. No source restart or availability promise is inferred from a service
+having no runtime timeout. Remaining running-workload evidence: `⟨fill at activation⟩`.
+
+**Source-access amendment, 2026-09-23T03:36Z.** Under the existing consumer exception,
+the installed Kalshi helper recorded and applied 33 ACL records: 32 access records and
+one log-directory default. Both `obiexec` and `aurascoper` now read the pinned source
+and shadow log and stat the producer configuration; neither can read the producer's
+private env file. Both bonzos and aurascoper remain denied the production credential
+directory. All after-ACLs matched at 03:36:54Z. Original, renamed and replacement
+temporary owner-created log files were readable by both consumers and then removed.
+The actual producer log was not rotated; its rotation remains unobserved.
+
+Both consumers obtained source pin
+`def8805af6194a5da5b19fa08bcc573b2ad73a972a8b0c247d49ab352b6764a9`.
+Producer HEAD remains `532ff06332998f0f335f76ec450ef07b3b1930a9`; worker PID/start ticks
+are `2228/2919` and `2263/3086`. No source code, environment, gate or process changed.
+No source-availability endpoint or durable attestation was created. Production entry
+stays inactive/masked, recovery inactive; no journal, arming or pilot service start.
+Installed artifact and execution hash remain the values above; the next reviewed
+release must carry forward the permission undo records.
+
+The standard W2 readback passed at 03:37:12Z: collector/shadow ages 2 s/12 s, current-hour
+files, zero worker order gates, no calibration, 58.4 °C and `throttled=0x0`.
+Load snapshots before/after were 1.01/0.96/0.94 and 1.03/0.97/0.94; access verification
+took 1.644 seconds. These observations do not establish credentialed consumer load.
+Exact ACLs/readback are in obi `docs/pilot/KALSHI_SOURCE_ACCESS_RECEIPT.json`.
+Undo is `sudo python3 /opt/obi-kalshi/recovery/scripts/kalshi_host.py rollback --restore-permissions`;
+it restores only ACLs still matching their recorded after-state and retains state and
+compatible recovery. Credentialed load, alerts and truthful source availability remain open.
+
+**Disarmed upgrade, 2026-09-23T04:00:50Z.** Commit
+`ef21a331f8b88b6f229e61ff183ba0fac1d9aa92` replaces the initial executable with artifact
+`2b5433b00a18f61a1495be52b6a0a130a4e2c60786da01cebbed234a2eb06dd9` and Pi execution hash
+`09a194f9a4b0e361f8cfc2c420e8b8cfb108ab76a13d8c469aa5d445e1293b31`.
+All 17 installed runtime-file hashes match the commit; the seal and unit bytes match.
+`current`, compatible schema-2 `recovery`, and the inactive demo code link point to the
+new immutable artifact. Earlier artifacts remain. The 33 ACL undo records and both
+private configurations remain unchanged. The existing empty kill marker is retained,
+with its recorded owner correction from root to obiexec. Entry stays inactive/masked;
+recovery and demo stay inactive. No Pi credential, journal, arming, attestation or
+service start was introduced; no venue request occurred on this host.
+
+Owner-side source checks now also bind the workers' actual cwd and output directory:
+same PIDs/start ticks and source pin, cwd `/home/bonzos/brti-edge/apps/market-worker`,
+log directory device/inode `45826/2445553`. These checks make no source-availability
+promise. The W2 readback passed at 04:02:35Z, with source processes unchanged,
+collector/shadow ages 0 s/5 s, current-hour files, zero gates, no calibration,
+57.4 °C and `throttled=0x0`. Clock synchronization passed.
+
+Upgrade elapsed time was 18.524 seconds. Before/after load snapshots were
+0.69/1.00/1.11 and 1.24/1.12/1.13. Retained artifacts/stages grew from 53144 to
+84252 KiB; the post-install snapshot had 170825859072 bytes and 14521807 inodes free.
+These are installation observations, not a credentialed consumer load check.
+Receipt: obi `docs/pilot/KALSHI_UPGRADE_RECEIPT.json`. Exact undo remains the pinned
+`kalshi_host.py rollback --restore-permissions` command above; current state is never
+replaced with an earlier journal. Running-consumer availability, actual rotation,
+credentialed load/API rate and alert evidence remain open.
+
+Rollback persists entry disarming, quarantines arming, masks entry across reboot and keeps
+a schema-compatible GET-only recovery executable and the current journal. Never restore
+an older journal snapshot or run the old executable without established schema
+compatibility. Exact receipt and commands are in obi `docs/pilot/KALSHI_HOST_RECEIPT.md`
+and `KALSHI_OPERATIONS.md`; per-path ACL undo records are required before permissions change.
+
 The operator keeps the full host change log, each change with its undo, for the restore
 after the close.
 
