@@ -285,6 +285,34 @@ Evidence: obi `docs/pilot/KALSHI_CREDENTIALED_READ_HOST_RECEIPT.json`. The proce
 exited, so there is no running workload to undo; retain its evidence. Source
 availability/attestation and a credentialed steady-state consumer check remain open.
 
+**Settlement scope upgrade, 2026-09-23T06:08:56Z.** The retained disarmed-install
+authorization covers exact commit `2b0a748e4524d034f0c853ab5df2a50422a4a875`.
+Its recovery path selects journal-owned settlement tickers before normalizing
+unrelated account history. The 17 committed runtime files and two examples were
+staged without credentials. Source artifact
+`9682bb2255ed8c3e87475c999a21e51aef2a872de1b6e79bea3a4b34cbd9a8a2` and Pi execution
+hash `b920da23ab12e9fa1e2535ec04c06393b1180ee6ac1f7fcf36480766485291a2` match the
+installed bytes. Current/recovery/demo code links point to this artifact.
+
+Entry stays inactive/masked; recovery inactive/static. The installed GET-only
+guard rejected four write methods without a request opener, credential or journal.
+Both configuration contents, credential metadata, state files and all 33 ACL undo
+records were retained. D1 remains enforced. No journal, arming, service start,
+venue request, allocation, source change or permission change occurred.
+
+Upgrade time was 19.623 s. Before/after load was 1.44/1.26/1.15 → 1.64/1.34/1.18;
+retained artifacts/stages grew 115364 → 146476 KiB. Available disk/inodes changed
+170611621888 bytes/14520432 → 170578124800 bytes/14519071. NTP stayed synchronized.
+The standard readback passed at 06:09:08Z: same source PIDs, collector/shadow ages
+1 s/7 s, current-hour files, zero gates, no calibration, 58.9 °C, `throttled=0x0`.
+These observations measure installation, not steady-state consumer operation.
+
+Evidence: obi `docs/pilot/KALSHI_SETTLEMENT_SCOPE_UPGRADE_RECEIPT.json`.
+Undo remains `sudo python3 /opt/obi-kalshi/recovery/scripts/kalshi_host.py rollback`;
+append `--restore-permissions` only for recorded ACL restoration. Keep current
+state and compatible recovery. Prior authenticated evidence remains pinned to
+its prior release; this upgrade did not re-run venue checks or adopt history.
+
 Rollback persists entry disarming, quarantines arming, masks entry across reboot and keeps
 a schema-compatible GET-only recovery executable and the current journal. Never restore
 an older journal snapshot or run the old executable without established schema
