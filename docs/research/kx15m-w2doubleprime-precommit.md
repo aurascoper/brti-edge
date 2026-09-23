@@ -232,6 +232,34 @@ Receipt: obi `docs/pilot/KALSHI_UPGRADE_RECEIPT.json`. Exact undo remains the pi
 replaced with an earlier journal. Running-consumer availability, actual rotation,
 credentialed load/API rate and alert evidence remain open.
 
+**Finalized-market mapping upgrade, 2026-09-23T05:00:28Z.** The covered disarmed
+consumer update installs commit `d485589bae7a753d400da64c284bbcefed1cea7a`, source
+artifact `554a38ee02ea4731d44a00d7f94686adc9d33d950762cd5efe86bb1651c65b25`, and Pi
+execution hash `b72152e3f7e748be31cde61ce13006f03dacc704569644035e6cf0dab50a6472`.
+Its only runtime change from the preceding release is settlement finalized-status
+mapping and ticker validation. All 17 installed runtime-file hashes match the commit;
+the full seal matches. Current/recovery/demo code links point to that root-owned
+artifact; earlier artifacts remain. Both configurations and all 33 ACL undo records
+are unchanged, with live ACLs matching their after-state. The kill marker and entry
+mask remain; no new source permission, credential, journal, attestation or service
+start was introduced.
+
+The current static recovery unit has no dependency on masked entry. Its GET-only
+transport rejected write methods before transmission in an installed-code probe.
+Actual authenticated Pi recovery remains unverified because no bound journal or
+production credentials exist. Source pins, process IDs, cwd and output identity
+remain unchanged. No availability promise was invented.
+
+The W2 readback passed at 05:01:58Z: collector/shadow ages 1 s/13 s, current-hour files,
+zero worker order gates, no calibration, 60.3 °C and `throttled=0x0`; NTP synchronized.
+The upgrade took 18.311 seconds. Load snapshots before/after were 0.94/0.98/0.99 and
+1.11/0.94/0.97. Retained artifact/stage footprint is 115364 KiB (previously 84252 KiB);
+170710532096 bytes and 14520440 inodes remained free. These are installation snapshots,
+not credentialed operating-load measurements. Evidence is in obi
+`docs/pilot/KALSHI_FINALIZED_UPGRADE_RECEIPT.json`; historical receipts remain intact.
+Undo remains the pinned `kalshi_host.py rollback` command; use `--restore-permissions`
+only for recorded ACL restoration. Keep current journals and compatible recovery.
+
 Rollback persists entry disarming, quarantines arming, masks entry across reboot and keeps
 a schema-compatible GET-only recovery executable and the current journal. Never restore
 an older journal snapshot or run the old executable without established schema
