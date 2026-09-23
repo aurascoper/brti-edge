@@ -260,6 +260,31 @@ not credentialed operating-load measurements. Evidence is in obi
 Undo remains the pinned `kalshi_host.py rollback` command; use `--restore-permissions`
 only for recorded ACL restoration. Keep current journals and compatible recovery.
 
+**Bounded credentialed reads, 2026-09-23T05:56Z.** Under the retained disarmed
+verification authority, the installed `d485589b` Kalshi application ran one GET-only
+process as obiexec. It made 25 requests (15 signed, 10 public) in 3.899475 seconds;
+user/system CPU time was 1.200218/0.075602 seconds and peak RSS 47336 KiB. The short
+burst averaged 6.41112 requests/second. Work was bounded by 64 attempts, a 45-second
+admission deadline and five-second request timeouts. This observation does not
+establish steady-state consumer load or live execution acceptance.
+
+NTP remained synchronized. Before/after host snapshots showed source ages
+4.504 s/1.241 s and load 1.06/1.24/1.18 → 0.79/1.13/1.15. Disk/inodes were
+170625630208 bytes/14520438 → 170623311872 bytes/14520437. A redacted host receipt was
+added; no source files, permissions, configuration, producer process or order gate
+changed. The standard readback passed at 05:58:01Z: collector/shadow ages 1 s/0 s,
+same worker PIDs, zero gates, no calibration, 58.9 °C and `throttled=0x0`.
+
+The dedicated credential files were already present before the process, private
+to obiexec; D1 access probes denied both bonzos and aurascoper. Entry remains
+inactive/masked and recovery inactive/static. No order, allocation, journal,
+arming or service start occurred. Account/subaccount confirmation is still open;
+historical settlement normalization refused mixed YES/NO history without adopting
+it. Alert delivery remains untested because the destination is a placeholder.
+Evidence: obi `docs/pilot/KALSHI_CREDENTIALED_READ_HOST_RECEIPT.json`. The process has
+exited, so there is no running workload to undo; retain its evidence. Source
+availability/attestation and a credentialed steady-state consumer check remain open.
+
 Rollback persists entry disarming, quarantines arming, masks entry across reboot and keeps
 a schema-compatible GET-only recovery executable and the current journal. Never restore
 an older journal snapshot or run the old executable without established schema
