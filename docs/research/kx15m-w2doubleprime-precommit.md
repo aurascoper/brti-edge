@@ -133,8 +133,10 @@ minute is that pause, 07:00:18Z to 09:00:48Z, which is 0.8 minutes of exchange-o
 Reconciliation: 249 settled, 248 captured, one missing (0.40%, under the 2% rule).
 The 0.06 h gap is the unplanned reboot recorded below, outside the Thursday window.
 
-**Instrument.** Tag `w2pp-instrument-20260924` on this lock commit. Its commit and the
-GitHub release time are appended in the single follow-up commit, as §13 prescribes. The worker and collector started 2026-09-21T20:56Z
+**Instrument.** Tag `w2pp-instrument-20260924` on commit `ea4a3f871a1b7550a1ef1661596b0be6e6b62349`.
+Its GitHub release was published 2026-09-24T16:16:39Z, a server time. The host checkout moved
+to that tag at 16:17:38Z, and the four archived W2′ files compared identical afterwards. G5
+against the tag at 16:18Z read a clean diff and a clean working tree. The worker and collector started 2026-09-21T20:56Z
 from `532ff06`. `git diff --name-only 532ff06 w2pp-instrument-20260924 -- apps/market-worker/src
 apps/data-collector/src packages` is empty, so the running code is the
 tagged code.
@@ -148,8 +150,8 @@ tagged code.
 
 - `kalshi-worker.service` and `kalshi-collector.service`, the instrument. The collector
   writes to the SD card. The external disk is removed and its mount unit masked.
-- `w2pp-day7-interim.timer` and `w2pp-close.timer`. Their install time is in the follow-up
-  commit, because the unit files arrive with this tag.
+- `w2pp-day7-interim.timer` and `w2pp-close.timer`, installed and enabled 2026-09-24T16:17:49Z.
+  They fire 2026-10-01T17:05Z and 2026-10-08T17:05Z.
 - `bookA-watchdog.service`, an account watchdog unrelated to Kalshi, kept on the operator's
   decision.
 - `rh-phase0-poll.timer`, as user `aurascoper` since 2026-09-21T20:08:41Z: `Nice=10`, idle
@@ -371,8 +373,8 @@ and `KALSHI_OPERATIONS.md`; per-path ACL undo records are required before permis
 The operator keeps the full host change log, each change with its undo, for the restore
 after the close.
 
-**Economic declaration.** Its obi commit and GitHub release time are in the follow-up
-commit. It declares the holdout window `w2pp-holdout-20260924` and the economic design before
+**Economic declaration.** obi commit `c47c402ff49d360e4b5b0a8e5ec8380c35bebe17`, GitHub release published
+2026-09-24T16:17:02Z. Its `declaredAt` is 16:16:51Z, before the window. It declares the holdout window `w2pp-holdout-20260924` and the economic design before
 10:00Z.
 
 **Lock authority.** The operator wrote "2. sep 24" on 2026-09-22, choosing this date over a
