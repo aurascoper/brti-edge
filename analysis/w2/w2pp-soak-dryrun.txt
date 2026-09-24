@@ -1,0 +1,11 @@
+# wrapper 74b679909d3c046a from /home/aurascoper/Developer/cellular-engine/brti-edge-w2pp/apps/market-worker/scripts/w2_close_check.py
+span 2026-09-22T00:00:00Z -> 2026-09-24T16:00:00Z
+  excluded (published pause): 2026-09-24T07:00:00Z -> 2026-09-24T09:00:00Z
+  G4 shadow: coverage 99.90% max gap 0.06h -> PASS 
+  G4 collector: worst 100.00% max missing run 0h -> PASS 
+  Thursday 2026-09-24T06:00:00Z -> 2026-09-24T10:00:00Z: wall gaps > 1 min [('2026-09-24T07:00:18Z', '2026-09-24T09:00:48Z', 0.8)] (last number: open-time minutes)
+  reconciliation: exchange 249 captured 248 missing 1 extra_local [] conflicts [] problems [] integrity_ok True
+  G5 freeze vs HEAD: git_ok=True diff=(clean) tree=(clean) calibration_absent=True
+  G5 env attestation: [kalshi-worker] starting; scan interval 15000ms; port 4001
+  G5 worker env: pids [2013, 2053] -> PASS  []
+DRY RUN: G4 PASS, G5 PASS (scorer not run)

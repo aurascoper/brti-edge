@@ -116,8 +116,6 @@ harsher. The 08-20 Thursday pause sits inside the span's final hours; expected, 
 
 ## 7. W2″ lock record (2026-09-24)
 
-**Status:** DRAFT. The lock commit fills every `⟨fill at lock⟩` field and removes this line.
-
 **Window.** 2026-09-24T17:00:00Z → 2026-10-08T17:00:00Z. The §8a day-7 interim fires
 2026-10-01T17:05Z and the close fires 2026-10-08T17:05Z, both through the close wrapper.
 The start is 13:00 ET on a Thursday, so it obeys the §12 window boundary rule (not 04:00 or
@@ -127,27 +125,36 @@ running at that hour.
 **§4(3) cure record.** One full Thursday observed on the scoring host 1705bonzos, where the
 only capture gap is the published pause. Soak start 2026-09-21T21:00:03Z, the first passing
 read-back after the host reboot. Thursday 2026-09-24 dry run with the amended wrapper and
-`--env-vector`: `⟨fill at lock: G4 and G5 lines, and the gap list⟩`.
+`--env-vector`, recorded in `analysis/w2/w2pp-soak-dryrun.txt`: over 2026-09-22T00:00:00Z to
+2026-09-24T16:00:00Z, G4 shadow coverage 99.90% with a 0.06 h maximum gap, G4 collector
+worst-channel 100.00% with no missing run, and G5 PASS. The excluded interval is the pause,
+2026-09-24T07:00:00Z to 09:00:00Z. Inside Thursday 06:00Z to 10:00Z the only gap over one
+minute is that pause, 07:00:18Z to 09:00:48Z, which is 0.8 minutes of exchange-open time.
+Reconciliation: 249 settled, 248 captured, one missing (0.40%, under the 2% rule).
+The 0.06 h gap is the unplanned reboot recorded below, outside the Thursday window.
 
-**Instrument.** Tag `w2pp-instrument-20260924` on commit `⟨fill at lock⟩`. GitHub release
-created `⟨fill at lock⟩` (server time). The worker and collector started 2026-09-21T20:56Z
+**Instrument.** Tag `w2pp-instrument-20260924` on this lock commit. Its commit and the
+GitHub release time are appended in the single follow-up commit, as §13 prescribes. The worker and collector started 2026-09-21T20:56Z
 from `532ff06`. `git diff --name-only 532ff06 w2pp-instrument-20260924 -- apps/market-worker/src
-apps/data-collector/src packages` is `⟨fill at lock: empty⟩`, so the running code is the
+apps/data-collector/src packages` is empty, so the running code is the
 tagged code.
 
 **Env-at-lock vector.** The frozen file `apps/market-worker/scripts/w2pp-env-vector.json`:
 `{"KALSHI_API_BASE": "https://api.elections.kalshi.com/trade-api/v2"}`. At
-`⟨fill at lock⟩` each worker's `/proc` environ showed `KALSHI_ALLOW_ORDERS=0`,
+2026-09-24T16:13:20Z each worker's `/proc` environ, pids 2013 and 2053, showed `KALSHI_ALLOW_ORDERS=0`,
 `KALSHI_AUTO_SUBMIT=0`, `KALSHI_DUST_ENABLED=0`, that API base, and no knob.
 
 **Host during the window.** Beside OS housekeeping, 1705bonzos runs only these:
 
 - `kalshi-worker.service` and `kalshi-collector.service`, the instrument. The collector
   writes to the SD card. The external disk is removed and its mount unit masked.
-- `w2pp-day7-interim.timer` and `w2pp-close.timer`, installed `⟨fill at lock⟩`.
+- `w2pp-day7-interim.timer` and `w2pp-close.timer`. Their install time is in the follow-up
+  commit, because the unit files arrive with this tag.
 - `bookA-watchdog.service`, an account watchdog unrelated to Kalshi, kept on the operator's
   decision.
-- `⟨fill at lock: the operator's line for the Robinhood poller timer, or "no poller"⟩`
+- `rh-phase0-poll.timer`, as user `aurascoper` since 2026-09-21T20:08:41Z: `Nice=10`, idle
+  I/O, `MemoryMax=300M`, `CPUQuota=50%`, one run of about 17 s at minutes 07, 22, 37 and 52,
+  memory peak 79 MB. It stops itself at 2026-09-28T21:00Z, inside this window.
 - A liveness monitor on another host opens one ssh session every 5 min. It reads unit
   states, file times and names, the worker environ and board sensors, never a data row.
 - The independent Kalshi pilot consumer, installed 2026-09-23 as `obiexec` under the
@@ -364,8 +371,17 @@ and `KALSHI_OPERATIONS.md`; per-path ACL undo records are required before permis
 The operator keeps the full host change log, each change with its undo, for the restore
 after the close.
 
-**Economic declaration.** obi commit `⟨fill at lock⟩`, GitHub release `⟨fill at lock⟩`,
-declares the holdout window `w2pp-holdout-20260924` and the economic design before
+**Economic declaration.** Its obi commit and GitHub release time are in the follow-up
+commit. It declares the holdout window `w2pp-holdout-20260924` and the economic design before
 10:00Z.
 
-**Lock authority.** `⟨fill at lock: the operator's words and time⟩`.
+**Lock authority.** The operator wrote "2. sep 24" on 2026-09-22, choosing this date over a
+delay, and on 2026-09-24 wrote "/schedule it" and then "granted, keep the session open",
+authorizing the two host steps in advance. The 10:00Z start passed while the owner's session
+was not running, so the start moved to 17:00Z on the same day.
+
+**Unplanned reboot, recorded.** The host rebooted at 2026-09-24T11:58:51Z and came back at
+11:59:38Z, 47 s later, with no clean shutdown in its journal. Both units returned by
+themselves, which §6 permits as a crash-restart through the supervised launcher. The shadow
+log lost 0.06 h and one settlement of 249. G4 still passes, and the Thursday record is
+untouched.
