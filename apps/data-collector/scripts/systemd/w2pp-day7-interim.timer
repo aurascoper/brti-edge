@@ -2,7 +2,7 @@
 Description=W2'' day7-interim timer (UTC; Persistent survives reboot across fire time)
 
 [Timer]
-OnCalendar=2026-10-01 10:05:00 UTC
+OnCalendar=2026-10-01 17:05:00 UTC
 Persistent=true
 
 [Install]

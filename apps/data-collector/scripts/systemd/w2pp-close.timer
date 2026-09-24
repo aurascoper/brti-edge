@@ -2,7 +2,7 @@
 Description=W2'' close timer (UTC; Persistent survives reboot across fire time)
 
 [Timer]
-OnCalendar=2026-10-08 10:05:00 UTC
+OnCalendar=2026-10-08 17:05:00 UTC
 Persistent=true
 
 [Install]

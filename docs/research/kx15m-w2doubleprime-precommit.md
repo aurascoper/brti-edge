@@ -118,10 +118,11 @@ harsher. The 08-20 Thursday pause sits inside the span's final hours; expected, 
 
 **Status:** DRAFT. The lock commit fills every `⟨fill at lock⟩` field and removes this line.
 
-**Window.** 2026-09-24T10:00:00Z → 2026-10-08T10:00:00Z. The §8a day-7 interim fires
-2026-10-01T10:05Z and the close fires 2026-10-08T10:05Z, both through the close wrapper.
-The start is 06:00 ET on a Thursday, so it obeys the §12 window boundary rule (not 04:00 or
-05:00 ET).
+**Window.** 2026-09-24T17:00:00Z → 2026-10-08T17:00:00Z. The §8a day-7 interim fires
+2026-10-01T17:05Z and the close fires 2026-10-08T17:05Z, both through the close wrapper.
+The start is 13:00 ET on a Thursday, so it obeys the §12 window boundary rule (not 04:00 or
+05:00 ET). The start moved from 10:00Z on the day, because the lock owner's session was not
+running at that hour.
 
 **§4(3) cure record.** One full Thursday observed on the scoring host 1705bonzos, where the
 only capture gap is the published pause. Soak start 2026-09-21T21:00:03Z, the first passing
@@ -149,6 +150,10 @@ tagged code.
 - `⟨fill at lock: the operator's line for the Robinhood poller timer, or "no poller"⟩`
 - A liveness monitor on another host opens one ssh session every 5 min. It reads unit
   states, file times and names, the worker environ and board sensors, never a data row.
+- The independent Kalshi pilot consumer, installed 2026-09-23 as `obiexec` under the
+  amendment below. It stays disarmed until after the close: production entry masked,
+  recovery inactive, no consumer or trading journal. It places no order, and it writes
+  nothing the instrument reads. So a capture gap remains attributable to the instrument.
 
 **Independent Kalshi pilot amendment (Hunter; installation retained in the amended
 implementation request).** The existing “amend that freeze” / “install” authority

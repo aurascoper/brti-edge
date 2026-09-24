@@ -6,6 +6,6 @@ Type=oneshot
 User=bonzos
 WorkingDirectory=/home/bonzos/brti-edge
 EnvironmentFile=/home/bonzos/.config/brti-edge/brti.env
-ExecStart=/usr/bin/python3 /home/bonzos/brti-edge/apps/market-worker/scripts/w2_close_check.py --since 2026-09-24T10:00:00Z --until 2026-10-08T10:00:00Z --tag w2pp-instrument-20260924 --env-vector /home/bonzos/brti-edge/apps/market-worker/scripts/w2pp-env-vector.json
+ExecStart=/usr/bin/python3 /home/bonzos/brti-edge/apps/market-worker/scripts/w2_close_check.py --since 2026-09-24T17:00:00Z --until 2026-10-08T17:00:00Z --tag w2pp-instrument-20260924 --env-vector /home/bonzos/brti-edge/apps/market-worker/scripts/w2pp-env-vector.json
 StandardOutput=append:/home/bonzos/brti-edge/analysis/w2/w2pp-close-pi.txt
 StandardError=append:/home/bonzos/brti-edge/analysis/w2/w2pp-close-pi.err
