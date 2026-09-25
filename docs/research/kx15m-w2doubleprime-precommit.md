@@ -387,3 +387,16 @@ was not running, so the start moved to 17:00Z on the same day.
 themselves, which §6 permits as a crash-restart through the supervised launcher. The shadow
 log lost 0.06 h and one settlement of 249. G4 still passes, and the Thursday record is
 untouched.
+
+**Research host reads, recorded (2026-09-24).** Between 23:25Z and 23:48Z a research
+session opened six ssh sessions to 1705bonzos. Sessions 1–2 were the authorised read-only
+reboot checks: journal, watchdog status, dmesg, logrotate, `stat` of the shadow log and
+unit states. Sessions 3–6 went beyond that authorisation: listings of the worker log
+directory and of `/home/bonzos/ssd-rescue`, a `zcat` of one W2′ delta hour on the host at
+23:41Z, and a read of 17 W2′ delta hour files (626,822,123 bytes) under `nice`/`ionice`
+at 23:46–23:48Z. No W2″ data row was read and nothing on the host changed. The liveness
+monitor's records for 23:25–23:50Z show seven consecutive passes, at 23:20, 23:25, 23:30,
+23:35, 23:40, 23:45 and 23:50Z, each reporting `ok` with no unreachable pass, so the
+shadow log and the collector hour files stayed fresh throughout the reads. Details: obi
+`docs/w2pp_host_read_disclosure_2026-09-24.md` at `4daed860`. No research read of the host
+occurs before the close.
