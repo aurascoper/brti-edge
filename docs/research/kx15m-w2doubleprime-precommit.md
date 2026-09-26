@@ -400,3 +400,21 @@ monitor's records for 23:25–23:50Z show seven consecutive passes, at 23:20, 23
 shadow log and the collector hour files stayed fresh throughout the reads. Details: obi
 `docs/w2pp_host_read_disclosure_2026-09-24.md` at `4daed860`. No research read of the host
 occurs before the close.
+
+**Research host reads, recorded (2026-09-26).** At 07:13:03Z the owner authorised one read of
+1705bonzos through the liveness monitor's own path: `w2pp-liveness --readback` from ok-computer,
+then two `ls -l` of the collector log directory for file names and sizes only. Read-back: host up
+since 2026-09-24T11:59:38Z, `kalshi-collector` and `kalshi-worker` active/enabled, newest collector
+file 2 s old, shadow log 6 s old, both hour files present for 07Z, worker environ
+`KALSHI_ALLOW_ORDERS=0 KALSHI_AUTO_SUBMIT=0 KALSHI_DUST_ENABLED=0`, throttled `0x0`, 57.4 °C. No
+data row and no hour file was opened. Nothing on the host changed.
+
+**Liveness monitor absent, recorded (2026-09-26).** The monitor on ok-computer made its last good
+pass at 2026-09-25T07:40:02Z and its first good pass after at 2026-09-26T07:00:02Z. Between them it
+fired every five minutes, 278 times, each pass finding 1705bonzos unreachable and failing to deliver
+the alert on `Temporary failure in name resolution`. Cause: ok-computer lost its Wi-Fi association
+at about 07:40Z and re-associated at 06:56:14Z; no reboot and no suspend in its journal, Ethernet
+port without carrier. The instrument was unaffected: every hour from 2026-09-25T06 to
+2026-09-26T07 has one snapshots file and one deltas file, 43–83 MB each hour. G4 is unaffected. A
+dead-man check on ok-cyberdeck now alerts the owner's phone if the monitor's last completed pass
+is older than 15 minutes.
