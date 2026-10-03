@@ -3,3 +3,4 @@ export * from "./client";
 export * from "./types";
 export * from "./adapter";
 export * from "./series";
+export * from "./cellular";

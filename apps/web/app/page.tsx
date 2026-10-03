@@ -1,6 +1,7 @@
 "use client";
 
 import { KalshiPanel } from "../components/KalshiPanel";
+import { CellularPanel } from "../components/CellularPanel";
 
 // Polymarket-era panels (CandlePanel, OrderBookPanel, WatchlistRail,
 // AccountPanel, NetworkGraphPanel, OrderTicket, PnlPanel, PositionsPanel,
@@ -16,6 +17,7 @@ export default function Page() {
         <span className="text-zinc-600">localhost:3000 · worker :4001</span>
       </header>
       <div className="flex-1 p-2">
+        <CellularPanel />
         <KalshiPanel />
       </div>
     </main>
