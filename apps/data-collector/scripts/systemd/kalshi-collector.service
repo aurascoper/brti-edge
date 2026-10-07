@@ -23,6 +23,12 @@ TimeoutStartSec=infinity
 ExecStart=/usr/bin/bash /home/bonzos/brti-edge/apps/data-collector/scripts/run-collector-supervised.sh
 Restart=always
 RestartSec=30
+# 74 == EXIT_DISK_FULL in src/persistence.ts, propagated by
+# run-collector-supervised.sh. A full disk must not be retried: on 2026-10-03 an
+# unconditional restart turned one ENOSPC into 35 restarts across three days with
+# NRestarts still reading 0. This holds the unit in `failed` instead, so
+# OnFailure= can fire and the journal carries `status=74` as the durable record.
+RestartPreventExitStatus=74
 KillMode=mixed
 # gzip trailer must flush on stop — a truncated hour file reads as a gap
 TimeoutStopSec=30

@@ -47,7 +47,7 @@ import {
   loadCredentialsFromEnv,
   type KalshiCredentials,
 } from "@polyterminal/kalshi-client";
-import { MultiChannelRotator } from "./persistence";
+import { MultiChannelRotator, EXIT_DISK_FULL, exitCodeForError } from "./persistence";
 
 // ---------- config ----------
 
@@ -392,11 +392,15 @@ function loadEnvFromLiveTrading(): void {
 
 // ---------- shutdown ----------
 
-async function shutdown(reason: string): Promise<void> {
+// `code` is the process exit status. It used to be hardcoded 0, which is the
+// defect that hid 2026-10-03: an ENOSPC crash routed through here and reported
+// success, so the supervisor could not tell a disk-full death from a clean
+// SIGTERM and restarted it 35 times over three days.
+async function shutdown(reason: string, code = 0): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log(`[data-collector] shutdown: ${reason}`);
-  logLifecycle({ event: "shutdown", reason });
+  console.log(`[data-collector] shutdown: ${reason} (exit ${code})`);
+  logLifecycle({ event: "shutdown", reason, exit_code: code });
   if (refreshTimer) clearInterval(refreshTimer);
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   if (ws) {
@@ -410,8 +414,13 @@ async function shutdown(reason: string): Promise<void> {
   // size) lands on disk before we exit. closeAsync() has a 3s safety
   // timeout per rotator so a hung stream cannot block forever; the
   // wrapper script's SIGKILL fires at +5s as final backstop.
+  if (code === EXIT_DISK_FULL) {
+    // Skip the drain. On a full disk the gzip trailer cannot land either, so
+    // waiting for it only delays the exit into the supervisor's next start.
+    process.exit(code);
+  }
   await rotator.closeAsync();
-  process.exit(0);
+  process.exit(code);
 }
 
 process.on("SIGINT", () => {
@@ -423,7 +432,12 @@ process.on("SIGTERM", () => {
 process.on("uncaughtException", (err) => {
   console.error("[data-collector] uncaughtException:", err);
   logLifecycle({ event: "uncaught_exception", error: String(err) });
-  void shutdown("uncaughtException");
+  // Never 0. ENOSPC gets its own code so the supervisor and the unit can stop
+  // restarting into a full disk; everything else exits 1, which still restarts.
+  // Synchronous throws reach here rather than the stream handlers -- mkdirSync()
+  // in rotate() is the ENOSPC path that has no stream to emit on.
+  const code = exitCodeForError(err as NodeJS.ErrnoException);
+  void shutdown("uncaughtException", code);
 });
 
 // ---------- main ----------

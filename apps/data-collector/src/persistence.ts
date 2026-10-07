@@ -20,6 +20,50 @@ import { createGzip, constants as zlibConstants, type Gzip } from "node:zlib";
 
 const FLUSH_INTERVAL_MS = 5_000;
 
+// Distinct exit code for "the filesystem is full", so a disk-full death is
+// mechanically distinguishable from every other exit. Three places must agree
+// on it -- this constant, run-collector-supervised.sh, and the unit's
+// RestartPreventExitStatus= -- so it is deliberately NOT env-overridable, and a
+// test pins all three together.
+//
+// 74 is sysexits.h EX_IOERR. Node reserves 1-12 for its own fatal errors and
+// 128+N for signals, so the 64-78 sysexits range cannot collide.
+export const EXIT_DISK_FULL = 74;
+
+// A write error is unrecoverable: the hour's file is already broken and every
+// subsequent line goes to the same place. Exit loudly.
+//
+// Why this function exists at all: before 2026-10-06 rotate() attached no
+// 'error' handler, so a stream error became an unhandled 'error' event -> throw
+// -> uncaughtException -> shutdown() -> process.exit(0). A disk-full crash
+// therefore reported SUCCESS. On 2026-10-03 that produced 35 restarts over three
+// days with systemd's NRestarts still reading 0, and the window was lost.
+// One home for the classification, used by both the stream handlers here and
+// index.ts's uncaughtException handler. A duplicated ternary in two files is how
+// the two paths drift apart.
+export function exitCodeForError(err: NodeJS.ErrnoException): number {
+  return err.code === "ENOSPC" ? EXIT_DISK_FULL : 1;
+}
+
+export function fatalWriteError(channel: string, err: NodeJS.ErrnoException): void {
+  const code = exitCodeForError(err);
+  // process.stderr, never logLifecycle(): the lifecycle log is written through
+  // this same rotator onto the same filesystem, which is exactly why only 3 of
+  // the 35 ENOSPC crashes left any record. The try/catch is the same lesson --
+  // a logger inside the failure domain of what it logs cannot be relied on, so
+  // the exit code is the record that has to survive on its own.
+  try {
+    process.stderr.write(
+      `[data-collector] FATAL ${channel} write failed (${err.code ?? "?"}): ${err.message}\n`,
+    );
+  } catch {
+    // ignore -- see above
+  }
+  // No drain on the way out. On a full disk the gzip trailer cannot land
+  // either, so waiting for it is pure delay that overlaps the next start.
+  process.exit(code);
+}
+
 interface ChannelState {
   gz: Gzip;
   file: WriteStream;
@@ -92,6 +136,19 @@ export class GzipRotator {
     }
     const file = createWriteStream(path, { flags: "w" });
     const gz = createGzip({ level: 6 });
+    // Both streams, because either can be the one that reports the full disk:
+    // the gzip stream surfaces errors from its own write to the pipe target,
+    // and the file stream surfaces the write(2) failure itself.
+    const onStreamError = (err: NodeJS.ErrnoException): void => {
+      // closeAsync() owns errors on the shutdown path -- it resolves on 'error'
+      // so the caller's own exit code stands. Only a live-write failure is fatal
+      // here, which keeps a truncated trailer on a normal stop from turning an
+      // operator SIGTERM into a non-zero exit.
+      if (this.closed) return;
+      fatalWriteError(this.channel, err);
+    };
+    file.on("error", onStreamError);
+    gz.on("error", onStreamError);
     gz.pipe(file);
     this.state = {
       gz,

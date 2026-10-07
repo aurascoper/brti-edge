@@ -41,6 +41,13 @@ WATCH_INTERVAL="${COLLECTOR_WATCH_INTERVAL:-30}"  # health-check cadence
 MIN_UP_SECONDS="${COLLECTOR_MIN_UP_SECONDS:-30}"  # shorter life => back off
 MAX_BACKOFF="${COLLECTOR_MAX_BACKOFF:-60}"
 
+# "The filesystem is full." Must equal EXIT_DISK_FULL in src/persistence.ts and
+# RestartPreventExitStatus= in systemd/kalshi-collector.service. NOT env-
+# overridable and not a tunable: three places have to agree or the chain breaks
+# silently, which is the failure mode this whole path exists to end. A test pins
+# all three together.
+EXIT_DISK_FULL=74
+
 STOPPING=false
 CHILD_PID=""
 CAFFEINATE_PID=""
@@ -307,6 +314,19 @@ while true; do
   $STOPPING && break
   RESTARTS=$(( RESTARTS + 1 ))
   log_event child_exit "rc=$rc uptime_s=$up"
+
+  if [ "$rc" -eq "$EXIT_DISK_FULL" ]; then
+    # Restarting into a full disk is what turned one ENOSPC on 2026-10-03 into 35
+    # restarts and three lost days. Stop, and propagate the code so systemd owns
+    # the decision: RestartPreventExitStatus=74 holds the unit in `failed`,
+    # OnFailure= fires, and the journal records status=74. That journal line is
+    # the durable record -- the collector's own lifecycle log shares a filesystem
+    # with the thing it is trying to report, which is why only 3 of 35 crashes
+    # left a trace.
+    log_event disk_full "child exited $rc (disk full) — NOT restarting; exiting $rc for systemd"
+    [ -n "$CAFFEINATE_PID" ] && kill "$CAFFEINATE_PID" 2>/dev/null
+    exit "$EXIT_DISK_FULL"
+  fi
 
   if [ "$up" -lt "$MIN_UP_SECONDS" ]; then
     backoff=$(( backoff * 2 ))
