@@ -45,6 +45,7 @@ STOPPING=false
 CHILD_PID=""
 CAFFEINATE_PID=""
 RESTARTS=0
+STAT_PROBE_WARNED=false
 
 now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
@@ -147,15 +148,53 @@ else
   RUN=(pnpm exec tsx src/index.ts)
 fi
 
-newest_delta_mtime() {
-  local newest=0 m f
-  for f in "$LOG_DIR"/orderbook-deltas-*.jsonl.gz; do
-    [ -e "$f" ] || continue
-    # BSD stat (macOS) first, GNU stat (Linux) fallback — without the
-    # fallback the watchdog silently never fires on Linux.
-    m="$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null)" || continue
-    [ "$m" -gt "$newest" ] && newest="$m"
+# Resolve the mtime syntax ONCE, by probing a real file for a numeric answer.
+#
+# 2026-10-06: the old per-call form was
+#   m="$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null)"
+# whose comment correctly feared that "without the fallback the watchdog silently
+# never fires on Linux" -- and which then fell into exactly that. On GNU coreutils
+# `stat -f` means --file-system, so `%m` is parsed as a FILENAME: stat reports an
+# error for `%m` (swallowed by 2>/dev/null), SUCCEEDS for the real file, prints a
+# six-line filesystem block to stdout and exits 0. Exit 0 means `||` never runs, so
+# `m` held filesystem text, `[ "$m" -gt "$newest" ]` failed as a non-integer, and
+# newest stayed 0 forever. The caller read 0 as "no files" and skipped the check.
+#
+# Consequence: the stall watchdog has NEVER fired on this Linux host -- zero
+# stale_restart events across 48 supervisor starts -- which is how a 20-hour silent
+# capture gap on 2026-10-03 went unnoticed and killed the W2'' window.
+#
+# A `||` fallback only guards against non-zero exit. "Wrong answer, exit 0" defeats
+# it, so correctness is established by probing for a numeric result instead.
+STAT_MTIME_CMD=""
+_stat_probe="$(mktemp "${CAP_TMPDIR:-/tmp}/statprobe.XXXXXX" 2>/dev/null || echo "")"
+if [ -n "$_stat_probe" ]; then
+  for _cand in "stat -c %Y" "stat -f %m"; do
+    _got="$($_cand "$_stat_probe" 2>/dev/null)" || continue
+    case "$_got" in
+      ''|*[!0-9]*) continue ;;
+    esac
+    [ "$_got" -gt 0 ] 2>/dev/null && { STAT_MTIME_CMD="$_cand"; break; }
   done
+  rm -f "$_stat_probe"
+fi
+unset _stat_probe _cand _got
+
+# Echoes: an epoch mtime > 0, or 0 for "no delta file exists at all", or -1 for
+# "the mtime probe is unusable on this host". The caller must distinguish all three
+# -- conflating the last two with health is the bug above.
+newest_delta_mtime() {
+  [ -n "$STAT_MTIME_CMD" ] || { echo -1; return 0; }
+  local newest=0 m f
+  # One `ls -t` plus one stat, not one stat per file: this ran against 320 delta
+  # files every WATCH_INTERVAL on the Pi.
+  f="$(ls -t "$LOG_DIR"/orderbook-deltas-*.jsonl.gz 2>/dev/null | head -1)"
+  [ -n "$f" ] && [ -e "$f" ] || { echo 0; return 0; }
+  m="$($STAT_MTIME_CMD "$f" 2>/dev/null)" || { echo -1; return 0; }
+  case "$m" in
+    ''|*[!0-9]*) echo -1; return 0 ;;
+  esac
+  newest="$m"
   echo "$newest"
 }
 
@@ -219,7 +258,26 @@ while true; do
     $STOPPING && break
     cap_err_log
     mt="$(newest_delta_mtime)"
-    if [ "$mt" -gt 0 ]; then
+    up_now=$(( $(date +%s) - start_ts ))
+    if [ "$mt" = "-1" ]; then
+      # The probe itself is broken. Say so once and keep supervising: a watchdog
+      # that cannot measure must not pretend the child is healthy, and must not
+      # kill it on no evidence either.
+      if ! $STAT_PROBE_WARNED; then
+        log_event stale_check_unavailable "cannot read delta mtimes on this host — stall detection is DISABLED"
+        STAT_PROBE_WARNED=true
+      fi
+    elif [ "$mt" = "0" ]; then
+      # No delta file exists at all. The old code skipped the check here, which is
+      # absence read as health -- the exact shape that hid the 2026-10-03 gap. Once
+      # the child has had STALE_SECONDS to produce its first file, nothing at all is
+      # the worst stall there is, not the absence of one.
+      if [ "$up_now" -gt "$STALE_SECONDS" ]; then
+        log_event stale_restart "no orderbook-deltas file exists after ${up_now}s (>${STALE_SECONDS}s)"
+        stop_child "$CHILD_PID"
+        break
+      fi
+    else
       age=$(( $(date +%s) - mt ))
       if [ "$age" -gt "$STALE_SECONDS" ]; then
         log_event stale_restart "no orderbook-deltas write in ${age}s (>${STALE_SECONDS}s)"
