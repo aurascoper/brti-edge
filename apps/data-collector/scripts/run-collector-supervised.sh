@@ -58,11 +58,52 @@ nap() { sleep "$1" & wait "$!" 2>/dev/null; }
 # 77MB observed 2026-08-15). launchd holds the fd open, so truncate via
 # cat-copy-back to preserve the inode — tail|mv would orphan the fd and the
 # file would keep growing invisibly. Checked each health tick; fires >1MB.
+#
+# 2026-10-06: this silently failed for ~2 months and reached 8.7GB, filling the
+# Pi's root fs and ending the W2'' window. Two defects, both fixed here:
+#   1. The log was root-owned 0644 while the supervisor runs unprivileged, so the
+#      cat-copy-back got EACCES every tick, left an orphaned .captmp, and never
+#      capped. A failure that repeats every 30s must be REPORTED, not retried in
+#      silence — so writability is now pre-checked and announced once.
+#   2. The staging temp was written next to the log, i.e. INTO the filesystem the
+#      cap exists to relieve. On a full disk the cap was guaranteed to fail at
+#      exactly the moment it was needed. It now stages on tmpfs.
+# `tail -n` seeks from the end (measured: 0.01s on the 8.7GB file), so this is
+# cheap even when badly overgrown. The size probe's `-f%z` exits non-zero on GNU
+# stat, so the `-c%s` fallback is reached — unlike the `-f %m` form, see
+# newest_delta_mtime.
 ERR_LOG="$STATE_DIR/launchd-collector.err.log"
+CAP_BLOCKED_ANNOUNCED=false
+CAP_TMPDIR="${COLLECTOR_CAP_TMPDIR:-}"
+if [ -z "$CAP_TMPDIR" ]; then
+  for d in /dev/shm /run/shm "${TMPDIR:-/tmp}"; do
+    [ -d "$d" ] && [ -w "$d" ] && { CAP_TMPDIR="$d"; break; }
+  done
+fi
+
 cap_err_log() {
   [ -f "$ERR_LOG" ] || return 0
   [ "$(stat -f%z "$ERR_LOG" 2>/dev/null || stat -c%s "$ERR_LOG" 2>/dev/null || echo 0)" -gt 1048576 ] || return 0
-  tail -n 5000 "$ERR_LOG" > "$ERR_LOG.captmp" && cat "$ERR_LOG.captmp" > "$ERR_LOG" && rm -f "$ERR_LOG.captmp"
+
+  # Fail loud, once. Without this the cap can be broken indefinitely in silence.
+  if [ ! -w "$ERR_LOG" ]; then
+    if ! $CAP_BLOCKED_ANNOUNCED; then
+      log_event errlog_cap_blocked "not writable by $(id -un): $ERR_LOG — it will grow unbounded until ownership is fixed"
+      CAP_BLOCKED_ANNOUNCED=true
+    fi
+    rm -f "$ERR_LOG.captmp"   # clear any orphan left by the old copy-back
+    return 1
+  fi
+
+  local tmp
+  tmp="$(mktemp "${CAP_TMPDIR:-/tmp}/errlogcap.XXXXXX" 2>/dev/null)" || return 1
+  if tail -n 5000 "$ERR_LOG" > "$tmp" 2>/dev/null && cat "$tmp" > "$ERR_LOG" 2>/dev/null; then
+    rm -f "$tmp"
+    $CAP_BLOCKED_ANNOUNCED && { log_event errlog_cap_recovered "cap is working again"; CAP_BLOCKED_ANNOUNCED=false; }
+    return 0
+  fi
+  rm -f "$tmp"
+  return 1
 }
 
 log_event() {
@@ -143,6 +184,16 @@ on_signal() {
   exit 0
 }
 trap on_signal TERM INT
+
+# Testability seam. With COLLECTOR_LIB_ONLY=1 the script defines its functions and
+# stops here, so cap_err_log and newest_delta_mtime can be exercised directly
+# without supervising a child. Everything above is definitions plus the mkdir of
+# LOG_DIR/STATE_DIR, both of which a test points at a scratch directory.
+# Added because the two defects fixed on 2026-10-06 were each invisible to every
+# check that existed, and an untestable health control is how that happens.
+if [ "${COLLECTOR_LIB_ONLY:-0}" = "1" ]; then
+  return 0 2>/dev/null || exit 0
+fi
 
 # Hold sleep assertions for the supervisor's lifetime (-w waits on our PID).
 if command -v caffeinate >/dev/null 2>&1; then
