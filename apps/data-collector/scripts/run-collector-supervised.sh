@@ -185,10 +185,24 @@ unset _stat_probe _cand _got
 # -- conflating the last two with health is the bug above.
 newest_delta_mtime() {
   [ -n "$STAT_MTIME_CMD" ] || { echo -1; return 0; }
-  local newest=0 m f
-  # One `ls -t` plus one stat, not one stat per file: this ran against 320 delta
-  # files every WATCH_INTERVAL on the Pi.
-  f="$(ls -t "$LOG_DIR"/orderbook-deltas-*.jsonl.gz 2>/dev/null | head -1)"
+  local newest=0 m f cand
+  # Newest NON-EMPTY delta file. The size test is load-bearing, not tidiness: the
+  # 2026-10-03 failure did not look like "no file", it looked like a brand new EMPTY
+  # file every hour (10-03T08 carries six .pN partitions at exactly 0 bytes, and the
+  # restart churn created a fresh one per relaunch). File *creation* stamps a current
+  # mtime, so taking the newest file unconditionally reads a just-created empty file
+  # as health, and the watchdog would merely oscillate: fire STALE_SECONDS after each
+  # hour boundary, restart, create another empty partition, reset. Skipping empties
+  # makes it read the last file that actually received data, so it fires promptly and
+  # stays fired. Delta inter-arrival is ~71ms p50, so a healthy hour file is empty
+  # only momentarily.
+  #
+  # `ls -t` once plus a builtin -s test per candidate, rather than one `stat` process
+  # per file: the old loop spawned 320 processes every WATCH_INTERVAL on the Pi.
+  f=""
+  while IFS= read -r cand; do
+    [ -s "$cand" ] && { f="$cand"; break; }
+  done < <(ls -t "$LOG_DIR"/orderbook-deltas-*.jsonl.gz 2>/dev/null)
   [ -n "$f" ] && [ -e "$f" ] || { echo 0; return 0; }
   m="$($STAT_MTIME_CMD "$f" 2>/dev/null)" || { echo -1; return 0; }
   case "$m" in
@@ -268,12 +282,13 @@ while true; do
         STAT_PROBE_WARNED=true
       fi
     elif [ "$mt" = "0" ]; then
-      # No delta file exists at all. The old code skipped the check here, which is
-      # absence read as health -- the exact shape that hid the 2026-10-03 gap. Once
-      # the child has had STALE_SECONDS to produce its first file, nothing at all is
-      # the worst stall there is, not the absence of one.
+      # No delta file holds any data -- either none exists, or every one is empty.
+      # The old code skipped the check here, which is absence read as health: the
+      # exact shape that hid the 2026-10-03 gap, where empty files were being created
+      # every hour. Once the child has had STALE_SECONDS to produce its first bytes,
+      # nothing at all is the worst stall there is, not the absence of one.
       if [ "$up_now" -gt "$STALE_SECONDS" ]; then
-        log_event stale_restart "no orderbook-deltas file exists after ${up_now}s (>${STALE_SECONDS}s)"
+        log_event stale_restart "no orderbook-deltas bytes written after ${up_now}s (>${STALE_SECONDS}s)"
         stop_child "$CHILD_PID"
         break
       fi

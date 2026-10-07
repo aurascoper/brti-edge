@@ -112,7 +112,7 @@ def test_a_live_child_writing_nothing_is_restarted(tmp_path):
         "a live child writing nothing must trip the watchdog; events seen: " + str(kinds)
     )
     reason = next(e["reason"] for e in events if e["event"] == "stale_restart")
-    assert "no orderbook-deltas file exists" in reason, reason
+    assert "no orderbook-deltas bytes written" in reason, reason
 
 
 def test_a_child_that_stops_writing_is_restarted(tmp_path):
@@ -224,6 +224,65 @@ def test_newest_delta_mtime_always_returns_a_bare_integer(tmp_path):
             assert value == "0", f"[{case}] empty dir must report 0, got {value!r}"
         else:
             assert int(value) > 0, f"[{case}] expected a positive mtime, got {value!r}"
+
+
+def test_a_fresh_EMPTY_file_each_hour_still_trips_the_watchdog(tmp_path):
+    """THE W2'' SHAPE, and the gap in the first cut of this fix.
+
+    2026-10-03 did not look like "no file". It looked like a brand new EMPTY file
+    every hour -- 10-03T08 carries six .pN partitions at exactly 0 bytes, one per
+    relaunch. Creation stamps a current mtime, so a watchdog that takes the newest
+    file unconditionally reads a just-created empty file as health.
+
+    The fake child reproduces exactly that: it keeps creating fresh empty delta
+    files and never writes a byte.
+    """
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir()
+    app = build_app(tmp_path, (
+        'i=0\n'
+        'while true; do\n'
+        f'  : > "{log_dir}/orderbook-deltas-2026-10-06T23.p$i.jsonl.gz"\n'
+        '  i=$((i+1)); sleep 1\n'
+        'done'
+    ))
+
+    events = run_supervisor(app, log_dir, seconds=9, stale=2)
+    kinds = [e["event"] for e in events]
+    assert "stale_restart" in kinds, (
+        "a child creating fresh EMPTY delta files must still trip the watchdog; "
+        f"events: {kinds}"
+    )
+    # and it must be empties that triggered it, not absence
+    created = list(log_dir.glob("orderbook-deltas-*.jsonl.gz"))
+    assert created, "the fake child should have created files"
+    assert all(f.stat().st_size == 0 for f in created), "all created files should be empty"
+
+
+def test_the_restart_cadence_is_recorded_not_merely_a_single_fire(tmp_path):
+    """Assert the cadence lands in the ledger, rather than reasoning about it.
+
+    A watchdog that fires once and then wedges looks the same as a working one if
+    the test only checks for a single event. With stale=2s and a 1s backoff, a
+    ~14s run should complete at least two full detect/restart cycles.
+    """
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir()
+    app = build_app(tmp_path, "sleep 600")
+
+    events = run_supervisor(app, log_dir, seconds=14, stale=2)
+    stale = [e for e in events if e["event"] == "stale_restart"]
+    starts = [e for e in events if e["event"] == "start"]
+    assert len(stale) >= 2, (
+        f"expected a repeating cadence, got {len(stale)} stale_restart event(s): "
+        f"{[e['reason'] for e in stale]}"
+    )
+    assert len(starts) >= len(stale), (
+        f"every stale_restart must be followed by a restart; starts={len(starts)} stale={len(stale)}"
+    )
+    # restarts must be monotonically counted, not reset
+    counters = [e["restarts"] for e in events if e["event"] == "child_exit"]
+    assert counters == sorted(counters), f"restart counter went backwards: {counters}"
 
 
 if __name__ == "__main__":
