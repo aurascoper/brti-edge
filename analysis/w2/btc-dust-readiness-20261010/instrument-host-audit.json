@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-10T05:14:16Z",
+  "host": "1705bonzos",
+  "instrument_source": "4d26b5c7f07e0ebed3830201b9b72a962833a1ac",
+  "instrument_tag": "w2ppp-instrument-20261010",
+  "invariant_problems": [],
+  "data_dir": "/mnt/ssd/kalshi/w2ppp/data-collector",
+  "process_data_dirs": {
+    "2528975": "/mnt/ssd/kalshi/w2ppp/data-collector",
+    "2528994": "/mnt/ssd/kalshi/w2ppp/data-collector",
+    "2529251": "/mnt/ssd/kalshi/w2ppp/data-collector",
+    "2529270": "/mnt/ssd/kalshi/w2ppp/data-collector"
+  },
+  "close_wrapper_resolved_data_dir": "/mnt/ssd/kalshi/w2ppp/data-collector",
+  "mounted_source_uuid": "/dev/sda1 aa89a0f6-3689-4ea9-a8ac-519350d26f5a",
+  "ntp_synchronized": true,
+  "pilot_masked_inactive": true,
+  "closed_utc_hour": "2026-10-10T04",
+  "closed_gzip_crc_json_verified": [
+    {
+      "file": "lifecycle-2026-10-10T04.jsonl.gz",
+      "rows": 6,
+      "sha256": "b8b6f2dda8c8d034d19faa995f05db2eb4c6e0a05ee7d883012af05c62378efe"
+    },
+    {
+      "file": "orderbook-deltas-2026-10-10T04.jsonl.gz",
+      "rows": 31218,
+      "sha256": "a6b0fee9304b15b344d6847f82a9058596330eb9f8eb6e83ed49f925809b3f16"
+    },
+    {
+      "file": "orderbook-snapshots-2026-10-10T04.jsonl.gz",
+      "rows": 7,
+      "sha256": "d899ad0cd6f85c40f10e2c782095ee4b13fab6eea77480edc60848b3be13352d"
+    },
+    {
+      "file": "tickers-2026-10-10T04.jsonl.gz",
+      "rows": 215,
+      "sha256": "3ced4d28a6b0cdb97ab84e47f143613a2d48a152a944c0ba99459e946aaa4658"
+    },
+    {
+      "file": "trades-2026-10-10T04.jsonl.gz",
+      "rows": 3719,
+      "sha256": "f2066c0d654849fde448f78c83f985ea9601d757b1524177ce9cbe0d6b5b0d57"
+    }
+  ],
+  "namespace_persistent_limit_bytes": 67108864,
+  "namespace_runtime_limit_bytes": 16777216,
+  "namespace_disk_usage": "Archived and active journals take up 16M in the file system.",
+  "soak_state": {
+    "phase": "soak",
+    "prepared_at": "2026-10-10T05:05:25Z",
+    "start_at": "2026-10-10T06:00:00Z"
+  },
+  "root_disk": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/mmcblk0p2  235G  206G   20G  92% /",
+  "ssd_disk": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       1.8T  437G  1.3T  26% /mnt/ssd"
+}

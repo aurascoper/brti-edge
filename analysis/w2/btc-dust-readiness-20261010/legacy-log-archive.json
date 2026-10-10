@@ -1,0 +1,8 @@
+{
+  "source": "/home/bonzos/brti-edge/apps/data-collector/ops/state/launchd-collector.err.log",
+  "archive": "/mnt/ssd/kalshi/archives/20261010/launchd-collector.err.log",
+  "bytes": 11673702278,
+  "sha256": "2d95c571ca24820b1867b82d757ba06a733c224cb3e14f5339b1205b4d5a45a0",
+  "seconds": 595.5022392272949,
+  "archive_verified_before_truncation": true
+}

@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "kind": "btc_dust_preparation",
+  "at": "2026-10-10T05:13:23.793584Z",
+  "status": "PREPARED_DISARMED_RESEARCH_AND_ACCOUNT_ACCEPTANCE_PENDING",
+  "authoritative_producer_executor": "1705bonzos",
+  "instrument": {
+    "source": "4d26b5c7f07e0ebed3830201b9b72a962833a1ac",
+    "instrument_tag": "w2ppp-instrument-20261010",
+    "data_dir": "/mnt/ssd/kalshi/w2ppp/data-collector",
+    "boot_id": "ea1da4ed-4690-4fbd-bb69-15116ced8d50",
+    "mount_identity": "/dev/sda1 aa89a0f6-3689-4ea9-a8ac-519350d26f5a",
+    "installed_files": {
+      "/etc/systemd/system/kalshi-collector.service": "f238b7504643357bd8b3b1858b7112b16228f0b3b046d627301422505e5c27dc",
+      "/etc/systemd/system/kalshi-worker.service": "e845ffea095395858eef2aa87cf43a30e16594edab30d9d48eccec384d2e48a1",
+      "/etc/systemd/system/w2ppp-prepare.service": "d431780adb072062ee587f97ce54a4fd85c4c5671026c8062261621c3978b91f",
+      "/etc/systemd/system/w2ppp-prepare.timer": "5241ba8c0c011adc4de0205aece6d384a4b81d96a90bcef50875f97cb47d1af4",
+      "/etc/systemd/journald@brti-edge.conf.d/limits.conf": "b68d06beba2cb4b876a8f9972ab7243ba4dd743d5cd0ca8f23213516eabecba4"
+    }
+  },
+  "research": {
+    "go_evidence": null,
+    "root_go_path": "/var/lib/brti-w2ppp/stage-a-go.json",
+    "soak_start": "2026-10-10T06:00:00Z",
+    "earliest_soak_check": "2026-10-11T12:05:00Z",
+    "earliest_conditional_lock": "2026-10-11T13:00:00Z",
+    "earliest_conditional_day7": "2026-10-18T13:05:00Z",
+    "earliest_conditional_close": "2026-10-25T13:05:00Z",
+    "controller_enabled": true,
+    "future_report_timers": "installed only after eligible soak and committed lock",
+    "thresholds_signal_and_scoring": "G1-G7, pause exclusions, signal model and scorer unchanged",
+    "terminal_failed_windows_preserved": true
+  },
+  "preserved_history": {
+    "october8": "NO-GO(data); original close hashes in instrument-installation.json",
+    "prior_host_integrity_finding": "retained",
+    "demo_reference": "63707dfd-b1ff-5ff6-9037-8c18c40487ff",
+    "demo_original_host_journal": "untouched; unresolved separate acceptance item; no retry or replacement"
+  },
+  "remaining": [
+    "30-hour clean soak, controlled restart and UTC-hour rotations",
+    "eligible fourteen-day wrapper GO",
+    "resolve authenticated HTTP 401 and refresh full account/subaccount, inventory, exchange-shard funds, fee and settlement evidence after GO",
+    "renew producer attestation for the actual 48-hour round and retain executor read ACL",
+    "operator activation and first five exact approvals; actual venue submission, fill, fee, latency and settlement observations",
+    "separate historical demo disposition"
+  ],
+  "instrument_evidence_sha256": {
+    "host-versions.json": "9a15bc21a501eaf951a241f725af1cb54c652a418f407e785291d7004af96dea",
+    "instrument-host-audit.json": "710011208cb7acb03e95f888fa3d7bbeb5c4b17a007e02e17f3f276bef3a62ae",
+    "instrument-installation.json": "362129b6c6d7074473334255e58bd2114afc835eb196a8004fe63b3a30dfe872",
+    "instrument-pi-final.xml": "173ae74dda68d1f62ec591ad0ee47f2cf281d9be66fbda8fa3936b046f973650",
+    "instrument-pi.xml": "f665faf45f6069870be8dcc432ae5b2385c983ea7e169973acbed5d732313d07",
+    "legacy-log-archive.json": "c2f33edfa40b08711d5ee94507d74772dc9d671e15753805a6ee43e7ced404e7",
+    "named-test-results.json": "3ac56efd2aca30115b62e3a1006812cc664a6e829e468186dc57cb0bd2fd6fa3",
+    "soak-config.json": "0810f3101b31dff2af5006318765c7193415dfaa6771f98c513f3fc173b7c93b",
+    "soak-state-at-handoff.json": "5ea116f505d4872321fc95ba5704868e1fc3b87940003898aecca4b6c7a7dc5a",
+    "source-attestation-acl.json": "e4066aaf0d353b5fb315da7a26417eb976983a8de1a11ca4846be9e87123f8b1",
+    "watchdog-deadline.json": "10608839d13de18ac06fd10b0bdb6fba29b003a54b637d590cab2407ffda4593",
+    "watchdog-pi.xml": "d94a1c76a117140990a7309a233e90f53d5653470dad6eaf0dec9495bc6f6db6"
+  }
+}

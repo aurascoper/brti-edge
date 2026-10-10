@@ -1,0 +1,37 @@
+{
+  "status": "installed_after_mount_assertion_repair",
+  "at": "2026-10-10T05:00:37Z",
+  "data_dir": "/mnt/ssd/kalshi/w2ppp/data-collector",
+  "namespace": "brti-edge",
+  "mount_unit_mask_preserved": true,
+  "historical_files": [
+    {
+      "path": "/home/bonzos/brti-edge/analysis/w2/w2pp-close-pi.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/bonzos/brti-edge/analysis/w2/w2pp-close-pi.txt",
+      "sha256": "168acc4bf1efbb7b3940e4aa2d138254db6b2b82776a40f58c66a7f7f263d0a6"
+    },
+    {
+      "path": "/home/bonzos/brti-edge/analysis/w2/w2pp-day7-interim-pi.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/bonzos/brti-edge/analysis/w2/w2pp-day7-interim-pi.txt",
+      "sha256": "382d0569015d6020cccdfa5edf291d5cd6ea84a2f9239dc0dd20e9f1c1c9e3de"
+    },
+    {
+      "path": "/home/bonzos/brti-edge/analysis/w2/w2pp-soak-dryrun.txt",
+      "sha256": "95134367ca3a40af748b7e9621d960b391506eb2cfe24f936564f2a036a412ed"
+    }
+  ],
+  "pilot_masked": true,
+  "production_round_started": false,
+  "backup": "/var/lib/brti-w2ppp/preparation-backup",
+  "historical_archives": [
+    "/home/bonzos/brti-edge/apps/data-collector/logs/data-collector",
+    "/mnt/ssd/kalshi/data-collector"
+  ],
+  "installation_observation": "Initial RequiresMountsFor encountered the existing masked SSD unit; AssertPathIsMountPoint plus a device precheck started the collector without changing that mask."
+}

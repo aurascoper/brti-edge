@@ -1,0 +1,6 @@
+{
+  "path": "/var/lib/obi-kalshi-source/producer.json",
+  "reason": "Restore only executor read access after atomic owner-side attestation renewal",
+  "before": "user::rw-\ngroup::---\nother::---\n",
+  "after": "user::rw-\ngroup::---\nother::---\nuser:993:r--\nmask::r--\n"
+}

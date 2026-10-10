@@ -1,0 +1,12 @@
+{
+  "host": "1705bonzos",
+  "kernel": "7.0.0-1019-raspi",
+  "hardware": "Raspberry Pi 4 Model B Rev 1.5",
+  "os_release": "PRETTY_NAME=\"Ubuntu 26.04 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"26.04\"\nVERSION=\"26.04 (Resolute Raccoon)\"\nVERSION_CODENAME=resolute\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=resolute\nLOGO=ubuntu-logo\n",
+  "python": "3.14.4",
+  "cryptography": "50.0.1",
+  "cffi": "2.1.1",
+  "pycparser": "3.0",
+  "node": "v22.23.2",
+  "fixture_pytest": "pytest 9.0.2"
+}

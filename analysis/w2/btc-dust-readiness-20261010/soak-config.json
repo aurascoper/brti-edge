@@ -1,0 +1,17 @@
+{
+  "start_at": "2026-10-10T06:00:00Z",
+  "instrument_tag": "w2ppp-instrument-20261010",
+  "repo": "/home/bonzos/brti-edge",
+  "source": "4d26b5c7f07e0ebed3830201b9b72a962833a1ac",
+  "data_dir": "/mnt/ssd/kalshi/w2ppp/data-collector",
+  "boot_id": "ea1da4ed-4690-4fbd-bb69-15116ced8d50",
+  "mount_identity": "/dev/sda1 aa89a0f6-3689-4ea9-a8ac-519350d26f5a",
+  "source_pin": "def8805af6194a5da5b19fa08bcc573b2ad73a972a8b0c247d49ab352b6764a9",
+  "installed_files": {
+    "/etc/systemd/system/kalshi-collector.service": "f238b7504643357bd8b3b1858b7112b16228f0b3b046d627301422505e5c27dc",
+    "/etc/systemd/system/kalshi-worker.service": "e845ffea095395858eef2aa87cf43a30e16594edab30d9d48eccec384d2e48a1",
+    "/etc/systemd/system/w2ppp-prepare.service": "d431780adb072062ee587f97ce54a4fd85c4c5671026c8062261621c3978b91f",
+    "/etc/systemd/system/w2ppp-prepare.timer": "5241ba8c0c011adc4de0205aece6d384a4b81d96a90bcef50875f97cb47d1af4",
+    "/etc/systemd/journald@brti-edge.conf.d/limits.conf": "b68d06beba2cb4b876a8f9972ab7243ba4dd743d5cd0ca8f23213516eabecba4"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "elapsed_seconds": 302.0,
+  "events": [
+    {
+      "ts": "2026-10-10T04:55:35Z",
+      "event": "warn",
+      "reason": "KALSHI_API_KEY_ID unset and /Users/aurascoper/Developer/live_trading/.env missing \u2014 auth will fail",
+      "child_pid": null,
+      "restarts": 0
+    },
+    {
+      "ts": "2026-10-10T04:55:35Z",
+      "event": "warn",
+      "reason": "caffeinate not found \u2014 system sleep can still cause coverage gaps",
+      "child_pid": null,
+      "restarts": 0
+    },
+    {
+      "ts": "2026-10-10T04:55:35Z",
+      "event": "supervisor_start",
+      "reason": "log_dir=/mnt/ssd/kalshi/btc-dust-readiness/watchdog-deadline/test_missing_deltas_relaunch_w0/logs grace=5s stale=300s",
+      "child_pid": null,
+      "restarts": 0
+    },
+    {
+      "ts": "2026-10-10T04:55:35Z",
+      "event": "start",
+      "reason": "collector pid 2521692",
+      "child_pid": 2521692,
+      "restarts": 0
+    },
+    {
+      "ts": "2026-10-10T05:00:35Z",
+      "event": "stale_restart",
+      "reason": "no orderbook-deltas bytes written after 300s (>300s)",
+      "child_pid": 2521692,
+      "restarts": 0
+    },
+    {
+      "ts": "2026-10-10T05:00:36Z",
+      "event": "child_exit",
+      "reason": "rc=143 uptime_s=301",
+      "child_pid": 2521692,
+      "restarts": 1
+    },
+    {
+      "ts": "2026-10-10T05:00:36Z",
+      "event": "backoff",
+      "reason": "restarting in 1s",
+      "child_pid": 2521692,
+      "restarts": 1
+    },
+    {
+      "ts": "2026-10-10T05:00:37Z",
+      "event": "start",
+      "reason": "collector pid 2529860",
+      "child_pid": 2529860,
+      "restarts": 1
+    }
+  ]
+}

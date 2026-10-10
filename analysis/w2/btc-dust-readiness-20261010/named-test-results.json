@@ -1,0 +1,572 @@
+{
+  "instrument-pi.xml": [
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_capper",
+      "name": "test_oversized_writable_log_is_capped_and_inode_preserved",
+      "seconds": 0.27,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_capper",
+      "name": "test_unwritable_log_is_reported_once_not_retried_in_silence",
+      "seconds": 0.295,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_capper",
+      "name": "test_unwritable_log_leaves_no_orphaned_temp",
+      "seconds": 0.278,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_capper",
+      "name": "test_cap_succeeds_when_the_logs_own_directory_cannot_take_new_files",
+      "seconds": 0.274,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_capper",
+      "name": "test_undersized_log_is_left_alone",
+      "seconds": 0.212,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_capper",
+      "name": "test_size_probe_reaches_the_gnu_fallback",
+      "seconds": 0.028,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_watchdog",
+      "name": "test_a_live_child_writing_nothing_is_restarted",
+      "seconds": 8.077,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_watchdog",
+      "name": "test_a_child_that_stops_writing_is_restarted",
+      "seconds": 8.046,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_watchdog",
+      "name": "test_a_healthy_child_is_left_alone",
+      "seconds": 8.041,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_watchdog",
+      "name": "test_probe_rejects_a_stat_that_succeeds_with_non_numeric_output",
+      "seconds": 0.115,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_watchdog",
+      "name": "test_newest_delta_mtime_always_returns_a_bare_integer",
+      "seconds": 0.228,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_watchdog",
+      "name": "test_a_fresh_EMPTY_file_each_hour_still_trips_the_watchdog",
+      "seconds": 9.042,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_supervisor_watchdog",
+      "name": "test_the_restart_cadence_is_recorded_not_merely_a_single_fire",
+      "seconds": 14.042,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_collector_fail_loud",
+      "name": "test_the_disk_full_code_is_identical_in_all_three_places",
+      "seconds": 0.004,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_collector_fail_loud",
+      "name": "test_enospc_exits_with_the_disk_full_code",
+      "seconds": 0.556,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_collector_fail_loud",
+      "name": "test_an_ordinary_error_exits_one_so_the_supervisor_still_restarts",
+      "seconds": 0.777,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_collector_fail_loud",
+      "name": "test_a_real_stream_error_reaches_the_fatal_handler",
+      "seconds": 0.565,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_collector_fail_loud",
+      "name": "test_the_disk_full_path_does_not_wait_for_a_drain",
+      "seconds": 0.368,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_collector_fail_loud",
+      "name": "test_supervisor_stops_and_propagates_the_disk_full_code",
+      "seconds": 0.225,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_collector_fail_loud",
+      "name": "test_supervisor_still_restarts_on_an_ordinary_nonzero_exit",
+      "seconds": 12.041,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_collector_fail_loud",
+      "name": "test_index_has_no_exit_zero_on_a_failure_path",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_readiness_persistence",
+      "name": "test_sustained_backpressure_is_rate_limited",
+      "seconds": 0.405,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_readiness_persistence",
+      "name": "test_gzip_utc_rotation_and_restart_are_complete",
+      "seconds": 0.329,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_readiness_persistence",
+      "name": "test_compressor_failure_during_shutdown_exits_visibly",
+      "seconds": 0.318,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_readiness_persistence",
+      "name": "test_unwritable_sink_exits_visibly",
+      "seconds": 0.35,
+      "status": "pass"
+    },
+    {
+      "class": "apps.data-collector.scripts.test_readiness_persistence",
+      "name": "test_journal_limits_and_health_loop_has_no_log_copying",
+      "seconds": 0.003,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_wrapper_is_frozen",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_env_vector_file_is_frozen_and_names_only_vector_keys",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_freeze_fails_closed_on_a_missing_tag",
+      "seconds": 0.137,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_reconcile_ignores_a_malformed_row_from_an_earlier_window",
+      "seconds": 0.004,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_listing_yields_exactly_the_two_thursday_pauses",
+      "seconds": 0.018,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_pause_gaps_are_zeroed",
+      "seconds": 1.143,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_host_outages_still_fail_w2prime",
+      "seconds": 0.776,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_faults_either_side_of_a_pause_join_into_one_gap",
+      "seconds": 0.739,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_collector_pause_costs_two_hour_files_and_runs_join_across_it",
+      "seconds": 0.042,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_published_window_follows_dst",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_only_the_overlap_with_the_padded_pause_is_excluded",
+      "seconds": 0.024,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_exchange_overrun_costs_only_its_excess",
+      "seconds": 0.152,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_worker_env_check_fails_closed",
+      "seconds": 0.004,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_verdict_fails_closed",
+      "seconds": 0.004,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_live_close_fails_a_window_ending_late_in_the_pause",
+      "seconds": 3.073,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_api_base_is_part_of_the_env_vector",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.GateTests",
+      "name": "test_complete_gate_line_passes",
+      "seconds": 0.003,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.GateTests",
+      "name": "test_incomplete_or_unknown_gate_line_cannot_go",
+      "seconds": 0.007,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.GateTests",
+      "name": "test_interim_accepts_only_one_exact_boolean_line",
+      "seconds": 0.005,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.GateTests",
+      "name": "test_known_failures_keep_their_quadrants",
+      "seconds": 0.003,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.GateTests",
+      "name": "test_scorer_crash_and_tripwire_refuse",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.SettlementTests",
+      "name": "test_close_identity_mismatch_is_refused",
+      "seconds": 0.003,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.SettlementTests",
+      "name": "test_conflicting_duplicate_across_window_boundary_is_refused",
+      "seconds": 0.003,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.SettlementTests",
+      "name": "test_duplicate_same_identity_allowed_conflict_refused",
+      "seconds": 0.004,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.SettlementTests",
+      "name": "test_empty_listing_never_passes",
+      "seconds": 0.003,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.SettlementTests",
+      "name": "test_extra_local_settlement_is_refused",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.SettlementTests",
+      "name": "test_malformed_authoritative_result_and_naive_time_fail",
+      "seconds": 0.006,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.SettlementTests",
+      "name": "test_matching_authoritative_outcome_passes",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_review.SettlementTests",
+      "name": "test_opposite_outcome_is_refused",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[shadow]",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[collector]",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[freeze]",
+      "seconds": 0.001,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[worker_env]",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[gzip]",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_soak_requires_complete_settlement_reconciliation",
+      "seconds": 0.001,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_soak_requires_same_collector_path",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_full_30_hours_gzip_trailers_and_nonempty_channels_required",
+      "seconds": 0.071,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_failed_soak_is_not_restarted_by_tick",
+      "seconds": 0.004,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_less_than_30_hours_cannot_lock_or_schedule",
+      "seconds": 0.004,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_any_integrity_problem_is_terminal_before_or_after_lock",
+      "seconds": 0.005,
+      "status": "pass"
+    }
+  ],
+  "watchdog-pi.xml": [
+    {
+      "class": "apps.data-collector.scripts.test_watchdog_real_deadline",
+      "name": "test_missing_deltas_relaunch_within_330_seconds_at_production_settings",
+      "seconds": 303.255,
+      "status": "pass"
+    }
+  ],
+  "instrument-pi-final.xml": [
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_wrapper_is_frozen",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_env_vector_file_is_frozen_and_names_only_vector_keys",
+      "seconds": 0.003,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_freeze_fails_closed_on_a_missing_tag",
+      "seconds": 3.094,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_reconcile_ignores_a_malformed_row_from_an_earlier_window",
+      "seconds": 0.004,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_listing_yields_exactly_the_two_thursday_pauses",
+      "seconds": 0.02,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_pause_gaps_are_zeroed",
+      "seconds": 1.107,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_host_outages_still_fail_w2prime",
+      "seconds": 0.778,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_faults_either_side_of_a_pause_join_into_one_gap",
+      "seconds": 0.696,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_collector_pause_costs_two_hour_files_and_runs_join_across_it",
+      "seconds": 0.038,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_published_window_follows_dst",
+      "seconds": 0.003,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_only_the_overlap_with_the_padded_pause_is_excluded",
+      "seconds": 0.017,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_exchange_overrun_costs_only_its_excess",
+      "seconds": 0.121,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_worker_env_check_fails_closed",
+      "seconds": 0.004,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_verdict_fails_closed",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_live_close_fails_a_window_ending_late_in_the_pause",
+      "seconds": 2.925,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2_close_check",
+      "name": "test_api_base_is_part_of_the_env_vector",
+      "seconds": 0.001,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[shadow]",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[collector]",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[freeze]",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[worker_env]",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_each_failed_soak_control_rejects_lock[gzip]",
+      "seconds": 0.002,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_soak_requires_complete_settlement_reconciliation",
+      "seconds": 0.001,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_soak_requires_same_collector_path",
+      "seconds": 0.001,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_full_30_hours_gzip_trailers_and_nonempty_channels_required",
+      "seconds": 0.265,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_failed_soak_is_not_restarted_by_tick",
+      "seconds": 0.005,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_less_than_30_hours_cannot_lock_or_schedule",
+      "seconds": 0.005,
+      "status": "pass"
+    },
+    {
+      "class": "apps.market-worker.scripts.test_w2ppp_prepare",
+      "name": "test_any_integrity_problem_is_terminal_before_or_after_lock",
+      "seconds": 0.007,
+      "status": "pass"
+    }
+  ]
+}
