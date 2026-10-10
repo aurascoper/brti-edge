@@ -72,6 +72,10 @@ FROZEN_PATHS = (
     "apps/data-collector/scripts/systemd/journald-brti-edge.conf",
     "apps/market-worker/scripts/w2ppp-env-vector.json",
     "apps/market-worker/scripts/w2ppp_prepare.py",
+    "apps/market-worker/scripts/run-worker-shadow.sh",
+    "apps/data-collector/scripts/systemd/kalshi-worker.service",
+    "apps/data-collector/scripts/systemd/w2ppp-prepare.service",
+    "apps/data-collector/scripts/systemd/w2ppp-prepare.timer",
 )
 WORKER_CMD = b"src/kalshi/worker.ts"
 ORDER_GATES = ("KALSHI_ALLOW_ORDERS", "KALSHI_AUTO_SUBMIT", "KALSHI_DUST_ENABLED")
