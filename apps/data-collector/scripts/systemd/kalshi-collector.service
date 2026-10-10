@@ -6,7 +6,9 @@
 Description=Kalshi WS data collector (brti-edge)
 Wants=network-online.target time-sync.target
 After=network-online.target time-sync.target
-RequiresMountsFor=/mnt/ssd
+# This host deliberately masks the mount unit and mounts the SSD separately.
+# Assert the existing mount; never fall back to an SD-card directory.
+AssertPathIsMountPoint=/mnt/ssd
 
 [Service]
 Type=simple
@@ -20,6 +22,7 @@ Environment=PATH=/usr/local/bin:/usr/bin:/bin
 # unbound DNSSEC rejects everything -> DNS dead -> NTP names dead. Broken
 # by the IP-literal chrony sources; this gate is the belt-and-braces.
 ExecStartPre=/usr/bin/bash -c 'until timedatectl show -p NTPSynchronized --value | grep -qx yes; do sleep 5; done'
+ExecStartPre=/usr/bin/bash -c 'test "$(findmnt -n -o SOURCE --target "$DATA_COLLECTOR_LOG_DIR")" = /dev/sda1'
 TimeoutStartSec=infinity
 ExecStart=/usr/bin/bash /home/bonzos/brti-edge/apps/data-collector/scripts/run-collector-supervised.sh
 Restart=always
