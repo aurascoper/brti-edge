@@ -113,6 +113,10 @@ def invariants(config):
     if source != config['mount_identity'] or not source.startswith('/dev/sda1 '): problems.append('ssd_mount_changed')
     for unit in ('kalshi-collector.service', 'kalshi-worker.service'):
         if run('systemctl', 'is-active', unit, check=False).stdout.strip() != 'active': problems.append(unit + '_inactive')
+    for filename, expected in config.get('installed_files', {}).items():
+        try:
+            if sha(filename) != expected: problems.append('installed_configuration_changed:' + filename)
+        except OSError: problems.append('installed_configuration_missing:' + filename)
     if run('systemctl', 'is-enabled', 'pilot-kalshi.service', check=False).stdout.strip() != 'masked': problems.append('pilot_not_masked')
     if run('systemctl', 'is-active', 'pilot-kalshi.service', check=False).stdout.strip() != 'inactive': problems.append('pilot_not_inactive')
     import w2_close_check as close
