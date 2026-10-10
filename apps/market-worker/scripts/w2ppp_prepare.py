@@ -149,6 +149,39 @@ def fail(state, phase, problems):
     return state
 
 
+def begin(tag):
+    if (STATE / 'config.json').exists() or (STATE / 'state.json').exists():
+        raise ValueError('existing_soak_or_window_must_not_be_replaced')
+    repo = str(HERE.parents[2])
+    source = run('git', '-C', repo, 'rev-parse', 'HEAD', owner=True).stdout.strip()
+    tagged = run('git', '-C', repo, 'rev-parse', tag + '^{commit}', owner=True).stdout.strip()
+    if source != tagged: raise ValueError('instrument_tag_must_name_installed_head')
+    vector = json.loads((HERE / 'w2ppp-env-vector.json').read_text())
+    att = json.loads(Path('/var/lib/obi-kalshi-source/producer.json').read_text())
+    installed = {}
+    for name in ('kalshi-collector.service', 'kalshi-worker.service', 'w2ppp-prepare.service', 'w2ppp-prepare.timer'):
+        path = Path('/etc/systemd/system') / name
+        if path.read_bytes() != (Path(repo) / 'apps/data-collector/scripts/systemd' / name).read_bytes():
+            raise ValueError('installed_unit_differs:' + name)
+        installed[str(path)] = sha(path)
+    journal = '/etc/systemd/journald@brti-edge.conf.d/limits.conf'
+    if Path(journal).read_bytes() != (Path(repo) / 'apps/data-collector/scripts/systemd/journald-brti-edge.conf').read_bytes():
+        raise ValueError('installed_journal_limits_differ')
+    installed[journal] = sha(journal)
+    config = {'start_at': iso(next_hour(time.time())), 'instrument_tag': tag, 'repo': repo,
+              'source': source, 'data_dir': vector['DATA_COLLECTOR_LOG_DIR'],
+              'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
+              'mount_identity': run('findmnt', '-n', '-o', 'SOURCE,UUID', '--target', vector['DATA_COLLECTOR_LOG_DIR']).stdout.strip(),
+              'source_pin': att['source_pin'], 'installed_files': installed}
+    problems = invariants(config)
+    if problems: raise ValueError('pre_soak_invariants_failed:' + ','.join(problems))
+    atomic(STATE / 'config.json', config)
+    state = {'phase': 'soak', 'prepared_at': iso(time.time()), 'start_at': config['start_at']}
+    atomic(STATE / 'state.json', state)
+    run('systemctl', 'enable', '--now', 'w2ppp-prepare.timer')
+    return state
+
+
 def tick():
     config = json.loads((STATE / 'config.json').read_text())
     state = json.loads((STATE / 'state.json').read_text())
@@ -228,6 +261,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--state-dir', default=str(STATE))
     sub = ap.add_subparsers(dest='cmd', required=True)
     sub.add_parser('tick')
+    p = sub.add_parser('begin'); p.add_argument('--instrument-tag', required=True)
     p = sub.add_parser('health'); p.add_argument('--config', required=True); p.add_argument('--end', required=True)
     p = sub.add_parser('report'); p.add_argument('--kind', choices=('day7-interim', 'close'), required=True)
     args = ap.parse_args(); STATE = Path(args.state_dir)
@@ -239,8 +273,9 @@ def main():
         with (STATE / 'controller.lock').open('a') as file:
             fcntl.flock(file, fcntl.LOCK_EX)
             try:
-                result = tick() if args.cmd == 'tick' else report(args.kind)
+                result = begin(args.instrument_tag) if args.cmd == 'begin' else (tick() if args.cmd == 'tick' else report(args.kind))
             except Exception as exc:
+                if not (STATE / 'state.json').exists(): raise
                 state = json.loads((STATE / 'state.json').read_text())
                 if state['phase'] in ('soak', 'holdout'):
                     result = fail(state, 'NO-GO(soak)' if state['phase'] == 'soak' else 'NO-GO(holdout)', [type(exc).__name__])
