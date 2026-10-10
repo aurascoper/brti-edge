@@ -185,7 +185,7 @@ def tick():
     run('git', '-C', config['repo'], 'add', 'docs/research/w2ppp-lock.json', owner=True)
     run('git', '-C', config['repo'], '-c', 'user.name=BTC dust readiness', '-c', 'user.email=readiness@localhost', 'commit', '-m', 'Lock W2 triple-prime after eligible 30-hour soak', owner=True)
     lock_tag = 'w2ppp-lock-' + since.replace('-', '').replace(':', '')
-    run('git', '-C', config['repo'], 'tag', '-a', lock_tag, '-m', 'W2 triple-prime frozen window', owner=True)
+    run('git', '-C', config['repo'], '-c', 'user.name=BTC dust readiness', '-c', 'user.email=readiness@localhost', 'tag', '-a', lock_tag, '-m', 'W2 triple-prime frozen window', owner=True)
     if time.time() >= epoch(since): return fail(state, 'NO-GO(soak)', ['lock_missed_boundary'])
     atomic(STATE / 'lock.json', lock)
     install_timers(config, lock)

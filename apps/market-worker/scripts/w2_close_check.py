@@ -355,7 +355,12 @@ def worker_environs(proc: str = "/proc", command=WORKER_CMD):
             continue
         try:
             with open(os.path.join(proc, pid, "cmdline"), "rb") as f:
-                if command not in f.read():
+                argv = f.read().split(b'\0')
+                if not any(arg == command or arg.endswith(b'/' + command) for arg in argv):
+                    continue
+            if proc == '/proc':
+                expected_cwd = WORKER if command == WORKER_CMD else os.path.join(REPO, 'apps/data-collector')
+                if os.path.realpath(os.path.join(proc, pid, 'cwd')) != expected_cwd:
                     continue
             with open(os.path.join(proc, pid, "environ"), "rb") as f:
                 raw = f.read()
