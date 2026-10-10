@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import stat
 import time
 from datetime import datetime, timezone
 
@@ -105,7 +106,30 @@ def health(config, end):
             'gzip': gzip_check(config['data_dir'], start, end)}
 
 
-def invariants(config):
+def dust_allowed(config, now=None):
+    """A single pinned soak test may run; holdout always requires the mask."""
+    now = time.time() if now is None else now
+    if not config.get('dust_authorization_sha256'): return False
+    try:
+        authorization = STATE / 'dust-authorization.json'
+        record_path = STATE / 'dust-run.json'
+        for path in (authorization, record_path):
+            info = path.lstat()
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: return False
+        if sha(authorization) != config['dust_authorization_sha256']: return False
+        auth = json.loads(authorization.read_text()); status = json.loads(record_path.read_text())
+        if (auth.get('source_pin') != config['source_pin'] or auth.get('starts_at') != config['start_at']
+                or auth.get('promotion_gate') != 'fourteen-day-G1-G7' or auth.get('research_go') is not False
+                or epoch(auth['ends_at']) - epoch(auth['starts_at']) != 48 * 3600
+                or not epoch(auth['starts_at']) <= now < epoch(auth['ends_at'])
+                or status.get('phase') not in ('active', 'activating')
+                or status.get('authorization_sha256') != config['dust_authorization_sha256']
+                or sha(config['dust_runtime']) != config['dust_runtime_sha256']): return False
+        return True
+    except (OSError, ValueError, KeyError, TypeError): return False
+
+
+def invariants(config, allow_dust=True):
     problems = []
     if run('timedatectl', 'show', '-p', 'NTPSynchronized', '--value').stdout.strip() != 'yes': problems.append('time_unsynchronized')
     if Path('/proc/sys/kernel/random/boot_id').read_text().strip() != config['boot_id']: problems.append('host_reboot')
@@ -117,8 +141,9 @@ def invariants(config):
         try:
             if sha(filename) != expected: problems.append('installed_configuration_changed:' + filename)
         except OSError: problems.append('installed_configuration_missing:' + filename)
-    if run('systemctl', 'is-enabled', 'pilot-kalshi.service', check=False).stdout.strip() != 'masked': problems.append('pilot_not_masked')
-    if run('systemctl', 'is-active', 'pilot-kalshi.service', check=False).stdout.strip() != 'inactive': problems.append('pilot_not_inactive')
+    if not (allow_dust and dust_allowed(config)):
+        if run('systemctl', 'is-enabled', 'pilot-kalshi.service', check=False).stdout.strip() != 'masked': problems.append('pilot_not_masked')
+        if run('systemctl', 'is-active', 'pilot-kalshi.service', check=False).stdout.strip() != 'inactive': problems.append('pilot_not_inactive')
     import w2_close_check as close
     vector = json.loads((HERE / 'w2ppp-env-vector.json').read_text())
     if not close.check_worker_env(close.worker_environs(), vector, close.API_BASE)['ok']: problems.append('worker_env_changed')
@@ -173,7 +198,20 @@ def begin(tag):
               'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
               'mount_identity': run('findmnt', '-n', '-o', 'SOURCE,UUID', '--target', vector['DATA_COLLECTOR_LOG_DIR']).stdout.strip(),
               'source_pin': att['source_pin'], 'installed_files': installed}
-    problems = invariants(config)
+    authorization = STATE / 'dust-authorization.json'
+    if authorization.exists():
+        auth = json.loads(authorization.read_text())
+        if auth['starts_at'] != config['start_at']: raise ValueError('dust_and_soak_start_must_match')
+        runtime = Path('/opt/obi-kalshi/current/scripts/kalshi_dust_round.py').resolve(strict=True)
+        config.update(dust_authorization_sha256=sha(authorization), dust_runtime=str(runtime),
+                      dust_runtime_sha256=sha(runtime))
+        for name in ('kalshi-dust-start.service', 'kalshi-dust-start.timer',
+                     'kalshi-dust-monitor.service', 'kalshi-dust-monitor.timer'):
+            path = Path('/etc/systemd/system') / name
+            if path.read_bytes() != (runtime.parents[1] / 'systemd' / name).read_bytes():
+                raise ValueError('installed_dust_unit_differs:' + name)
+            config['installed_files'][str(path)] = sha(path)
+    problems = invariants(config, allow_dust=False)
     if problems: raise ValueError('pre_soak_invariants_failed:' + ','.join(problems))
     atomic(STATE / 'config.json', config)
     state = {'phase': 'soak', 'prepared_at': iso(time.time()), 'start_at': config['start_at']}
@@ -186,7 +224,7 @@ def tick():
     config = json.loads((STATE / 'config.json').read_text())
     state = json.loads((STATE / 'state.json').read_text())
     if state['phase'] not in ('soak', 'holdout'): return state
-    problems = invariants(config)
+    problems = invariants(config) if state['phase'] == 'soak' else invariants(config, allow_dust=False)
     if problems: return fail(state, 'NO-GO(soak)' if state['phase'] == 'soak' else 'VOID(host-integrity)', problems)
     now = time.time(); start = epoch(config['start_at'])
     if state['phase'] == 'holdout':
@@ -200,6 +238,13 @@ def tick():
         atomic(STATE / 'state.json', state)
     end = start + 30 * 3600
     if now < end + 300: return state
+    if dust_allowed(config):
+        state['awaiting_dust_endpoint'] = iso(now); atomic(STATE / 'state.json', state); return state
+    if config.get('dust_authorization_sha256'):
+        dust = json.loads((STATE / 'dust-run.json').read_text())
+        if dust.get('phase') in ('FAIL', 'START_FAILED', 'NO_START'):
+            return fail(state, 'NO-GO(soak)', ['dust_execution_acceptance_failed:' + dust['phase']])
+        if dust.get('phase') != 'ended': return fail(state, 'NO-GO(soak)', ['dust_endpoint_not_recorded'])
     result = run(sys.executable, HERE / 'w2ppp_prepare.py', 'health', '--config', STATE / 'config.json', '--end', iso(end), owner=True)
     checks = json.loads(result.stdout)
     atomic(STATE / 'soak-receipt.json', checks)
@@ -242,7 +287,7 @@ def report(kind):
     if days == 7: cmd.append('--interim')
     proc = run(*cmd, owner=True, check=False)
     out = STATE / (kind + '.txt'); out.write_text(proc.stdout + proc.stderr)
-    problems = invariants(config)
+    problems = invariants(config, allow_dust=False)
     go = days == 14 and state['phase'] == 'holdout' and not problems and proc.returncode == 0 and '\nVERDICT: GO — full battery PASS on an eligible, frozen window' in proc.stdout
     receipt = {'schema': 1, 'kind': kind, 'at': iso(time.time()), 'since': lock['since'], 'until': until,
                'verdict': 'GO' if go else ('CONTINUE' if days == 7 and proc.returncode == 0 else 'NO-GO'),

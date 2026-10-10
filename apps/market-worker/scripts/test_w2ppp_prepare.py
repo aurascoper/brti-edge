@@ -62,7 +62,50 @@ def test_less_than_30_hours_cannot_lock_or_schedule(tmp_path, monkeypatch):
 
 def test_any_integrity_problem_is_terminal_before_or_after_lock(tmp_path, monkeypatch):
     monkeypatch.setattr(p, 'STATE', tmp_path); p.atomic(tmp_path / 'config.json', {})
-    monkeypatch.setattr(p, 'invariants', lambda _: ['host_reboot'])
+    monkeypatch.setattr(p, 'invariants', lambda _, **kwargs: ['host_reboot'])
     for phase, result in [('soak', 'NO-GO(soak)'), ('holdout', 'VOID(host-integrity)')]:
         p.atomic(tmp_path / 'state.json', {'phase': phase})
         assert p.tick()['phase'] == result
+
+
+def test_dust_exception_requires_exact_receipt_and_clock(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(p, 'STATE', tmp_path)
+    start = p.epoch('2026-10-10T06:00:00Z')
+    runtime = tmp_path / 'runtime.py';runtime.write_text('pinned runtime')
+    auth = {'source_pin':'pin','starts_at':p.iso(start),'ends_at':p.iso(start+48*3600),
+            'promotion_gate':'fourteen-day-G1-G7','research_go':False}
+    p.atomic(tmp_path / 'dust-authorization.json', auth)
+    identity = p.sha(tmp_path / 'dust-authorization.json')
+    p.atomic(tmp_path / 'dust-run.json', {'phase':'active','authorization_sha256':identity})
+    config = {'dust_authorization_sha256':identity,'source_pin':'pin','start_at':p.iso(start),
+              'dust_runtime':str(runtime),'dust_runtime_sha256':p.sha(runtime)}
+    original = p.Path.lstat
+    def root_owned(path):
+        info=original(path)
+        return SimpleNamespace(st_mode=info.st_mode,st_uid=0)
+    monkeypatch.setattr(p.Path,'lstat',root_owned)
+    assert p.dust_allowed(config,start)
+    assert not p.dust_allowed(config,start-1)
+    assert not p.dust_allowed(config,start+48*3600)
+    runtime.write_text('changed')
+    assert not p.dust_allowed(config,start)
+    runtime.write_text('pinned runtime')
+    p.atomic(tmp_path / 'dust-run.json', {'phase':'ended','authorization_sha256':identity})
+    assert not p.dust_allowed(config,start)
+    p.atomic(tmp_path / 'dust-run.json', {'phase':'active','authorization_sha256':'wrong'})
+    assert not p.dust_allowed(config,start)
+
+
+def test_active_dust_must_finish_before_holdout_can_lock(tmp_path, monkeypatch):
+    monkeypatch.setattr(p,'STATE',tmp_path)
+    start=p.epoch('2026-10-10T06:00:00Z')
+    p.atomic(tmp_path / 'config.json', {'start_at':p.iso(start)})
+    p.atomic(tmp_path / 'state.json', {'phase':'soak','restart':{'at':'observed'}})
+    monkeypatch.setattr(p,'invariants',lambda *args,**kwargs:[])
+    monkeypatch.setattr(p.time,'time',lambda:start+31*3600)
+    monkeypatch.setattr(p,'dust_allowed',lambda _:True)
+    monkeypatch.setattr(p,'health',lambda *args:pytest.fail('cannot lock while pilot active'))
+    result=p.tick()
+    assert result['phase']=='soak' and 'awaiting_dust_endpoint' in result
+    assert not (tmp_path / 'lock.json').exists()
