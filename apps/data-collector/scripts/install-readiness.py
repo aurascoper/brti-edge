@@ -22,7 +22,7 @@ def main():
     assert os.getuid() == 0 and run('hostname') == '1705bonzos'
     assert run('timedatectl', 'show', '-p', 'NTPSynchronized', '--value') == 'yes'
     assert run('findmnt', '-n', '-o', 'SOURCE', '--target', '/mnt/ssd') == '/dev/sda1'
-    assert run('systemctl', 'is-enabled', 'pilot-kalshi.service') == 'masked'
+    assert run('systemctl', 'show', 'pilot-kalshi.service', '-p', 'UnitFileState', '--value') == 'masked'
     assert run('git', '-c', f'safe.directory={REPO}', '-C', REPO, 'status', '--porcelain', '--untracked-files=no') == ''
     assert not STATE.exists(), 'existing readiness state must never be replaced'
     STATE.mkdir(mode=0o755)
