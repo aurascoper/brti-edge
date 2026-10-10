@@ -6,6 +6,7 @@
 Description=Kalshi WS data collector (brti-edge)
 Wants=network-online.target time-sync.target
 After=network-online.target time-sync.target
+RequiresMountsFor=/mnt/ssd
 
 [Service]
 Type=simple
@@ -32,8 +33,9 @@ RestartPreventExitStatus=74
 KillMode=mixed
 # gzip trailer must flush on stop — a truncated hour file reads as a gap
 TimeoutStopSec=30
-StandardOutput=append:/home/bonzos/brti-edge/apps/data-collector/ops/state/launchd-collector.out.log
-StandardError=append:/home/bonzos/brti-edge/apps/data-collector/ops/state/launchd-collector.err.log
+LogNamespace=brti-edge
+StandardOutput=journal
+StandardError=journal
 NoNewPrivileges=yes
 
 [Install]

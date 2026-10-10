@@ -136,6 +136,11 @@ load_env() {
 }
 load_env "$ROOT_DIR/.env"
 load_env "$APP_DIR/.env"
+# Resolve after loading configuration, exactly as the writer does.
+LOG_DIR="${DATA_COLLECTOR_LOG_DIR:-$APP_DIR/logs/data-collector}"
+mkdir -p "$LOG_DIR" || exit 74
+LOG_DIR="$(cd "$LOG_DIR" && pwd -P)" || exit 74
+export DATA_COLLECTOR_LOG_DIR="$LOG_DIR"
 
 # Kalshi creds: the collector self-loads KALSHI_* from live_trading/.env via its
 # loadEnvFromLiveTrading() (src/index.ts), so they need not be in our shell env.
@@ -274,10 +279,16 @@ while true; do
   log_event start "collector pid $CHILD_PID"
 
   # inner health-watch loop
+  progress_ts="$start_ts"
   while kill -0 "$CHILD_PID" 2>/dev/null; do
-    nap "$WATCH_INTERVAL"
+    # Wake at the persistence deadline as well as the 30s cadence. This leaves
+    # the 5s drain + 1s relaunch inside the 330s recovery bound.
+    remaining=$(( progress_ts + STALE_SECONDS - $(date +%s) ))
+    interval="$WATCH_INTERVAL"
+    [ "$remaining" -gt 0 ] && [ "$remaining" -lt "$interval" ] && interval="$remaining"
+    [ "$remaining" -le 0 ] && interval=1
+    nap "$interval"
     $STOPPING && break
-    cap_err_log
     mt="$(newest_delta_mtime)"
     up_now=$(( $(date +%s) - start_ts ))
     if [ "$mt" = "-1" ]; then
@@ -285,8 +296,9 @@ while true; do
       # that cannot measure must not pretend the child is healthy, and must not
       # kill it on no evidence either.
       if ! $STAT_PROBE_WARNED; then
-        log_event stale_check_unavailable "cannot read delta mtimes on this host — stall detection is DISABLED"
-        STAT_PROBE_WARNED=true
+        log_event stale_check_unavailable "cannot read delta mtimes — refusing unmonitored collection"
+        stop_child "$CHILD_PID"
+        exit 74
       fi
     elif [ "$mt" = "0" ]; then
       # No delta file holds any data -- either none exists, or every one is empty.
@@ -294,14 +306,15 @@ while true; do
       # exact shape that hid the 2026-10-03 gap, where empty files were being created
       # every hour. Once the child has had STALE_SECONDS to produce its first bytes,
       # nothing at all is the worst stall there is, not the absence of one.
-      if [ "$up_now" -gt "$STALE_SECONDS" ]; then
+      if [ "$up_now" -ge "$STALE_SECONDS" ]; then
         log_event stale_restart "no orderbook-deltas bytes written after ${up_now}s (>${STALE_SECONDS}s)"
         stop_child "$CHILD_PID"
         break
       fi
     else
+      progress_ts="$mt"
       age=$(( $(date +%s) - mt ))
-      if [ "$age" -gt "$STALE_SECONDS" ]; then
+      if [ "$age" -ge "$STALE_SECONDS" ]; then
         log_event stale_restart "no orderbook-deltas write in ${age}s (>${STALE_SECONDS}s)"
         stop_child "$CHILD_PID"
         break

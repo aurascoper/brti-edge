@@ -88,6 +88,9 @@ export class GzipRotator {
   private readonly logDir: string;
   private readonly channel: string;
   private closed = false;
+  private lastBackpressureWarning = -Infinity;
+  private suppressedWarnings = 0;
+  private readonly draining = new Set<Promise<void>>();
 
   constructor(opts: RotatorOptions) {
     this.logDir = opts.logDir;
@@ -109,7 +112,12 @@ export class GzipRotator {
       // Backpressure: gzip stream buffer is full. We don't pause the WS
       // (event loss is worse than memory growth here), but emit a
       // diagnostic. If sustained, this is a sign the disk is too slow.
-      console.warn(`[data-collector] ${this.channel} gzip backpressure`);
+      this.suppressedWarnings++;
+      if (Date.now() - this.lastBackpressureWarning >= 30_000) {
+        console.warn(`[data-collector] ${this.channel} gzip backpressure (${this.suppressedWarnings} writes since warning)`);
+        this.lastBackpressureWarning = Date.now();
+        this.suppressedWarnings = 0;
+      }
     }
     this.state!.bytesWritten += line.length;
     this.state!.linesWritten += 1;
@@ -119,7 +127,7 @@ export class GzipRotator {
     if (this.state) {
       const prev = this.state;
       // Cleanly end the previous gzip; the file becomes a valid .gz.
-      prev.gz.end();
+      this.drain(prev);
     }
     // Never append into an existing hour file: readers recover only
     // truncation-at-EOF, so a second gzip member appended after a
@@ -140,11 +148,7 @@ export class GzipRotator {
     // the gzip stream surfaces errors from its own write to the pipe target,
     // and the file stream surfaces the write(2) failure itself.
     const onStreamError = (err: NodeJS.ErrnoException): void => {
-      // closeAsync() owns errors on the shutdown path -- it resolves on 'error'
-      // so the caller's own exit code stands. Only a live-write failure is fatal
-      // here, which keeps a truncated trailer on a normal stop from turning an
-      // operator SIGTERM into a non-zero exit.
-      if (this.closed) return;
+      // Trailer and compressor failures are data loss too, including shutdown.
       fatalWriteError(this.channel, err);
     };
     file.on("error", onStreamError);
@@ -178,7 +182,7 @@ export class GzipRotator {
     if (this.closed) return;
     this.closed = true;
     if (this.state) {
-      this.state.gz.end();
+      this.drain(this.state);
       this.state = null;
     }
   }
@@ -188,25 +192,21 @@ export class GzipRotator {
   // file stream still needs to flush the gzip trailer (CRC32 + size).
   // Returns when the file stream emits 'finish', or after a 3s safety
   // timeout so a hung stream never blocks shutdown forever.
-  closeAsync(): Promise<void> {
-    if (this.closed) return Promise.resolve();
-    this.closed = true;
-    if (!this.state) return Promise.resolve();
-    const file = this.state.file;
-    const gz = this.state.gz;
-    this.state = null;
-    return new Promise<void>((resolve) => {
-      let done = false;
-      const finish = (): void => {
-        if (done) return;
-        done = true;
-        resolve();
-      };
-      file.once("finish", finish);
-      file.once("error", finish);
-      setTimeout(finish, 3_000);
-      gz.end();
+  private drain(state: ChannelState): void {
+    let pending: Promise<void>;
+    pending = new Promise<void>((done) => {
+      const timer = setTimeout(() => fatalWriteError(this.channel,
+        Object.assign(new Error("gzip trailer did not finish within 3 seconds"), { code: "ETIMEDOUT" })), 3_000);
+      state.file.once("finish", () => { clearTimeout(timer); done(); });
+      state.gz.end();
     });
+    this.draining.add(pending);
+    void pending.then(() => this.draining.delete(pending));
+  }
+
+  async closeAsync(): Promise<void> {
+    this.close();
+    await Promise.all(this.draining);
   }
 }
 

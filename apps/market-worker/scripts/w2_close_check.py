@@ -49,7 +49,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 WORKER = os.path.normpath(os.path.join(HERE, ".."))
 REPO = os.path.normpath(os.path.join(WORKER, "..", ".."))
 LOGS = os.path.join(WORKER, "logs")
-COLLECTOR_LOGS = os.path.join(REPO, "apps", "data-collector", "logs", "data-collector")
+COLLECTOR_LOGS = os.path.realpath(os.environ.get("DATA_COLLECTOR_LOG_DIR",
+    os.path.join(REPO, "apps", "data-collector", "logs", "data-collector")))
 ANALYSIS_W2 = os.path.join(REPO, "analysis", "w2")
 API_BASE_DEFAULT = "https://api.elections.kalshi.com/trade-api/v2"
 API_BASE = os.environ.get("KALSHI_API_BASE", API_BASE_DEFAULT)
@@ -65,6 +66,12 @@ FROZEN_PATHS = (
     "apps/market-worker/scripts/w2pp-env-vector.json",  # W2″: G5 compares workers to it
     "packages/kalshi-client/src",
     "packages/signals/src",
+    "apps/data-collector/src",
+    "apps/data-collector/scripts/run-collector-supervised.sh",
+    "apps/data-collector/scripts/systemd/kalshi-collector.service",
+    "apps/data-collector/scripts/systemd/journald-brti-edge.conf",
+    "apps/market-worker/scripts/w2ppp-env-vector.json",
+    "apps/market-worker/scripts/w2ppp_prepare.py",
 )
 WORKER_CMD = b"src/kalshi/worker.ts"
 ORDER_GATES = ("KALSHI_ALLOW_ORDERS", "KALSHI_AUTO_SUBMIT", "KALSHI_DUST_ENABLED")
@@ -72,7 +79,7 @@ KNOBS = ("KALSHI_SIGMA_MULTIPLIER", "KALSHI_MIN_Z_DISTANCE", "KALSHI_CALIBRATION
          "KALSHI_SPOT_MAX_AGE_MS", "KALSHI_SCAN_INTERVAL_MS")  # must stay at code defaults
 # The API base is in the vector too: the worker and this listing fetch both read it,
 # so a wrong endpoint would otherwise agree with itself.
-ENV_VECTOR_KEYS = ("KALSHI_API_BASE", "SPOT_FEED_REST", "PERP_FEED_REST", "PERP_FEED_PATH")
+ENV_VECTOR_KEYS = ("KALSHI_API_BASE", "SPOT_FEED_REST", "PERP_FEED_REST", "PERP_FEED_PATH", "DATA_COLLECTOR_LOG_DIR")
 LISTING_PAD_MS = 3 * 3_600_000  # anchors a pause at the start edge; see §12 boundary rule
 MARKET_MS = 15 * 60_000     # one KXBTC15M market; pads the published pause
 ET = ZoneInfo("America/New_York")
@@ -216,7 +223,7 @@ def collector_hours(have, t0: float, t1: float, excluded):
 # ---------- 2. exchange listing + reconciliation ----------
 
 def fetch_settled_listing(t0: float, t1: float):
-    results, cursor = [], None
+    results, cursor, seen = [], None, set()
     while True:
         q = {
             "series_ticker": "KXBTC15M", "status": "settled", "limit": "1000",
@@ -227,12 +234,17 @@ def fetch_settled_listing(t0: float, t1: float):
         url = f"{API_BASE}/markets?{urllib.parse.urlencode(q)}"
         with urllib.request.urlopen(url, timeout=30) as resp:
             body = json.load(resp)
+        if not isinstance(body.get("markets"), list):
+            raise ValueError("incomplete settlement listing")
         for m in body.get("markets", []):
             results.append({"ticker": m.get("ticker"), "close_time": m.get("close_time"),
                             "result": m.get("result")})
         cursor = body.get("cursor")
-        if not cursor or not body.get("markets"):
+        if not cursor:
             break
+        if cursor in seen or not body['markets']:
+            raise ValueError("incomplete or repeated settlement pagination")
+        seen.add(cursor)
     return results
 
 
@@ -331,7 +343,7 @@ def check_freeze(tag: str):
     }
 
 
-def worker_environs(proc: str = "/proc"):
+def worker_environs(proc: str = "/proc", command=WORKER_CMD):
     """Environment of each running Kalshi worker this user can read, by pid."""
     out = {}
     for pid in os.listdir(proc):
@@ -339,7 +351,7 @@ def worker_environs(proc: str = "/proc"):
             continue
         try:
             with open(os.path.join(proc, pid, "cmdline"), "rb") as f:
-                if WORKER_CMD not in f.read():
+                if command not in f.read():
                     continue
             with open(os.path.join(proc, pid, "environ"), "rb") as f:
                 raw = f.read()
@@ -348,6 +360,10 @@ def worker_environs(proc: str = "/proc"):
         out[int(pid)] = dict(
             kv.split("=", 1) for kv in raw.decode(errors="replace").split("\0") if "=" in kv)
     return out
+
+
+def worker_environs_for_collector():
+    return worker_environs(command=b"src/index.ts")
 
 
 def check_worker_env(environs, vector, wrapper_base=None):
@@ -483,6 +499,13 @@ def main() -> int:
         with open(args.env_vector) as f:
             vector = json.load(f)
     wenv = check_worker_env(worker_environs(), vector, API_BASE)
+    if vector and "DATA_COLLECTOR_LOG_DIR" in vector:
+        path_ok = COLLECTOR_LOGS == vector['DATA_COLLECTOR_LOG_DIR']
+        collector_env = worker_environs_for_collector()
+        path_ok = path_ok and bool(collector_env) and all(
+            env.get('DATA_COLLECTOR_LOG_DIR') == COLLECTOR_LOGS for env in collector_env.values())
+        wenv['ok'] = wenv['ok'] and path_ok
+        wenv.setdefault('problems', []).extend([] if path_ok else ['collector/wrapper path differs from lock'])
     fz["ok"] = fz["ok"] and wenv["ok"]
     say(f"\n[3] G5 freeze integrity -> {'PASS' if fz['ok'] else 'FAIL'}")
     say(f"  worker env: pids {wenv.get('pids', [])} -> {'PASS' if wenv['ok'] else 'FAIL'}"

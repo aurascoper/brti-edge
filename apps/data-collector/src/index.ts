@@ -400,7 +400,8 @@ async function shutdown(reason: string, code = 0): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   console.log(`[data-collector] shutdown: ${reason} (exit ${code})`);
-  logLifecycle({ event: "shutdown", reason, exit_code: code });
+  try { logLifecycle({ event: "shutdown", reason, exit_code: code }); }
+  catch (err) { process.exit(exitCodeForError(err as NodeJS.ErrnoException)); }
   if (refreshTimer) clearInterval(refreshTimer);
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   if (ws) {
@@ -431,7 +432,6 @@ process.on("SIGTERM", () => {
 });
 process.on("uncaughtException", (err) => {
   console.error("[data-collector] uncaughtException:", err);
-  logLifecycle({ event: "uncaught_exception", error: String(err) });
   // Never 0. ENOSPC gets its own code so the supervisor and the unit can stop
   // restarting into a full disk; everything else exits 1, which still restarts.
   // Synchronous throws reach here rather than the stream handlers -- mkdirSync()

@@ -1,0 +1,7 @@
+[Unit]
+Description=W2 triple-prime durable pre-lock soak and holdout integrity check
+After=kalshi-collector.service kalshi-worker.service
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/bonzos/brti-edge/apps/market-worker/scripts/w2ppp_prepare.py tick
+TimeoutStartSec=1800

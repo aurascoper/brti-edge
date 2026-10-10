@@ -1,0 +1,9 @@
+[Unit]
+Description=W2 triple-prime pre-lock and integrity cadence
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=1
+Persistent=true
+[Install]
+WantedBy=timers.target
