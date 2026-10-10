@@ -86,6 +86,9 @@ def test_dust_exception_requires_exact_receipt_and_clock(tmp_path, monkeypatch):
         return SimpleNamespace(st_mode=info.st_mode,st_uid=0)
     monkeypatch.setattr(p.Path,'lstat',root_owned)
     assert p.dust_allowed(config,start)
+    resumed=dict(config,start_at=p.iso(start+3600),dust_round_started_at=p.iso(start))
+    assert p.dust_allowed(resumed,start+3600)
+    assert not p.dust_allowed(resumed,start+48*3600)
     assert not p.dust_allowed(config,start-1)
     assert not p.dust_allowed(config,start+48*3600)
     runtime.write_text('changed')
@@ -109,3 +112,16 @@ def test_active_dust_must_finish_before_holdout_can_lock(tmp_path, monkeypatch):
     result=p.tick()
     assert result['phase']=='soak' and 'awaiting_dust_endpoint' in result
     assert not (tmp_path / 'lock.json').exists()
+@pytest.mark.parametrize('phase',['holdout','NO-GO(holdout)','soak'])
+def test_repair_cannot_replace_holdout_or_unrecorded_failure(tmp_path,monkeypatch,phase):
+    from types import SimpleNamespace
+    monkeypatch.setattr(p,'STATE',tmp_path)
+    p.atomic(tmp_path/'state.json',{'phase':phase})
+    path=tmp_path/'repair.json'
+    p.atomic(path,{'kind':'zero-order-ticketing-repair','phase':'rebound'})
+    original=p.Path.lstat
+    monkeypatch.setattr(p.Path,'lstat',lambda x:SimpleNamespace(st_uid=0,st_mode=original(x).st_mode))
+    before=(tmp_path/'state.json').read_bytes()
+    with pytest.raises(ValueError,match='failed_prelock_soak_not_recorded'):
+        p.begin('unreached',str(path))
+    assert (tmp_path/'state.json').read_bytes()==before

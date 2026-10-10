@@ -118,7 +118,7 @@ def dust_allowed(config, now=None):
             if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022: return False
         if sha(authorization) != config['dust_authorization_sha256']: return False
         auth = json.loads(authorization.read_text()); status = json.loads(record_path.read_text())
-        if (auth.get('source_pin') != config['source_pin'] or auth.get('starts_at') != config['start_at']
+        if (auth.get('source_pin') != config['source_pin'] or auth.get('starts_at') != config.get('dust_round_started_at',config['start_at'])
                 or auth.get('promotion_gate') != 'fourteen-day-G1-G7' or auth.get('research_go') is not False
                 or epoch(auth['ends_at']) - epoch(auth['starts_at']) != 48 * 3600
                 or not epoch(auth['starts_at']) <= now < epoch(auth['ends_at'])
@@ -174,8 +174,22 @@ def fail(state, phase, problems):
     return state
 
 
-def begin(tag):
-    if (STATE / 'config.json').exists() or (STATE / 'state.json').exists():
+def begin(tag, repair_receipt=None):
+    repair = None
+    if repair_receipt:
+        path = Path(repair_receipt);info=path.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_uid!=0 or info.st_mode&0o022:
+            raise ValueError('unsafe_repair_receipt')
+        repair=json.loads(path.read_text())
+        old=json.loads((STATE/'state.json').read_text())
+        if (repair.get('kind')!='zero-order-ticketing-repair' or repair.get('phase')!='rebound'
+                or old.get('phase')!='NO-GO(soak)' or old.get('lock')
+                or old!=json.loads((path.parent/'failed-soak.json').read_text())):
+            raise ValueError('failed_prelock_soak_not_recorded')
+        for name in ('config.json','state.json'):
+            destination=path.parent/('retired-'+name)
+            if destination.exists():raise ValueError('repair_soak_already_retired')
+    if not repair and ((STATE / 'config.json').exists() or (STATE / 'state.json').exists()):
         raise ValueError('existing_soak_or_window_must_not_be_replaced')
     repo = str(HERE.parents[2])
     source = run('git', '-C', repo, 'rev-parse', 'HEAD', owner=True).stdout.strip()
@@ -201,7 +215,12 @@ def begin(tag):
     authorization = STATE / 'dust-authorization.json'
     if authorization.exists():
         auth = json.loads(authorization.read_text())
-        if auth['starts_at'] != config['start_at']: raise ValueError('dust_and_soak_start_must_match')
+        if auth['starts_at'] != config['start_at']:
+            if (not repair or auth['starts_at']!=repair['starts_at'] or auth['ends_at']!=repair['ends_at']
+                    or sha(authorization)!=repair['new_authorization_sha256']):
+                raise ValueError('dust_and_soak_start_must_match_without_recorded_repair')
+            config['dust_round_started_at']=auth['starts_at']
+            config['repair_receipt_sha256']=sha(repair_receipt)
         runtime = Path('/opt/obi-kalshi/current/scripts/kalshi_dust_round.py').resolve(strict=True)
         config.update(dust_authorization_sha256=sha(authorization), dust_runtime=str(runtime),
                       dust_runtime_sha256=sha(runtime))
@@ -213,8 +232,14 @@ def begin(tag):
             config['installed_files'][str(path)] = sha(path)
     problems = invariants(config, allow_dust=False)
     if problems: raise ValueError('pre_soak_invariants_failed:' + ','.join(problems))
+    if repair:
+        for name in ('config.json','state.json'):
+            os.replace(STATE/name,Path(repair_receipt).parent/('retired-'+name))
     atomic(STATE / 'config.json', config)
     state = {'phase': 'soak', 'prepared_at': iso(time.time()), 'start_at': config['start_at']}
+    if repair:
+        state.update(failed_predecessor=str(Path(repair_receipt).parent/'failed-soak.json'),
+                     original_dust_start=repair['starts_at'])
     atomic(STATE / 'state.json', state)
     run('systemctl', 'enable', '--now', 'w2ppp-prepare.timer')
     return state
@@ -307,6 +332,7 @@ def main():
     sub = ap.add_subparsers(dest='cmd', required=True)
     sub.add_parser('tick')
     p = sub.add_parser('begin'); p.add_argument('--instrument-tag', required=True)
+    p.add_argument('--repair-receipt')
     p = sub.add_parser('health'); p.add_argument('--config', required=True); p.add_argument('--end', required=True)
     p = sub.add_parser('report'); p.add_argument('--kind', choices=('day7-interim', 'close'), required=True)
     args = ap.parse_args(); STATE = Path(args.state_dir)
@@ -318,7 +344,7 @@ def main():
         with (STATE / 'controller.lock').open('a') as file:
             fcntl.flock(file, fcntl.LOCK_EX)
             try:
-                result = begin(args.instrument_tag) if args.cmd == 'begin' else (tick() if args.cmd == 'tick' else report(args.kind))
+                result = begin(args.instrument_tag,args.repair_receipt) if args.cmd == 'begin' else (tick() if args.cmd == 'tick' else report(args.kind))
             except Exception as exc:
                 if not (STATE / 'state.json').exists(): raise
                 state = json.loads((STATE / 'state.json').read_text())
