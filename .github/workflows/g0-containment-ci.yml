@@ -2,9 +2,15 @@ name: G0 Isolation and Holdout CI
 
 on:
   push:
-    branches: [master, fix/g0-env-isolation-and-w2pp-holdout]
+    branches:
+      - master
+      - fix/g0-env-isolation-and-w2pp-holdout
+      - fix/g0-close-w2pp-complete-guard
   pull_request:
-    branches: [master, fix/g0-env-isolation-and-w2pp-holdout]
+    branches:
+      - master
+      - fix/g0-env-isolation-and-w2pp-holdout
+      - fix/g0-close-w2pp-complete-guard
 
 jobs:
   g0-isolation-and-w2pp:
@@ -31,5 +37,8 @@ jobs:
             apps/market-worker/scripts/compute_calibration.py \
             tests/test_g0_env_and_w2pp_guard.py
 
-      - name: Run G0 env-isolation and W2PP holdout tests
-        run: python -m pytest -ra tests/test_g0_env_and_w2pp_guard.py
+      - name: Run G0 env-isolation, W2PP holdout, and W2 close-check tests
+        run: |
+          python -m pytest -ra \
+            tests/test_g0_env_and_w2pp_guard.py \
+            apps/market-worker/scripts/test_w2_close_check.py

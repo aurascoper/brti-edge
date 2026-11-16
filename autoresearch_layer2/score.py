@@ -55,7 +55,7 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 sys.path.insert(0, str(BAKEOFF_DIR))
 import brier_bakeoff as bb  # noqa: E402
-from w2pp_holdout_guard import is_in_w2pp_holdout  # noqa: E402
+from w2pp_holdout_guard import filter_dataframe_w2pp_holdout  # noqa: E402
 
 EPS = 1e-4
 CLIMATOLOGY_BRIER = 0.250
@@ -145,8 +145,8 @@ def load_shadow_universe() -> pd.DataFrame:
     val = bb.load_validator_rows()
     layer2 = bb.load_bakeoff_shadow(decision_secs=SECS_TO_CLOSE_GATE)
     shadow = bb.merge_layer2_with_settlements(layer2, val)
-    if len(shadow) and "close_time" in shadow.columns:
-        shadow = shadow[~shadow["close_time"].map(is_in_w2pp_holdout)].reset_index(drop=True)
+    if len(shadow):
+        shadow, _ = filter_dataframe_w2pp_holdout(shadow)
     if len(shadow) and "basis_bps" in shadow.columns:
         shadow = shadow.sort_values(["asset", "close_time"]).reset_index(drop=True)
         shadow["basis_change_bps"] = (

@@ -25,10 +25,16 @@ import gzip
 import json
 import math
 import os
+import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+
+from w2pp_holdout_guard import assert_span_excludes_w2pp_holdout, filter_out_w2pp_holdout
+
 WORKER = os.path.normpath(os.path.join(HERE, ".."))
 LOGS = os.path.join(WORKER, "logs")
 ARCHIVE = os.path.normpath(os.path.join(
@@ -56,14 +62,22 @@ def load_jsonl(path):
     return rows
 
 
-def w1_s1_fills(t0: float, t1: float):
+def w1_s1_fills(t0: float, t1: float, *, allow_locked_w2pp_holdout: bool = False):
     """Scorer-identical first-fire persistence fills, S1 only."""
     settle = {}
-    for r in load_jsonl(os.path.join(LOGS, "kalshi-settlement-validation.jsonl")):
+    settle_rows, _ = filter_out_w2pp_holdout(
+        load_jsonl(os.path.join(LOGS, "kalshi-settlement-validation.jsonl")),
+        allow_locked_w2pp_holdout=allow_locked_w2pp_holdout,
+    )
+    for r in settle_rows:
         if r.get("kalshi_result") in ("yes", "no") and r.get("close_time"):
             settle[r["ticker"]] = 1.0 if r["kalshi_result"] == "yes" else 0.0
     per = defaultdict(list)
-    for r in load_jsonl(os.path.join(LOGS, "kalshi-shadow.jsonl")):
+    shadow_rows, _ = filter_out_w2pp_holdout(
+        load_jsonl(os.path.join(LOGS, "kalshi-shadow.jsonl")),
+        allow_locked_w2pp_holdout=allow_locked_w2pp_holdout,
+    )
+    for r in shadow_rows:
         t = ts_ms(r["ts"])
         if t0 <= t <= t1:
             per[r["ticker"]].append(r)
@@ -204,11 +218,21 @@ def main() -> None:
                          "progress persists in the checkpoint — rerun to resume")
     ap.add_argument("--checkpoint", default=os.path.normpath(os.path.join(
         WORKER, "..", "..", "analysis", "w2", "w1-fade-checkpoint.jsonl")))
+    ap.add_argument(
+        "--allow-locked-w2pp-holdout",
+        action="store_true",
+        help="Explicit audit override for locked W2PP holdout (disabled by default)",
+    )
     args = ap.parse_args()
+    assert_span_excludes_w2pp_holdout(
+        args.since,
+        args.until,
+        allow_locked_w2pp_holdout=args.allow_locked_w2pp_holdout,
+    )
     import time
     t_start = time.monotonic()
     t0, t1 = ts_ms(args.since), ts_ms(args.until)
-    fills = w1_s1_fills(t0, t1)
+    fills = w1_s1_fills(t0, t1, allow_locked_w2pp_holdout=args.allow_locked_w2pp_holdout)
     print(f"# W1 fade audit — {args.since} -> {args.until}")
     print(f"S1 fills under §5 next-scan rule: {len(fills)} "
           f"(prereg official W1 span counts 71)")
