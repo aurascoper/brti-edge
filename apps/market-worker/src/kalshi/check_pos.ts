@@ -1,9 +1,7 @@
-import { readFileSync } from "fs";
-if (!process.env.KALSHI_API_KEY_ID) {
-  const t = readFileSync("/Users/aurascoper/Developer/live_trading/.env", "utf8");
-  for (const l of t.split("\n")) { const m = l.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*?)\s*$/); if (m && m[1].startsWith("KALSHI_") && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, ""); }
-}
 import { KalshiClient } from "@polyterminal/kalshi-client";
+if (!process.env.KALSHI_API_KEY_ID || !process.env.KALSHI_PRIVATE_KEY_PEM) {
+  throw new Error("G0 isolation: supply KALSHI_API_KEY_ID and KALSHI_PRIVATE_KEY_PEM in brti-edge env (cross-repo .env fallback disabled).");
+}
 const c = new KalshiClient({ apiKeyId: process.env.KALSHI_API_KEY_ID!, privateKeyPem: process.env.KALSHI_PRIVATE_KEY_PEM! });
 // Both expired markets
 for (const t of ["KXBTC15M-26MAY151145-45", "KXSOL15M-26MAY151145-45"]) {

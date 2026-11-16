@@ -21,6 +21,7 @@ import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
+import sys
 
 import numpy as np
 import pandas as pd
@@ -28,7 +29,13 @@ from scipy.special import ndtri
 from scipy.stats import t as student_t
 from sklearn.linear_model import LogisticRegression
 
-ROOT = Path(__file__).resolve().parents[3]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from w2pp_holdout_guard import filter_out_w2pp_holdout  # noqa: E402
+
+ROOT = SCRIPT_DIR.parents[2]
 LOGS = ROOT / "apps" / "market-worker" / "logs"
 OUT = ROOT / "analysis" / "brier"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -54,9 +61,12 @@ def load_jsonl(path: Path) -> list[dict]:
     return rows
 
 
-def load_validator_rows() -> pd.DataFrame:
-    """Universe A: every settlement-validated market where we recorded a decision."""
-    rows = load_jsonl(LOGS / "kalshi-settlement-validation.jsonl")
+def load_validator_rows(*, allow_locked_w2pp_holdout: bool = False) -> pd.DataFrame:
+    """Universe A: every settlement-validated market where we recorded a decision (W2PP excluded)."""
+    raw_rows = load_jsonl(LOGS / "kalshi-settlement-validation.jsonl")
+    rows, _ = filter_out_w2pp_holdout(
+        raw_rows, allow_locked_w2pp_holdout=allow_locked_w2pp_holdout
+    )
     out = []
     for r in rows:
         if r.get("rejected_reason") is not None:
@@ -100,23 +110,14 @@ def load_validator_rows() -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
-def load_bakeoff_shadow(decision_secs: float = 90.0) -> pd.DataFrame:
-    """Layer-2 shadow rows: model prediction + new candidate features (basis, ...).
-    Each row is one scan-tick evaluation of one Kalshi market.
-
-    For each ticker, we keep the row whose secs_to_close is the smallest value
-    that is still >= decision_secs (default: 90s, matching the live executor's
-    KALSHI_DEF_MIN_SECS_TO_CLOSE gate). This represents the worker's view at
-    the moment a live decision would be made.
-
-    Previously we kept the LAST row per ticker; that captured the saturation
-    state (post-close), not the decision state. With the saturation row, both
-    p_gaussian and any structural correction collapse to 0/1, masking the real
-    signal we're trying to evaluate.
-
-    Tickers with no row at >= decision_secs (e.g., the worker only saw them
-    deep in the settlement window) are dropped."""
-    rows = load_jsonl(LOGS / "kalshi-model-bakeoff-shadow.jsonl")
+def load_bakeoff_shadow(
+    decision_secs: float = 90.0, *, allow_locked_w2pp_holdout: bool = False
+) -> pd.DataFrame:
+    """Layer-2 shadow rows: model prediction + candidate features (W2PP excluded by default)."""
+    raw_rows = load_jsonl(LOGS / "kalshi-model-bakeoff-shadow.jsonl")
+    rows, _ = filter_out_w2pp_holdout(
+        raw_rows, allow_locked_w2pp_holdout=allow_locked_w2pp_holdout
+    )
     if not rows:
         return pd.DataFrame()
     df = pd.DataFrame(rows)
@@ -168,14 +169,17 @@ FILLED_COLUMNS = [
 ]
 
 
-def load_filled_trades() -> pd.DataFrame:
-    """Universe B: candidates the executor actually submitted, with realized PnL."""
+def load_filled_trades(*, allow_locked_w2pp_holdout: bool = False) -> pd.DataFrame:
+    """Universe B: candidates the executor actually submitted, with realized PnL (W2PP excluded)."""
     state_path = LOGS / "kalshi-dust-state.json"
     if not state_path.exists():
         return pd.DataFrame(columns=FILLED_COLUMNS)
     state = json.loads(state_path.read_text())
+    candidates, _ = filter_out_w2pp_holdout(
+        state.get("candidates", []), allow_locked_w2pp_holdout=allow_locked_w2pp_holdout
+    )
     out = []
-    for c in state.get("candidates", []):
+    for c in candidates:
         if c.get("status") != "filled":
             continue
         if c.get("realized_pnl_usd") is None:

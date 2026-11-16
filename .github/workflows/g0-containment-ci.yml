@@ -1,0 +1,35 @@
+name: G0 Isolation and Holdout CI
+
+on:
+  push:
+    branches: [master, fix/g0-env-isolation-and-w2pp-holdout]
+  pull_request:
+    branches: [master, fix/g0-env-isolation-and-w2pp-holdout]
+
+jobs:
+  g0-isolation-and-w2pp:
+    runs-on: ubuntu-latest
+    env: {}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - run: python -m pip install --upgrade pip
+      - run: pip install pytest ruff
+
+      - name: Ruff check W2PP guard, calibration, and tests
+        run: |
+          ruff check \
+            apps/market-worker/scripts/w2pp_holdout_guard.py \
+            apps/market-worker/scripts/compute_calibration.py \
+            tests/test_g0_env_and_w2pp_guard.py
+
+      - name: Run G0 env-isolation and W2PP holdout tests
+        run: python -m pytest -ra tests/test_g0_env_and_w2pp_guard.py

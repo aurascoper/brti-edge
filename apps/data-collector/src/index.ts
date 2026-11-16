@@ -26,11 +26,9 @@
 // Run:
 //   cd apps/data-collector && pnpm run start
 //
-// Env required:
-//   KALSHI_API_KEY_ID         — UUID of the key
-//   KALSHI_PRIVATE_KEY_PATH   — path to PEM
-//   (loaded automatically from /Users/aurascoper/Developer/live_trading/.env
-//    if not set, same convention as kalshi-worker)
+// Env required (supplied strictly via brti-edge process environment):
+//   KALSHI_API_KEY_ID         - UUID of the key
+//   KALSHI_PRIVATE_KEY_PATH   - path to PEM
 //
 // Env optional:
 //   DATA_COLLECTOR_LOG_DIR    — default logs/data-collector
@@ -51,7 +49,7 @@ import { MultiChannelRotator } from "./persistence";
 
 // ---------- config ----------
 
-loadEnvFromLiveTrading();
+assertIsolatedKalshiEnv();
 
 const WS_URL = "wss://api.elections.kalshi.com/trade-api/ws/v2";
 // WS sign path differs from REST: REST uses /trade-api/v2/..., WS uses
@@ -373,20 +371,11 @@ function numEnv(name: string, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function loadEnvFromLiveTrading(): void {
-  if (process.env.KALSHI_API_KEY_ID && process.env.KALSHI_PRIVATE_KEY_PATH) return;
-  const envPath = "/Users/aurascoper/Developer/live_trading/.env";
-  if (!existsSync(envPath)) return;
-  try {
-    const text = readFileSync(envPath, "utf8");
-    for (const line of text.split("\n")) {
-      const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-      if (m && m[1]?.startsWith("KALSHI_")) {
-        if (!process.env[m[1]]) process.env[m[1]] = m[2];
-      }
-    }
-  } catch {
-    // ignore
+function assertIsolatedKalshiEnv(): void {
+  if (process.env.KALSHI_LIVE_TRADING_ENV) {
+    throw new Error(
+      "G0 isolation error: KALSHI_LIVE_TRADING_ENV cross-repo secret fallback is disabled; supply KALSHI_* in brti-edge environment only.",
+    );
   }
 }
 

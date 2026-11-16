@@ -2,18 +2,7 @@
 //
 //   pnpm dlx tsx src/smoke-multi-series.ts
 
-import { readFileSync } from "node:fs";
 import { CRYPTO_15M_SERIES, isExecutionAllowed, KalshiAdapter } from "./index";
-
-if (!process.env.KALSHI_API_KEY_ID) {
-  const envText = readFileSync("/Users/aurascoper/Developer/live_trading/.env", "utf8");
-  for (const line of envText.split("\n")) {
-    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-    if (m && m[1]?.startsWith("KALSHI_")) {
-      if (!process.env[m[1]]) process.env[m[1]] = m[2];
-    }
-  }
-}
 
 async function main() {
   console.log("=== Configured 15m crypto series ===");
