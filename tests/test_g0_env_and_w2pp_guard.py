@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = REPO_ROOT / "apps" / "market-worker" / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-import compute_calibration  # noqa: E402
-from w2pp_holdout_guard import (  # noqa: E402
+import compute_calibration
+from w2pp_holdout_guard import (
     W2PP_HOLDOUT_END_ISO,
     W2PP_HOLDOUT_START_ISO,
     filter_out_w2pp_holdout,

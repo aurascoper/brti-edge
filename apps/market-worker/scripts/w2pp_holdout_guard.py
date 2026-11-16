@@ -7,8 +7,10 @@ be silently reused for calibration, bakeoff fitting, or autoresearch tuning.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Iterable
+import math
+from collections.abc import Iterable
+from datetime import UTC, datetime
+from typing import Any
 
 W2PP_DECLARATION_TAG = "w2pp-declaration-20260924"
 W2PP_INSTRUMENT_TAG = "w2pp-instrument-20260924"
@@ -23,19 +25,17 @@ def parse_timestamp_ms(value: Any) -> int | None:
     if value is None:
         return None
     if isinstance(value, (int, float)):
-        if value != value:  # NaN
-            return None
         val_f = float(value)
-        if val_f <= 0:
+        if math.isnan(val_f) or val_f <= 0:
             return None
-        return int(round(val_f * 1000.0)) if val_f < 1e11 else int(round(val_f))
+        return round(val_f * 1000.0) if val_f < 1e11 else round(val_f)
     if hasattr(value, "timestamp"):
         try:
-            ts = value.timestamp()
-            if ts != ts:
+            ts = float(value.timestamp())
+            if math.isnan(ts):
                 return None
-            return int(round(ts * 1000.0))
-        except Exception:
+            return round(ts * 1000.0)
+        except (ValueError, TypeError, OSError, OverflowError):
             return None
     if isinstance(value, str):
         s = value.strip()
@@ -46,8 +46,8 @@ def parse_timestamp_ms(value: Any) -> int | None:
         try:
             dt = datetime.fromisoformat(s)
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return int(round(dt.timestamp() * 1000.0))
+                dt = dt.replace(tzinfo=UTC)
+            return round(dt.timestamp() * 1000.0)
         except ValueError:
             return None
     return None
@@ -67,10 +67,7 @@ def row_overlaps_w2pp_holdout(
     ts_keys: tuple[str, ...] = ("close_time", "ts", "settled_at", "created_at", "updated_at"),
 ) -> bool:
     """Return True if any timestamp field on row falls within the locked W2PP holdout window."""
-    for key in ts_keys:
-        if key in row and is_in_w2pp_holdout(row.get(key)):
-            return True
-    return False
+    return any(key in row and is_in_w2pp_holdout(row.get(key)) for key in ts_keys)
 
 
 def filter_out_w2pp_holdout(

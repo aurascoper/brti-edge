@@ -9,18 +9,18 @@ The strategy applies: fair_yes_corrected = clamp(fair_yes + alpha * bias, 0.05, 
 
 from __future__ import annotations
 
-from collections import defaultdict
-from datetime import datetime, timezone
 import json
-from pathlib import Path
 import sys
+from collections import defaultdict
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from w2pp_holdout_guard import W2PP_DECLARATION_TAG, filter_out_w2pp_holdout  # noqa: E402
+from w2pp_holdout_guard import W2PP_DECLARATION_TAG, filter_out_w2pp_holdout
 
 WORKER_DIR = SCRIPT_DIR.parent
 STATE = WORKER_DIR / "logs" / "kalshi-dust-state.json"
@@ -54,7 +54,7 @@ def recompute_calibration(
         samples[str(c["series"])].append(actual_yes - fair)
 
     out: dict[str, Any] = {
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(UTC).isoformat(),
         "min_sample_n": min_n,
         "w2pp_holdout_tag_excluded": W2PP_DECLARATION_TAG,
         "w2pp_holdout_excluded_count": excluded_w2pp,
