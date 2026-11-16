@@ -3,20 +3,7 @@
 //
 //   pnpm dlx tsx src/smoke-adapter.ts
 
-import { readFileSync } from "node:fs";
 import { KalshiAdapter } from "./adapter";
-
-if (!process.env.KALSHI_API_KEY_ID) {
-  try {
-    const envText = readFileSync("/Users/aurascoper/Developer/live_trading/.env", "utf8");
-    for (const line of envText.split("\n")) {
-      const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-      if (m && m[1]?.startsWith("KALSHI_")) {
-        if (!process.env[m[1]]) process.env[m[1]] = m[2];
-      }
-    }
-  } catch {}
-}
 
 async function main() {
   const adapter = new KalshiAdapter({ allowOrders: false });

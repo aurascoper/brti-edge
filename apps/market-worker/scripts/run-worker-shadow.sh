@@ -87,15 +87,13 @@ export KALSHI_ALLOW_ORDERS=0
 export KALSHI_AUTO_SUBMIT=0
 export KALSHI_DUST_ENABLED=0
 
-# Kalshi creds: worker.ts self-loads KALSHI_* from live_trading/.env via
-# loadEnvFromLiveTrading(); they need not be in our shell env.
-LIVE_TRADING_ENV="${KALSHI_LIVE_TRADING_ENV:-/Users/aurascoper/Developer/live_trading/.env}"
+# Kalshi creds: isolated to brti-edge .env / process environment only (no cross-repo dotenv fallback).
+if [ -n "${KALSHI_LIVE_TRADING_ENV:-}" ]; then
+  log_event error "KALSHI_LIVE_TRADING_ENV cross-repo secret fallback is disabled under G0"
+  exit 2
+fi
 if [ -z "${KALSHI_API_KEY_ID:-}" ]; then
-  if [ -f "$LIVE_TRADING_ENV" ] && grep -q '^KALSHI_API_KEY_ID=' "$LIVE_TRADING_ENV" 2>/dev/null; then
-    log_event creds "worker will self-load KALSHI_* from $LIVE_TRADING_ENV"
-  else
-    log_event warn "KALSHI_API_KEY_ID unset and $LIVE_TRADING_ENV missing — auth will fail"
-  fi
+  log_event warn "KALSHI_API_KEY_ID unset in brti-edge .env - authenticated Kalshi calls will fail"
 fi
 
 # Port preflight: a manual `pnpm kalshi-dev` holding :4001 would otherwise

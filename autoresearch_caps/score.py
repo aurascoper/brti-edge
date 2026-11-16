@@ -30,6 +30,12 @@ from pathlib import Path
 import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = REPO_ROOT / "apps" / "market-worker" / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from w2pp_holdout_guard import filter_out_w2pp_holdout  # noqa: E402
+
 DUST_STATE = REPO_ROOT / "apps" / "market-worker" / "logs" / "kalshi-dust-state.json"
 OUT_DIR = REPO_ROOT / "analysis" / "brier"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -89,10 +95,15 @@ class Config:
 # Data loading
 # -------------------------------------------------------------------------
 
-def load_filled_trades() -> list[dict]:
-    state = json.loads(DUST_STATE.read_text())
+def load_filled_trades(
+    state_path: Path = DUST_STATE, *, allow_locked_w2pp_holdout: bool = False
+) -> list[dict]:
+    state = json.loads(state_path.read_text())
+    candidates, _ = filter_out_w2pp_holdout(
+        state.get("candidates", []), allow_locked_w2pp_holdout=allow_locked_w2pp_holdout
+    )
     out = []
-    for c in state.get("candidates", []):
+    for c in candidates:
         if c.get("status") != "filled":
             continue
         if c.get("realized_pnl_usd") is None:

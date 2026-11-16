@@ -1,28 +1,7 @@
 // Smoke test: not exported, run directly with tsx for verification.
-//
-//   cd /Users/aurascoper/Developer/polyterminal/packages/kalshi-client
-//   pnpm dlx tsx src/smoke.ts
-//
-// Requires KALSHI_API_KEY_ID / KALSHI_PRIVATE_KEY_PATH in env (loaded from
-// ~/Developer/live_trading/.env if you source it first).
+// Requires KALSHI_API_KEY_ID / KALSHI_PRIVATE_KEY_PATH in brti-edge process env.
 
-import { readFileSync } from "node:fs";
 import { KalshiClient } from "./client";
-
-// Load env from ~/Developer/live_trading/.env if not already set.
-if (!process.env.KALSHI_API_KEY_ID) {
-  try {
-    const envText = readFileSync("/Users/aurascoper/Developer/live_trading/.env", "utf8");
-    for (const line of envText.split("\n")) {
-      const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-      if (m && m[1]?.startsWith("KALSHI_")) {
-        if (!process.env[m[1]]) process.env[m[1]] = m[2];
-      }
-    }
-  } catch {
-    // ignore; will error from constructor if creds missing
-  }
-}
 
 async function main() {
   const client = new KalshiClient();

@@ -88,15 +88,13 @@ load_env() {
 load_env "$ROOT_DIR/.env"
 load_env "$APP_DIR/.env"
 
-# Kalshi creds: the collector self-loads KALSHI_* from live_trading/.env via its
-# loadEnvFromLiveTrading() (src/index.ts), so they need not be in our shell env.
-LIVE_TRADING_ENV="${KALSHI_LIVE_TRADING_ENV:-/Users/aurascoper/Developer/live_trading/.env}"
+# Kalshi creds: isolated to brti-edge .env / process environment only (no cross-repo dotenv fallback).
+if [ -n "${KALSHI_LIVE_TRADING_ENV:-}" ]; then
+  log_event error "KALSHI_LIVE_TRADING_ENV cross-repo secret fallback is disabled under G0"
+  exit 2
+fi
 if [ -z "${KALSHI_API_KEY_ID:-}" ]; then
-  if [ -f "$LIVE_TRADING_ENV" ] && grep -q '^KALSHI_API_KEY_ID=' "$LIVE_TRADING_ENV" 2>/dev/null; then
-    log_event creds "collector will self-load KALSHI_* from $LIVE_TRADING_ENV"
-  else
-    log_event warn "KALSHI_API_KEY_ID unset and $LIVE_TRADING_ENV missing — auth will fail"
-  fi
+  log_event warn "KALSHI_API_KEY_ID unset in brti-edge .env - authenticated Kalshi WS calls will fail"
 fi
 
 # Resolve the collector entrypoint as a DIRECT child so SIGTERM reaches it.

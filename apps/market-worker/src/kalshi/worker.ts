@@ -46,7 +46,7 @@ import { ModelBakeoffLogger } from "./modelBakeoffLogger";
 
 // ------------------ config ------------------
 
-loadEnvFromLiveTrading();
+assertIsolatedKalshiEnv();
 
 // Default 15s scan to stay under Kalshi's public-API rate limit (we hit 429s
 // at 5s with 9 series × orderbook fetch). Override via env if needed.
@@ -818,17 +818,12 @@ function numEnv(name: string, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function loadEnvFromLiveTrading(): void {
-  if (process.env.KALSHI_API_KEY_ID) return;
-  try {
-    const envText = readFileSync("/Users/aurascoper/Developer/live_trading/.env", "utf8");
-    for (const line of envText.split("\n")) {
-      const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-      if (m && m[1]?.startsWith("KALSHI_")) {
-        if (!process.env[m[1]]) process.env[m[1]] = m[2];
-      }
-    }
-  } catch {}
+function assertIsolatedKalshiEnv(): void {
+  if (process.env.KALSHI_LIVE_TRADING_ENV) {
+    throw new Error(
+      "G0 isolation error: KALSHI_LIVE_TRADING_ENV cross-repo secret fallback is disabled; supply KALSHI_* in brti-edge environment only.",
+    );
+  }
 }
 
 // ------------------ main ------------------
