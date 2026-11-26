@@ -6,11 +6,13 @@ on:
       - master
       - fix/g0-env-isolation-and-w2pp-holdout
       - fix/g0-close-w2pp-complete-guard
+      - infra/rfas-stage0-readiness
   pull_request:
     branches:
       - master
       - fix/g0-env-isolation-and-w2pp-holdout
       - fix/g0-close-w2pp-complete-guard
+      - infra/rfas-stage0-readiness
 
 jobs:
   g0-isolation-and-w2pp:
@@ -30,15 +32,24 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install pytest ruff
 
-      - name: Ruff check W2PP guard, calibration, and tests
+      - name: Ruff check W2PP guard, calibration, and Stage 0 tooling
         run: |
           ruff check \
             apps/market-worker/scripts/w2pp_holdout_guard.py \
             apps/market-worker/scripts/compute_calibration.py \
-            tests/test_g0_env_and_w2pp_guard.py
+            ops/rfas_stage0/render_units.py \
+            tests/test_g0_env_and_w2pp_guard.py \
+            tests/test_rfas_stage0_readiness.py
 
-      - name: Run G0 env-isolation, W2PP holdout, and W2 close-check tests
+      - name: ShellCheck RFAS Stage 0 shell scripts
+        run: |
+          shellcheck \
+            ops/rfas_stage0/storage_guard.sh \
+            ops/rfas_stage0/collect_readiness.sh
+
+      - name: Run G0 env-isolation, W2PP holdout, W2 close-check, and Stage 0 tests
         run: |
           python -m pytest -ra \
             tests/test_g0_env_and_w2pp_guard.py \
-            apps/market-worker/scripts/test_w2_close_check.py
+            apps/market-worker/scripts/test_w2_close_check.py \
+            tests/test_rfas_stage0_readiness.py
