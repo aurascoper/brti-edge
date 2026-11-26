@@ -28,7 +28,7 @@
 // and are seq-advances for unsubscribed markets — see
 // docs/research/kalshi-data-collector-30h-2026-05-26.md.
 
-import { createReadStream, readdirSync } from "node:fs";
+import { createReadStream, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { createGunzip } from "node:zlib";
@@ -297,56 +297,145 @@ export function discoverBookFiles(logDir: string): FileDiscovery {
   return { snapshots, deltas };
 }
 
-async function* readGzLines(path: string): AsyncGenerator<string> {
-  const gz = createReadStream(path).pipe(createGunzip());
-  gz.on("error", (err: NodeJS.ErrnoException) => {
-    if (err.code !== "Z_BUF_ERROR" && err.code !== "ERR_STREAM_PREMATURE_CLOSE") {
-      process.stderr.write(`[bookReconstructor] decompress ${path}: ${err.message}\n`);
-    }
+async function* readGzLines(
+  path: string,
+  allowTruncatedGzip = false
+): AsyncGenerator<string> {
+  if (statSync(path).size === 0) {
+    if (allowTruncatedGzip) return;
+    throw new Error(`Empty 0-byte gzip file: ${path}`);
+  }
+  const src = createReadStream(path);
+  const gunzip = createGunzip();
+  src.on("error", (err: NodeJS.ErrnoException) => {
+    gunzip.destroy(err);
   });
-  const rl = createInterface({ input: gz, crlfDelay: Infinity });
+  src.pipe(gunzip);
+  const rl = createInterface({ input: gunzip, crlfDelay: Infinity });
   try {
     for await (const line of rl) yield line;
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
-    if (code !== "Z_BUF_ERROR" && code !== "ERR_STREAM_PREMATURE_CLOSE") throw err;
+    if (allowTruncatedGzip && (code === "Z_BUF_ERROR" || code === "ERR_STREAM_PREMATURE_CLOSE")) {
+      return;
+    }
+    throw err;
+  } finally {
+    rl.close();
+    gunzip.destroy();
+    src.destroy();
   }
+}
+
+export interface BookStreamOptions {
+  allowTruncatedGzip?: boolean;
+  strictSegments?: boolean;
+}
+
+export interface HourSegmentAudit {
+  hour: string;
+  snapshotParts: number[];
+  deltaParts: number[];
+  missingSnapshotParts: number[];
+  missingDeltaParts: number[];
+}
+
+interface ParsedPart {
+  hour: string;
+  part: number;
+  path: string;
+}
+
+function parseBookPart(path: string): ParsedPart | null {
+  const m = path.match(/-(\d{4}-\d{2}-\d{2}T\d{2})(?:\.p(\d+))?\.jsonl\.gz$/);
+  if (!m) return null;
+  const hour = m[1]!;
+  const part = m[2] ? Number(m[2]) : 1;
+  if (!Number.isInteger(part) || part < 1) return null;
+  return { hour, part, path };
+}
+
+function findMissingParts(parts: number[]): number[] {
+  if (parts.length === 0) return [];
+  const present = new Set(parts);
+  const maxPart = Math.max(...parts);
+  const missing: number[] = [];
+  for (let partNum = 1; partNum <= maxPart; partNum++) {
+    if (!present.has(partNum)) missing.push(partNum);
+  }
+  return missing;
+}
+
+export function auditBookSegments(logDir: string): HourSegmentAudit[] {
+  const disc = discoverBookFiles(logDir);
+  const hours = new Map<string, { snapParts: number[]; deltaParts: number[] }>();
+  const ensure = (h: string) => {
+    let entry = hours.get(h);
+    if (!entry) {
+      entry = { snapParts: [], deltaParts: [] };
+      hours.set(h, entry);
+    }
+    return entry;
+  };
+  for (const fp of disc.snapshots) {
+    const parsed = parseBookPart(fp);
+    if (parsed) ensure(parsed.hour).snapParts.push(parsed.part);
+  }
+  for (const fp of disc.deltas) {
+    const parsed = parseBookPart(fp);
+    if (parsed) ensure(parsed.hour).deltaParts.push(parsed.part);
+  }
+  return [...hours.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([hour, v]) => {
+      const snapshotParts = [...v.snapParts].sort((a, b) => a - b);
+      const deltaParts = [...v.deltaParts].sort((a, b) => a - b);
+      return {
+        hour,
+        snapshotParts,
+        deltaParts,
+        missingSnapshotParts: findMissingParts(snapshotParts),
+        missingDeltaParts: findMissingParts(deltaParts),
+      };
+    });
 }
 
 // Hourly chronological merger.
 //
-// The two channels (snapshots, deltas) are split by hour. Within an hour
-// we merge-sort by (tsMs, type-tiebreak), where snapshots tie-break BEFORE
-// deltas at the same tsMs so that a fresh snapshot reseats the book before
-// any delta at the identical timestamp would apply.
+// The two channels (snapshots, deltas) are split by hour (with optional .pN
+// crash-relaunch parts). Within an hour we merge-sort by (tsMs, recvTsMs,
+// type-tiebreak), where snapshots tie-break BEFORE deltas at the same tsMs so
+// that a fresh snapshot reseats the book before any delta at the identical
+// timestamp would apply.
 //
 // Crossing hour boundaries: the gzip files are rotated on local-hour
 // boundaries, so a single market's event stream is split across consecutive
-// files in chronological order. We process each (snapshot-file, delta-file)
-// pair as a single hour, then move on.
+// files in chronological order. We process all parts for each hour together,
+// then move on.
 async function* mergeHour(
-  snapshotPath: string | null,
-  deltaPath: string | null,
-  filter?: (marketTicker: string) => boolean
+  snapshotPaths: string[],
+  deltaPaths: string[],
+  filter?: (marketTicker: string) => boolean,
+  allowTruncatedGzip = false
 ): AsyncGenerator<BookEvent> {
   const events: BookEvent[] = [];
-  if (snapshotPath) {
-    for await (const line of readGzLines(snapshotPath)) {
+  for (const snapshotPath of snapshotPaths) {
+    for await (const line of readGzLines(snapshotPath, allowTruncatedGzip)) {
       const ev = parseLine(line);
       if (!ev) continue;
       if (filter && !filter(ev.marketTicker)) continue;
       events.push(ev);
     }
   }
-  if (deltaPath) {
-    for await (const line of readGzLines(deltaPath)) {
+  for (const deltaPath of deltaPaths) {
+    for await (const line of readGzLines(deltaPath, allowTruncatedGzip)) {
       const ev = parseLine(line);
       if (!ev) continue;
       if (filter && !filter(ev.marketTicker)) continue;
       events.push(ev);
     }
   }
-  // Stable sort: by tsMs, then snapshot < snapshot_terminal < delta.
+  // Stable sort: by tsMs, then recvTsMs, then snapshot < delta < snapshot_terminal.
   // Reasoning: at identical tsMs, a fresh snapshot must reseat the book
   // before deltas at the same tick apply. snapshot_terminal at identical
   // tsMs as deltas should NOT eat those deltas, so terminal comes after.
@@ -363,27 +452,51 @@ async function* mergeHour(
   for (const ev of events) yield ev;
 }
 
-// Pair snapshot and delta files by hour suffix.
-function pairFilesByHour(disc: FileDiscovery): Array<{ hour: string; snap: string | null; delta: string | null }> {
-  const hours = new Map<string, { snap: string | null; delta: string | null }>();
-  const hourOf = (path: string): string => {
-    const m = path.match(/-(\d{4}-\d{2}-\d{2}T\d{2})\.jsonl\.gz$/);
-    return m ? m[1]! : "";
+// Pair snapshot and delta files (including .pN multipart segments) by hour suffix.
+function pairFilesByHour(
+  disc: FileDiscovery
+): Array<{
+  hour: string;
+  snaps: string[];
+  deltas: string[];
+  missingSnapshotParts: number[];
+  missingDeltaParts: number[];
+}> {
+  const hours = new Map<
+    string,
+    { snaps: Array<{ part: number; path: string }>; deltas: Array<{ part: number; path: string }> }
+  >();
+  const ensure = (h: string) => {
+    let entry = hours.get(h);
+    if (!entry) {
+      entry = { snaps: [], deltas: [] };
+      hours.set(h, entry);
+    }
+    return entry;
   };
-  for (const p of disc.snapshots) {
-    const h = hourOf(p);
-    if (!hours.has(h)) hours.set(h, { snap: null, delta: null });
-    hours.get(h)!.snap = p;
+  for (const fp of disc.snapshots) {
+    const parsed = parseBookPart(fp);
+    if (!parsed) continue;
+    ensure(parsed.hour).snaps.push({ part: parsed.part, path: parsed.path });
   }
-  for (const p of disc.deltas) {
-    const h = hourOf(p);
-    if (!hours.has(h)) hours.set(h, { snap: null, delta: null });
-    hours.get(h)!.delta = p;
+  for (const fp of disc.deltas) {
+    const parsed = parseBookPart(fp);
+    if (!parsed) continue;
+    ensure(parsed.hour).deltas.push({ part: parsed.part, path: parsed.path });
   }
   return [...hours.entries()]
-    .map(([hour, v]) => ({ hour, ...v }))
-    .filter((e) => e.hour !== "")
-    .sort((a, b) => a.hour.localeCompare(b.hour));
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([hour, v]) => {
+      v.snaps.sort((a, b) => a.part - b.part);
+      v.deltas.sort((a, b) => a.part - b.part);
+      return {
+        hour,
+        snaps: v.snaps.map((x) => x.path),
+        deltas: v.deltas.map((x) => x.path),
+        missingSnapshotParts: findMissingParts(v.snaps.map((x) => x.part)),
+        missingDeltaParts: findMissingParts(v.deltas.map((x) => x.part)),
+      };
+    });
 }
 
 // Stream all book events across the full log dir in chronological order.
@@ -391,12 +504,21 @@ function pairFilesByHour(disc: FileDiscovery): Array<{ hour: string; snap: strin
 // the Map<marketTicker, KalshiBookState> and applying each event.
 export async function* streamBookEvents(
   logDir: string,
-  filter?: (marketTicker: string) => boolean
+  filter?: (marketTicker: string) => boolean,
+  options: BookStreamOptions = {}
 ): AsyncGenerator<BookEvent> {
   const disc = discoverBookFiles(logDir);
   const hours = pairFilesByHour(disc);
   for (const h of hours) {
-    yield* mergeHour(h.snap, h.delta, filter);
+    if (
+      options.strictSegments &&
+      (h.missingSnapshotParts.length > 0 || h.missingDeltaParts.length > 0)
+    ) {
+      throw new Error(
+        `Missing segment(s) in hour ${h.hour}: snapshots=[${h.missingSnapshotParts.join(",")}] deltas=[${h.missingDeltaParts.join(",")}]`
+      );
+    }
+    yield* mergeHour(h.snaps, h.deltas, filter, options.allowTruncatedGzip ?? false);
   }
 }
 
@@ -411,10 +533,11 @@ export type ReconstructCallback = (state: KalshiBookState, event: BookEvent) => 
 export async function reconstructAll(
   logDir: string,
   filter: (marketTicker: string) => boolean,
-  onEvent: ReconstructCallback
+  onEvent: ReconstructCallback,
+  options: BookStreamOptions = {}
 ): Promise<Map<string, KalshiBookState>> {
   const books = new Map<string, KalshiBookState>();
-  for await (const ev of streamBookEvents(logDir, filter)) {
+  for await (const ev of streamBookEvents(logDir, filter, options)) {
     let state = books.get(ev.marketTicker);
     if (!state) {
       state = newBookState(ev.marketTicker, ev.marketId);

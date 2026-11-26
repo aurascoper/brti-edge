@@ -6,11 +6,13 @@ on:
       - master
       - fix/g0-env-isolation-and-w2pp-holdout
       - fix/g0-close-w2pp-complete-guard
+      - fix/replay-multipart-integrity
   pull_request:
     branches:
       - master
       - fix/g0-env-isolation-and-w2pp-holdout
       - fix/g0-close-w2pp-complete-guard
+      - fix/replay-multipart-integrity
 
 jobs:
   g0-isolation-and-w2pp:
@@ -42,3 +44,28 @@ jobs:
           python -m pytest -ra \
             tests/test_g0_env_and_w2pp_guard.py \
             apps/market-worker/scripts/test_w2_close_check.py
+
+  data-collector-replay-integrity:
+    runs-on: ubuntu-latest
+    env: {}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck @polyterminal/data-collector
+        run: pnpm --filter @polyterminal/data-collector typecheck
+
+      - name: Run multipart and fail-closed gzip replay integrity tests
+        run: |
+          pnpm --filter @polyterminal/data-collector exec tsx --test \
+            tests/bookReconstructor.multipart.test.ts \
+            tests/bookReconstructor.integrity.test.ts
