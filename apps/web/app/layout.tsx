@@ -4,7 +4,7 @@ import { Web3Provider } from "../providers/Web3Provider";
 
 export const metadata: Metadata = {
   title: "polyterminal",
-  description: "BTC-focused Polymarket execution terminal",
+  description: "Kalshi BTC terminal with cellular paper-pilot monitoring",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
