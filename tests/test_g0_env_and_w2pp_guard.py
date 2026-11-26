@@ -176,7 +176,9 @@ def test_repository_wide_python_scoring_and_calibration_guard_completeness() -> 
         "apps/market-worker/scripts/w2_close_check.py",
         "apps/market-worker/scripts/w2_replay_scorer.py",
         "apps/market-worker/scripts/w2pp_holdout_guard.py",
+        "ops/rfas_stage0/render_units.py",
         "tests/test_g0_env_and_w2pp_guard.py",
+        "tests/test_rfas_stage0_readiness.py",
     }
     expected_guarded = {
         "apps/market-worker/scripts/brier_bakeoff.py",
